@@ -32,6 +32,12 @@ import type {
   LiveCaptureResult,
   ProviderHealthResult,
   ReasoningStreamChunk,
+  ConnectorStatus,
+  ConnectorConfig,
+  ConnectorEvent,
+  ConnectorId,
+  ConnectorResult,
+  SyncHistoryEntry,
 } from '@scooper/core';
 
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData, RepositoryAssetData } from '../src/types/kae.js';
@@ -103,6 +109,14 @@ export interface KaeAPI {
   getLastRepairPlan: () => Promise<RepairPlan | null>;
   getLastRepairResult: () => Promise<RepairResult | null>;
   importChatGptZip: (filePath: string) => Promise<ImportSummary>;
+  getConnectorStatuses: () => Promise<ConnectorStatus[]>;
+  connectConnector: (connectorId: ConnectorId, config: Partial<ConnectorConfig>) => Promise<unknown>;
+  disconnectConnector: (connectorId: ConnectorId) => Promise<boolean>;
+  updateConnectorConfig: (connectorId: ConnectorId, config: Partial<ConnectorConfig>) => Promise<ConnectorConfig>;
+  syncConnector: (connectorId: ConnectorId, sourcePath?: string | null) => Promise<ConnectorResult>;
+  getConnectorSyncHistory: (connectorId?: ConnectorId) => Promise<SyncHistoryEntry[]>;
+  getConnectorEvents: (connectorId?: ConnectorId) => Promise<ConnectorEvent[]>;
+  selectFolder: () => Promise<string | null>;
   onJobUpdated: (callback: (job: ImportJob) => void) => () => void;
   onLogAdded: (callback: (entry: LogEntry) => void) => () => void;
   onImportComplete: (callback: (summary: ImportSummary) => void) => () => void;
@@ -175,6 +189,18 @@ const kaeAPI: KaeAPI = {
   getLastRepairPlan: () => ipcRenderer.invoke('kae:get-last-repair-plan'),
   getLastRepairResult: () => ipcRenderer.invoke('kae:get-last-repair-result'),
   importChatGptZip: (filePath) => ipcRenderer.invoke('kae:import-chatgpt-zip', filePath),
+  getConnectorStatuses: () => ipcRenderer.invoke('kae:get-connector-statuses'),
+  connectConnector: (connectorId, config) =>
+    ipcRenderer.invoke('kae:connect-connector', connectorId, config),
+  disconnectConnector: (connectorId) => ipcRenderer.invoke('kae:disconnect-connector', connectorId),
+  updateConnectorConfig: (connectorId, config) =>
+    ipcRenderer.invoke('kae:update-connector-config', connectorId, config),
+  syncConnector: (connectorId, sourcePath) =>
+    ipcRenderer.invoke('kae:sync-connector', connectorId, sourcePath ?? null),
+  getConnectorSyncHistory: (connectorId) =>
+    ipcRenderer.invoke('kae:get-connector-sync-history', connectorId),
+  getConnectorEvents: (connectorId) => ipcRenderer.invoke('kae:get-connector-events', connectorId),
+  selectFolder: () => ipcRenderer.invoke('kae:select-folder'),
   onJobUpdated: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, job: ImportJob) => callback(job);
     ipcRenderer.on('kae:job-updated', handler);

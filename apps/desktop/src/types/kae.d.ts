@@ -31,6 +31,12 @@ import type {
   LiveCaptureResult,
   ProviderHealthResult,
   ReasoningStreamChunk,
+  ConnectorStatus,
+  ConnectorConfig,
+  ConnectorEvent,
+  ConnectorId,
+  ConnectorResult,
+  SyncHistoryEntry,
 } from '@scooper/core';
 
 export interface ImporterInfo {
@@ -143,6 +149,14 @@ export interface KaeAPI {
   getLastRepairPlan: () => Promise<RepairPlan | null>;
   getLastRepairResult: () => Promise<RepairResult | null>;
   importChatGptZip: (filePath: string) => Promise<ImportSummary>;
+  getConnectorStatuses: () => Promise<ConnectorStatus[]>;
+  connectConnector: (connectorId: ConnectorId, config: Partial<ConnectorConfig>) => Promise<unknown>;
+  disconnectConnector: (connectorId: ConnectorId) => Promise<boolean>;
+  updateConnectorConfig: (connectorId: ConnectorId, config: Partial<ConnectorConfig>) => Promise<ConnectorConfig>;
+  syncConnector: (connectorId: ConnectorId, sourcePath?: string | null) => Promise<ConnectorResult>;
+  getConnectorSyncHistory: (connectorId?: ConnectorId) => Promise<SyncHistoryEntry[]>;
+  getConnectorEvents: (connectorId?: ConnectorId) => Promise<ConnectorEvent[]>;
+  selectFolder: () => Promise<string | null>;
   onJobUpdated: (callback: (job: ImportJob) => void) => () => void;
   onLogAdded: (callback: (entry: LogEntry) => void) => () => void;
   onImportComplete: (callback: (summary: ImportSummary) => void) => () => void;

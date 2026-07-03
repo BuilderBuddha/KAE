@@ -7,6 +7,9 @@ export type JobId = string;
 /** Supported importer format identifiers. */
 export type ImporterFormatId =
   | 'chatgpt-export-zip'
+  | 'youtube'
+  | 'github'
+  | 'local-folder'
   | 'pdf'
   | 'markdown'
   | 'html'

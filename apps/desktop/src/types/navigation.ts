@@ -1,6 +1,7 @@
 export type ScreenId =
   | 'dashboard'
   | 'import'
+  | 'connectors'
   | 'explorer'
   | 'search'
   | 'vigsy'
@@ -34,6 +35,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Import',
     icon: '↓',
     description: 'Acquire knowledge from external sources',
+  },
+  {
+    id: 'connectors',
+    label: 'Connectors',
+    icon: '⎈',
+    description: 'Manage connected knowledge sources',
   },
   {
     id: 'explorer',

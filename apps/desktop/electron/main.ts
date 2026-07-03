@@ -23,8 +23,11 @@ import {
   type AnswerKnowledgeOptions,
   type LiveCaptureInput,
   type AIProviderId,
+  type ConnectorConfig,
+  type ConnectorId,
   InMemoryJobQueue,
 } from '@scooper/core';
+import { getSharedConnectorManager } from '@scooper/connector-engine';
 import { getSharedAIProviderManager } from '@scooper/ai-orchestration';
 import { importerRegistry, stubImporters, validateChatGptZipImport } from '@scooper/importers';
 import { exporterRegistry, axiomExporter } from '@scooper/exporters';
@@ -116,6 +119,15 @@ const logs: LogEntry[] = [];
 
 function repoPath(): string {
   return config.repository.path;
+}
+
+async function ensureConnectorManager(): Promise<void> {
+  const manager = getSharedConnectorManager();
+  await manager.initialize(repoPath());
+  manager.setAwarenessRefreshHandler(() => {
+    mainWindow?.webContents.send('kae:executive-briefing-updated');
+    mainWindow?.webContents.send('kae:vigsy-refreshed');
+  });
 }
 
 function mergedSettings(): AppSettings {
@@ -570,8 +582,9 @@ function setupIpc(): void {
   );
 
   ipcMain.handle('kae:get-repository-config', () => config.repository);
-  ipcMain.handle('kae:set-repository-config', (_event, repo: RepositoryConfig) => {
+  ipcMain.handle('kae:set-repository-config', async (_event, repo: RepositoryConfig) => {
     config.repository = repo;
+    await ensureConnectorManager();
     addLog('info', 'repository', `Repository path set to ${repo.path}`);
     return config.repository;
   });
@@ -834,6 +847,69 @@ function setupIpc(): void {
     }
     return runImport(filePath, 'chatgpt-export-zip');
   });
+
+  ipcMain.handle('kae:get-connector-statuses', async () => {
+    await ensureConnectorManager();
+    return getSharedConnectorManager().getStatuses({
+      repositoryPath: repoPath(),
+      log: (level, message) => addLog(level, 'connector', message),
+    });
+  });
+
+  ipcMain.handle('kae:connect-connector', async (_event, connectorId: ConnectorId, config: Partial<ConnectorConfig>) => {
+    await ensureConnectorManager();
+    return getSharedConnectorManager().connect(connectorId, config, {
+      repositoryPath: repoPath(),
+      log: (level, message) => addLog(level, 'connector', message),
+    });
+  });
+
+  ipcMain.handle('kae:disconnect-connector', async (_event, connectorId: ConnectorId) => {
+    await ensureConnectorManager();
+    await getSharedConnectorManager().disconnect(connectorId);
+    return true;
+  });
+
+  ipcMain.handle('kae:update-connector-config', async (_event, connectorId: ConnectorId, config: Partial<ConnectorConfig>) => {
+    await ensureConnectorManager();
+    return getSharedConnectorManager().updateConfig(connectorId, config);
+  });
+
+  ipcMain.handle('kae:sync-connector', async (_event, connectorId: ConnectorId, sourcePath?: string | null) => {
+    await ensureConnectorManager();
+    const source = sourcePath
+      ? {
+          path: sourcePath,
+          name: path.basename(sourcePath),
+          extension: path.extname(sourcePath),
+        }
+      : null;
+    const result = await getSharedConnectorManager().syncNow(connectorId, source, {
+      repositoryPath: repoPath(),
+      log: (level, message) => addLog(level, 'connector', message),
+    });
+    if (result.briefingGeneratedAt) {
+      void rebuildExecutiveBriefingCache();
+    }
+    return result;
+  });
+
+  ipcMain.handle('kae:get-connector-sync-history', async (_event, connectorId?: ConnectorId) => {
+    await ensureConnectorManager();
+    return getSharedConnectorManager().getSyncHistory(connectorId);
+  });
+
+  ipcMain.handle('kae:get-connector-events', async (_event, connectorId?: ConnectorId) => {
+    await ensureConnectorManager();
+    return getSharedConnectorManager().getEvents(connectorId);
+  });
+
+  ipcMain.handle('kae:select-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ['openDirectory'],
+    });
+    return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0];
+  });
 }
 
 app.whenReady().then(async () => {
@@ -849,6 +925,7 @@ app.whenReady().then(async () => {
   });
 
   registerPlugins();
+  await ensureConnectorManager();
   setupIpc();
   addLog('info', 'system', `${APP_NAME} started — ${APP_FULL_NAME}`);
   createWindow();

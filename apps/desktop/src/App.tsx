@@ -10,6 +10,7 @@ import { RepositorySettingsScreen } from './screens/RepositorySettingsScreen';
 import { JobQueueScreen } from './screens/JobQueueScreen';
 import { LogsScreen } from './screens/LogsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { ConnectorManagerScreen } from './screens/ConnectorManagerScreen';
 import type { ScreenId } from './types/navigation';
 
 function renderScreen(screen: ScreenId) {
@@ -18,6 +19,8 @@ function renderScreen(screen: ScreenId) {
       return <DashboardScreen />;
     case 'import':
       return <ImportScreen />;
+    case 'connectors':
+      return <ConnectorManagerScreen />;
     case 'explorer':
       return <ExplorerScreen />;
     case 'search':

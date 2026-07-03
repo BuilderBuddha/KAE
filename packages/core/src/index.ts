@@ -13,6 +13,7 @@ export * from './types/live-capture.js';
 export * from './types/repair.js';
 export * from './types/import-rc.js';
 export * from './connector/pipeline.js';
+export * from './connector/framework.js';
 export * from './config/branding.js';
 export * from './health/status-labels.js';
 export * from './plugin/index.js';

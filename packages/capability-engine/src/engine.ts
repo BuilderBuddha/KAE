@@ -31,6 +31,9 @@ export class StubCapabilityEngine implements CapabilityEngine {
 export function getFormatCapabilities(format: ImporterFormatId): string[] {
   const capabilities: Record<ImporterFormatId, string[]> = {
     'chatgpt-export-zip': ['conversation', 'message-thread', 'metadata'],
+    youtube: ['video', 'transcript', 'metadata', 'channel'],
+    github: ['repository', 'readme', 'issue', 'pull-request', 'commit', 'release'],
+    'local-folder': ['document', 'markdown', 'text-file'],
     pdf: ['document', 'section', 'text-block'],
     markdown: ['heading', 'code-block', 'link'],
     html: ['element', 'link', 'heading'],
