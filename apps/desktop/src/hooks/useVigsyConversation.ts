@@ -164,37 +164,72 @@ export function useVigsyConversation() {
     setTurns(nextTurns);
 
     try {
-      const answer = await window.kae.answerKnowledgeQuestion(question, {
-        conversationContext: {
-          conversationId: conversationId ?? recordRef.current?.conversationId,
-          turns: turns.map((turn) => ({ role: turn.role, text: turn.text })),
-          followUpContext: sessionRef.current,
-        },
-      });
+      const settings = await window.kae.getSettings();
+      const conversationContext = {
+        conversationId: conversationId ?? recordRef.current?.conversationId,
+        turns: turns.map((turn) => ({ role: turn.role, text: turn.text })),
+        followUpContext: sessionRef.current,
+      };
+
+      let answer: VigsyKnowledgeAnswer;
+      let streamText = '';
+      let supportingText = '';
+
+      if (settings.aiStreaming) {
+        let visibleDirect = '';
+        const offStream = window.kae.onReasoningStreamChunk((chunk) => {
+          if (abortRef.current) return;
+          if (chunk.kind === 'token') {
+            visibleDirect += chunk.text;
+            setTurns((prev) =>
+              prev.map((turn) =>
+                turn.id === assistantId
+                  ? { ...turn, thinking: false, streaming: true, text: visibleDirect }
+                  : turn,
+              ),
+            );
+          }
+          if (chunk.kind === 'direct_answer') visibleDirect = chunk.text;
+          if (chunk.kind === 'summary') supportingText = chunk.text;
+        });
+        try {
+          answer = await window.kae.answerKnowledgeQuestionStream(question, { conversationContext });
+        } finally {
+          offStream();
+        }
+        if (abortRef.current) return;
+        const formatted = formatConversationalAnswer(answer);
+        streamText = formatted.streamText;
+        supportingText = formatted.supportingText;
+      } else {
+        answer = await window.kae.answerKnowledgeQuestion(question, { conversationContext });
+        if (abortRef.current) return;
+        const formatted = formatConversationalAnswer(answer);
+        streamText = formatted.streamText;
+        supportingText = formatted.supportingText;
+
+        await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
+        if (abortRef.current) return;
+
+        setTurns((prev) =>
+          prev.map((turn) =>
+            turn.id === assistantId
+              ? { ...turn, thinking: false, streaming: true, answer, text: '', summary: supportingText }
+              : turn,
+          ),
+        );
+
+        await streamTextReveal(streamText, (visible) => {
+          if (abortRef.current) return;
+          setTurns((prev) =>
+            prev.map((turn) => (turn.id === assistantId ? { ...turn, text: visible } : turn)),
+          );
+        });
+      }
+
       if (abortRef.current) return;
 
       sessionRef.current = sessionFromAnswer(question, answer);
-      const { streamText, supportingText } = formatConversationalAnswer(answer);
-
-      await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
-      if (abortRef.current) return;
-
-      setTurns((prev) =>
-        prev.map((turn) =>
-          turn.id === assistantId
-            ? { ...turn, thinking: false, streaming: true, answer, text: '', summary: supportingText }
-            : turn,
-        ),
-      );
-
-      await streamTextReveal(streamText, (visible) => {
-        if (abortRef.current) return;
-        setTurns((prev) =>
-          prev.map((turn) => (turn.id === assistantId ? { ...turn, text: visible } : turn)),
-        );
-      });
-
-      if (abortRef.current) return;
 
       const completedTurns = nextTurns.map((turn) =>
         turn.id === assistantId

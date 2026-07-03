@@ -9,6 +9,7 @@ export * from './types/vigsy-conversation.js';
 export * from './types/executive-awareness.js';
 export * from './types/executive-memory.js';
 export * from './types/ai-orchestration.js';
+export * from './types/live-capture.js';
 export * from './types/repair.js';
 export * from './types/import-rc.js';
 export * from './connector/pipeline.js';

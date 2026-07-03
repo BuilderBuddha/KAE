@@ -6,7 +6,7 @@ export function createMockProvider(): AIProvider {
     capabilities: {
       id: 'mock',
       displayName: 'Mock (offline)',
-      supportsStreaming: false,
+      supportsStreaming: true,
       supportsTools: false,
       requiresApiKey: false,
       offline: true,

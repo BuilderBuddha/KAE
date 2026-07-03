@@ -26,6 +26,11 @@ import type {
   VigsyConversationRecord,
   AnswerKnowledgeOptions,
   ProviderCapabilities,
+  AIProviderId,
+  LiveCaptureInput,
+  LiveCaptureResult,
+  ProviderHealthResult,
+  ReasoningStreamChunk,
 } from '@scooper/core';
 
 export interface ImporterInfo {
@@ -100,6 +105,10 @@ export interface KaeAPI {
   searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
   resolveEvidenceDrilldown: (recordId: string, query?: string) => Promise<EvidenceDrilldown | null>;
   answerKnowledgeQuestion: (question: string, options?: AnswerKnowledgeOptions) => Promise<VigsyKnowledgeAnswer>;
+  answerKnowledgeQuestionStream: (
+    question: string,
+    options?: AnswerKnowledgeOptions,
+  ) => Promise<VigsyKnowledgeAnswer>;
   buildRelationshipIndex: () => Promise<KnowledgeRelationshipStats>;
   searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
   getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
@@ -112,6 +121,14 @@ export interface KaeAPI {
   deleteVigsyConversation: (conversationId: string) => Promise<void>;
   getExecutiveContinuity: () => Promise<ExecutiveContinuity>;
   listAiProviders: () => Promise<ProviderCapabilities[]>;
+  testAiProvider: (providerId?: AIProviderId) => Promise<ProviderHealthResult>;
+  getProviderHealth: () => Promise<ProviderHealthResult>;
+  getProviderKeyStatus: () => Promise<{
+    secureStorage: 'available' | 'dev_fallback';
+    providers: Record<string, boolean>;
+  }>;
+  setProviderApiKey: (providerId: AIProviderId, apiKey: string) => Promise<boolean>;
+  captureLiveSession: (input: LiveCaptureInput) => Promise<LiveCaptureResult>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -134,6 +151,7 @@ export interface KaeAPI {
   onExecutiveBriefingUpdated: (callback: () => void) => () => void;
   onExecutiveMemoryUpdated: (callback: () => void) => () => void;
   onVigsyRefreshed: (callback: () => void) => () => void;
+  onReasoningStreamChunk: (callback: (chunk: ReasoningStreamChunk) => void) => () => void;
 }
 
 declare global {

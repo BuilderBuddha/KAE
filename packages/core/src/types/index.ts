@@ -99,8 +99,9 @@ export interface AppSettings {
   outputDirectory: string;
   aiProvider: import('./ai-orchestration.js').AIProviderId;
   aiModel?: string;
-  aiApiKey?: string;
   aiBaseUrl?: string;
+  aiStreaming: boolean;
+  aiTemperature: number;
 }
 
 /** Result of an import operation. */

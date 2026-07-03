@@ -1,5 +1,7 @@
 export * from './manager.js';
 export * from './verify.js';
+export * from './health.js';
+export * from './stream.js';
 export { createMockProvider } from './providers/mock.js';
 export {
   openAiProvider,

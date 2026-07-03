@@ -1,4 +1,8 @@
-import type { AnswerKnowledgeOptions, VigsyKnowledgeAnswer } from '@scooper/core';
+import type {
+  AnswerKnowledgeOptions,
+  ReasoningStreamChunk,
+  VigsyKnowledgeAnswer,
+} from '@scooper/core';
 import { getSharedAIProviderManager, verifyGroundedAnswer } from '@scooper/ai-orchestration';
 import { getExecutiveBriefing } from '../awareness/query.js';
 import { loadActiveExecutiveSession, loadExecutiveSessionByConversation } from '../executive-memory/persist.js';
@@ -8,11 +12,11 @@ import { assembleEvidenceContext } from './assemble.js';
 import { buildReasoningContext, conversationContextFromOptions } from './context-builder.js';
 import { composeGroundedAnswer } from './compose.js';
 
-/** Orchestrated answer pipeline — KAE owns memory/evidence; provider only reasons. */
-export async function answerKnowledgeQuestion(
+async function buildOrchestratedAnswer(
   repositoryPath: string,
   question: string,
-  options?: AnswerKnowledgeOptions,
+  options: AnswerKnowledgeOptions | undefined,
+  onChunk?: (chunk: ReasoningStreamChunk) => void,
 ): Promise<VigsyKnowledgeAnswer> {
   const index = await ensureEvidenceIndex(repositoryPath);
   const evidenceContext = assembleEvidenceContext(index, question);
@@ -40,15 +44,36 @@ export async function answerKnowledgeQuestion(
     apiKey: options?.apiKey,
     model: options?.model,
     baseUrl: options?.baseUrl,
+    temperature: options?.temperature,
+    streaming: options?.streaming,
   });
 
-  const aiResponse = await manager.reason({
-    context: reasoningContext,
-    groundedAnswer: skeleton,
-  });
+  const request = { context: reasoningContext, groundedAnswer: skeleton };
+  const aiResponse = onChunk
+    ? await manager.reasonStream(request, onChunk)
+    : await manager.reason(request);
 
   const verified = verifyGroundedAnswer(skeleton, aiResponse);
   return enrichAnswerWithRelationships(repositoryPath, verified);
+}
+
+/** Orchestrated answer pipeline — KAE owns memory/evidence; provider only reasons. */
+export async function answerKnowledgeQuestion(
+  repositoryPath: string,
+  question: string,
+  options?: AnswerKnowledgeOptions,
+): Promise<VigsyKnowledgeAnswer> {
+  return buildOrchestratedAnswer(repositoryPath, question, options);
+}
+
+/** Streaming variant for native provider token output. */
+export async function answerKnowledgeQuestionStream(
+  repositoryPath: string,
+  question: string,
+  options: AnswerKnowledgeOptions | undefined,
+  onChunk: (chunk: ReasoningStreamChunk) => void,
+): Promise<VigsyKnowledgeAnswer> {
+  return buildOrchestratedAnswer(repositoryPath, question, { ...options, streaming: true }, onChunk);
 }
 
 /** Retrieval-only entry point for testing. */

@@ -234,7 +234,8 @@ export async function buildEvidenceIndex(repositoryPath: string): Promise<Eviden
       continue;
     }
 
-    if (isChatGptImportSourceFileName(file.name) && parseChatGptSourceMarkdown(content)) {
+    const parsedChatGpt = parseChatGptSourceMarkdown(content);
+    if (parsedChatGpt) {
       indexChatGptSource(file.relativePath, content, uploadIndex, records);
     } else {
       indexGenericSource(file.relativePath, content, records);

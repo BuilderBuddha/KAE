@@ -10,6 +10,8 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   maxConcurrentJobs: 2,
   outputDirectory: './output',
   aiProvider: 'mock',
+  aiStreaming: true,
+  aiTemperature: 0.2,
 };
 
 /** Default repository configuration. */

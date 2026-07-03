@@ -8,7 +8,6 @@ import {
   createDefaultConfig,
   createImportJob,
   DEFAULT_REPOSITORY_PATH,
-  DEFAULT_APP_SETTINGS,
   type AppSettings,
   type RepositoryConfig,
   type LogEntry,
@@ -22,6 +21,8 @@ import {
   type RepairResult,
   type VigsyConversationRecord,
   type AnswerKnowledgeOptions,
+  type LiveCaptureInput,
+  type AIProviderId,
   InMemoryJobQueue,
 } from '@scooper/core';
 import { getSharedAIProviderManager } from '@scooper/ai-orchestration';
@@ -46,6 +47,7 @@ import {
   evidenceResultsToRepositoryResults,
   getEvidenceDrilldown,
   answerKnowledgeQuestion,
+  answerKnowledgeQuestionStream,
   buildRelationshipIndex,
   summarizeRelationshipIndex,
   searchRelationships,
@@ -63,9 +65,18 @@ import {
   ensureExecutiveSessionForConversation,
   pauseActiveExecutiveSession,
   archiveExecutiveSessionForConversation,
+  captureLiveSession,
   writeSessionManifest,
   writeImportReport,
 } from '@scooper/repository-engine';
+import {
+  hasProviderApiKey,
+  loadActiveProviderApiKey,
+  listProviderKeyStatus,
+  saveProviderApiKey,
+  secureStorageMode,
+} from './credentials.js';
+import { loadPersistedSettings, mergeAppSettings, savePersistedSettings } from './settings-persist.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -108,16 +119,37 @@ function repoPath(): string {
 }
 
 function mergedSettings(): AppSettings {
-  return { ...DEFAULT_APP_SETTINGS, ...config.settings };
+  return mergeAppSettings(config.settings);
 }
 
-function answerOptionsFromConfig(options?: AnswerKnowledgeOptions): AnswerKnowledgeOptions {
+async function configureProviderManager(): Promise<void> {
   const settings = mergedSettings();
+  const manager = getSharedAIProviderManager();
+  manager.setSecureStorageMode(secureStorageMode());
+  manager.setActive(settings.aiProvider);
+  const apiKey = await loadActiveProviderApiKey(settings.aiProvider);
+  manager.setCredentials({
+    apiKey,
+    model: settings.aiModel,
+    baseUrl: settings.aiBaseUrl,
+    temperature: settings.aiTemperature,
+    streaming: settings.aiStreaming,
+  });
+}
+
+async function answerOptionsFromConfig(
+  options?: AnswerKnowledgeOptions,
+): Promise<AnswerKnowledgeOptions> {
+  const settings = mergedSettings();
+  const providerId = options?.providerId ?? settings.aiProvider;
+  const apiKey = options?.apiKey ?? (await loadActiveProviderApiKey(providerId));
   return {
-    providerId: options?.providerId ?? settings.aiProvider,
-    apiKey: options?.apiKey ?? settings.aiApiKey,
+    providerId,
+    apiKey,
     model: options?.model ?? settings.aiModel,
     baseUrl: options?.baseUrl ?? settings.aiBaseUrl,
+    temperature: options?.temperature ?? settings.aiTemperature,
+    streaming: options?.streaming ?? settings.aiStreaming,
     conversationContext: options?.conversationContext,
   };
 }
@@ -545,8 +577,10 @@ function setupIpc(): void {
   });
 
   ipcMain.handle('kae:get-settings', () => mergedSettings());
-  ipcMain.handle('kae:set-settings', (_event, settings: AppSettings) => {
-    config.settings = { ...DEFAULT_APP_SETTINGS, ...settings };
+  ipcMain.handle('kae:set-settings', async (_event, settings: AppSettings) => {
+    config.settings = mergeAppSettings(settings);
+    await savePersistedSettings(mergedSettings());
+    await configureProviderManager();
     addLog('info', 'settings', 'Application settings updated');
     return mergedSettings();
   });
@@ -614,10 +648,52 @@ function setupIpc(): void {
   );
   ipcMain.handle(
     'kae:answer-knowledge-question',
-    async (_event, question: string, options?: AnswerKnowledgeOptions) =>
-      answerKnowledgeQuestion(repoPath(), question, answerOptionsFromConfig(options)),
+    async (_event, question: string, options?: AnswerKnowledgeOptions) => {
+      const resolved = await answerOptionsFromConfig(options);
+      await configureProviderManager();
+      return answerKnowledgeQuestion(repoPath(), question, resolved);
+    },
+  );
+  ipcMain.handle(
+    'kae:answer-knowledge-question-stream',
+    async (event, question: string, options?: AnswerKnowledgeOptions) => {
+      const resolved = await answerOptionsFromConfig({ ...options, streaming: true });
+      await configureProviderManager();
+      return answerKnowledgeQuestionStream(repoPath(), question, resolved, (chunk) => {
+        event.sender.send('kae:reasoning-stream-chunk', chunk);
+      });
+    },
   );
   ipcMain.handle('kae:list-ai-providers', () => getSharedAIProviderManager().listCapabilities());
+  ipcMain.handle('kae:test-ai-provider', async (_event, providerId?: AIProviderId) => {
+    await configureProviderManager();
+    const manager = getSharedAIProviderManager();
+    if (providerId) manager.setActive(providerId);
+    return manager.testProviderHealth(providerId ?? mergedSettings().aiProvider);
+  });
+  ipcMain.handle('kae:get-provider-health', async () => {
+    await configureProviderManager();
+    return getSharedAIProviderManager().testActiveProviderHealth();
+  });
+  ipcMain.handle('kae:get-provider-key-status', async () => ({
+    secureStorage: secureStorageMode(),
+    providers: await listProviderKeyStatus(),
+  }));
+  ipcMain.handle('kae:set-provider-api-key', async (_event, providerId: AIProviderId, apiKey: string) => {
+    await saveProviderApiKey(providerId, apiKey);
+    await configureProviderManager();
+    return hasProviderApiKey(providerId);
+  });
+  ipcMain.handle('kae:capture-live-session', async (_event, input: LiveCaptureInput) => {
+    const result = await captureLiveSession(repoPath(), input);
+    void rebuildExecutiveBriefingCache();
+    mainWindow?.webContents.send('kae:executive-briefing-updated');
+    mainWindow?.webContents.send('kae:executive-memory-updated');
+    addLog('info', 'live-capture', `Captured live session ${result.krcId}`, {
+      source: result.sourceRelativePath,
+    });
+    return result;
+  });
   ipcMain.handle('kae:build-relationship-index', async () => {
     const index = await buildRelationshipIndex(repoPath());
     void rebuildExecutiveBriefingCache();
@@ -761,6 +837,9 @@ function setupIpc(): void {
 }
 
 app.whenReady().then(async () => {
+  config.settings = mergeAppSettings(await loadPersistedSettings());
+  await configureProviderManager();
+
   protocol.handle('kae-asset', async (request) => {
     const relativePath = parseKaeAssetRequestUrl(request.url);
     const full = resolveRepoFile(relativePath);

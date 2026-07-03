@@ -71,12 +71,41 @@ export interface AIProviderCredentials {
   apiKey?: string;
   model?: string;
   baseUrl?: string;
+  temperature?: number;
+  streaming?: boolean;
+}
+
+export type ProviderHealthStatus =
+  | 'connected'
+  | 'missing_key'
+  | 'unavailable'
+  | 'offline'
+  | 'fallback';
+
+export interface ProviderHealthResult {
+  providerId: AIProviderId;
+  status: ProviderHealthStatus;
+  message: string;
+  supportsStreaming: boolean;
+  secureStorage: 'available' | 'dev_fallback';
+}
+
+export interface ReasoningStreamChunk {
+  kind: 'token' | 'direct_answer' | 'summary' | 'done';
+  text: string;
+  providerId: AIProviderId;
 }
 
 /** Pluggable AI reasoning provider — must not mutate memory or invent evidence. */
 export interface AIProvider {
   readonly capabilities: ProviderCapabilities;
   reason(request: ReasoningRequest, credentials?: AIProviderCredentials): Promise<ReasoningResponse>;
+  reasonStream?(
+    request: ReasoningRequest,
+    credentials: AIProviderCredentials | undefined,
+    onChunk: (chunk: ReasoningStreamChunk) => void,
+  ): Promise<ReasoningResponse>;
+  testHealth?(credentials?: AIProviderCredentials): Promise<ProviderHealthResult>;
 }
 
 export interface AnswerKnowledgeOptions {
@@ -84,5 +113,7 @@ export interface AnswerKnowledgeOptions {
   apiKey?: string;
   model?: string;
   baseUrl?: string;
+  temperature?: number;
+  streaming?: boolean;
   conversationContext?: ConversationContext;
 }
