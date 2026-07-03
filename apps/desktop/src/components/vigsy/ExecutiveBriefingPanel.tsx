@@ -13,10 +13,16 @@ const CATEGORY_LABELS: Record<ExecutiveAwarenessCard['category'], string> = {
 interface ExecutiveBriefingPanelProps {
   briefing: ExecutiveBriefing | null;
   loading: boolean;
+  backgroundRefreshing?: boolean;
   onRefresh: () => void;
 }
 
-export function ExecutiveBriefingPanel({ briefing, loading, onRefresh }: ExecutiveBriefingPanelProps) {
+export function ExecutiveBriefingPanel({
+  briefing,
+  loading,
+  backgroundRefreshing = false,
+  onRefresh,
+}: ExecutiveBriefingPanelProps) {
   const { openInExplorer } = useNavigation();
 
   return (
@@ -47,6 +53,7 @@ export function ExecutiveBriefingPanel({ briefing, loading, onRefresh }: Executi
           <p className="vigsy-briefing__meta muted">
             {briefing.cards.length} cards · {briefing.evidenceRecordCount.toLocaleString()} evidence
             records · {briefing.relationshipCount.toLocaleString()} relationships
+            {backgroundRefreshing ? ' · Updating…' : ''}
           </p>
           <div className="vigsy-briefing__grid">
             {briefing.cards.map((card) => (

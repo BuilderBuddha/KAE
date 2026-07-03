@@ -48,7 +48,8 @@ import {
   getRelationshipsForEvidence,
   getRelatedEvidence,
   ensureRelationshipIndex,
-  buildExecutiveBriefing,
+  getExecutiveBriefing,
+  refreshExecutiveBriefing,
   writeSessionManifest,
   writeImportReport,
 } from '@scooper/repository-engine';
@@ -118,6 +119,16 @@ function addLog(
   if (logs.length > 500) logs.pop();
   mainWindow?.webContents.send('kae:log-added', entry);
   return entry;
+}
+
+async function rebuildExecutiveBriefingCache(): Promise<void> {
+  try {
+    await refreshExecutiveBriefing(repoPath());
+    mainWindow?.webContents.send('kae:executive-briefing-updated');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    addLog('warn', 'awareness', `Executive briefing refresh failed: ${msg}`);
+  }
 }
 
 async function appendPersistentImportLog(message: string): Promise<void> {
@@ -483,6 +494,7 @@ async function runImport(filePath: string, formatId: 'chatgpt-export-zip'): Prom
   );
 
   mainWindow?.webContents.send('kae:job-updated', jobQueue.getById(jobId)!);
+  void rebuildExecutiveBriefingCache();
   mainWindow?.webContents.send('kae:import-complete', summary);
   return summary;
 }
@@ -561,6 +573,7 @@ function setupIpc(): void {
   ipcMain.handle('kae:build-evidence-index', async () => {
     const index = await buildEvidenceIndex(repoPath());
     await buildRelationshipIndex(repoPath());
+    void rebuildExecutiveBriefingCache();
     return summarizeEvidenceIndex(index);
   });
   ipcMain.handle('kae:search-knowledge', async (_event, query: string) => {
@@ -576,6 +589,7 @@ function setupIpc(): void {
   );
   ipcMain.handle('kae:build-relationship-index', async () => {
     const index = await buildRelationshipIndex(repoPath());
+    void rebuildExecutiveBriefingCache();
     return summarizeRelationshipIndex(index);
   });
   ipcMain.handle('kae:search-relationships', async (_event, query: string) => {
@@ -590,7 +604,10 @@ function setupIpc(): void {
     'kae:get-related-evidence',
     async (_event, anchor: string, query?: string) => getRelatedEvidence(repoPath(), anchor, query),
   );
-  ipcMain.handle('kae:get-executive-briefing', async () => buildExecutiveBriefing(repoPath()));
+  ipcMain.handle('kae:get-executive-briefing', async () => getExecutiveBriefing(repoPath()));
+  ipcMain.handle('kae:refresh-executive-briefing', async () =>
+    refreshExecutiveBriefing(repoPath()),
+  );
   ipcMain.handle('kae:open-repository-path', async () => {
     await shell.openPath(repoPath());
   });

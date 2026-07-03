@@ -21,6 +21,7 @@ import type {
   KnowledgeRelationshipStats,
   RelatedEvidenceHit,
   ExecutiveBriefing,
+  ExecutiveBriefingLoadResult,
 } from '@scooper/core';
 
 export interface ImporterInfo {
@@ -99,7 +100,8 @@ export interface KaeAPI {
   searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
   getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
   getRelatedEvidence: (anchor: string, query?: string) => Promise<RelatedEvidenceHit[]>;
-  getExecutiveBriefing: () => Promise<ExecutiveBriefing>;
+  getExecutiveBriefing: () => Promise<ExecutiveBriefingLoadResult>;
+  refreshExecutiveBriefing: () => Promise<ExecutiveBriefing>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -119,6 +121,7 @@ export interface KaeAPI {
   onImportComplete: (callback: (summary: ImportSummary) => void) => () => void;
   onImportTimeline: (callback: (steps: ImportTimelineStep[]) => void) => () => void;
   onValidationProgress: (callback: (progress: ValidationProgress) => void) => () => void;
+  onExecutiveBriefingUpdated: (callback: () => void) => () => void;
 }
 
 declare global {

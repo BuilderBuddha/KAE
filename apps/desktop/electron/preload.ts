@@ -22,6 +22,7 @@ import type {
   KnowledgeRelationshipStats,
   RelatedEvidenceHit,
   ExecutiveBriefing,
+  ExecutiveBriefingLoadResult,
 } from '@scooper/core';
 
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData, RepositoryAssetData } from '../src/types/kae.js';
@@ -59,7 +60,8 @@ export interface KaeAPI {
   searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
   getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
   getRelatedEvidence: (anchor: string, query?: string) => Promise<RelatedEvidenceHit[]>;
-  getExecutiveBriefing: () => Promise<ExecutiveBriefing>;
+  getExecutiveBriefing: () => Promise<ExecutiveBriefingLoadResult>;
+  refreshExecutiveBriefing: () => Promise<ExecutiveBriefing>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -79,6 +81,7 @@ export interface KaeAPI {
   onImportComplete: (callback: (summary: ImportSummary) => void) => () => void;
   onImportTimeline: (callback: (steps: ImportTimelineStep[]) => void) => () => void;
   onValidationProgress: (callback: (progress: ValidationProgress) => void) => () => void;
+  onExecutiveBriefingUpdated: (callback: () => void) => () => void;
 }
 
 const kaeAPI: KaeAPI = {
@@ -111,6 +114,7 @@ const kaeAPI: KaeAPI = {
     ipcRenderer.invoke('kae:get-relationships-for-evidence', evidenceId),
   getRelatedEvidence: (anchor, query) => ipcRenderer.invoke('kae:get-related-evidence', anchor, query),
   getExecutiveBriefing: () => ipcRenderer.invoke('kae:get-executive-briefing'),
+  refreshExecutiveBriefing: () => ipcRenderer.invoke('kae:refresh-executive-briefing'),
   openRepositoryPath: () => ipcRenderer.invoke('kae:open-repository-path'),
   openRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:open-repository-file', relativePath),
   revealRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:reveal-repository-file', relativePath),
@@ -150,6 +154,11 @@ const kaeAPI: KaeAPI = {
       callback(progress);
     ipcRenderer.on('kae:validation-progress', handler);
     return () => ipcRenderer.removeListener('kae:validation-progress', handler);
+  },
+  onExecutiveBriefingUpdated: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('kae:executive-briefing-updated', handler);
+    return () => ipcRenderer.removeListener('kae:executive-briefing-updated', handler);
   },
 };
 

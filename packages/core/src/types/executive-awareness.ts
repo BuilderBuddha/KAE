@@ -36,3 +36,22 @@ export interface ExecutiveBriefing {
   relationshipCount: number;
   cards: ExecutiveAwarenessCard[];
 }
+
+/** Persisted executive briefing cache under `.kae-index/`. */
+export interface ExecutiveBriefingCache {
+  version: 1;
+  repositoryPath: string;
+  cachedAt: string;
+  evidenceIndexBuiltAt: string;
+  evidenceIndexMtimeMs: number;
+  relationshipIndexBuiltAt: string;
+  relationshipIndexMtimeMs: number;
+  briefing: ExecutiveBriefing;
+}
+
+/** Result of loading an executive briefing with cache metadata. */
+export interface ExecutiveBriefingLoadResult {
+  briefing: ExecutiveBriefing;
+  fromCache: boolean;
+  stale: boolean;
+}

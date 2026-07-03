@@ -33,16 +33,7 @@ export function VigsyHomePanel({
   const [briefing, setBriefing] = useState<ExecutiveBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [briefingLoading, setBriefingLoading] = useState(true);
-
-  const loadBriefing = useCallback(async () => {
-    setBriefingLoading(true);
-    try {
-      const result = await window.kae.getExecutiveBriefing();
-      setBriefing(result);
-    } finally {
-      setBriefingLoading(false);
-    }
-  }, []);
+  const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
 
   const loadContext = useCallback(async () => {
     setLoading(true);
@@ -60,13 +51,72 @@ export function VigsyHomePanel({
     }
   }, []);
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([loadContext(), loadBriefing()]);
-  }, [loadBriefing, loadContext]);
+  const applyBriefing = useCallback((next: ExecutiveBriefing) => {
+    setBriefing(next);
+  }, []);
+
+  const refreshBriefingInBackground = useCallback(async () => {
+    setBackgroundRefreshing(true);
+    try {
+      const fresh = await window.kae.refreshExecutiveBriefing();
+      applyBriefing(fresh);
+    } finally {
+      setBackgroundRefreshing(false);
+    }
+  }, [applyBriefing]);
+
+  const loadBriefing = useCallback(async () => {
+    setBriefingLoading(true);
+    try {
+      const result = await window.kae.getExecutiveBriefing();
+      applyBriefing(result.briefing);
+      if (result.stale) {
+        void refreshBriefingInBackground();
+      }
+    } finally {
+      setBriefingLoading(false);
+    }
+  }, [applyBriefing, refreshBriefingInBackground]);
+
+  const handleManualRefresh = useCallback(async () => {
+    setBriefingLoading(true);
+    try {
+      const [fresh] = await Promise.all([
+        window.kae.refreshExecutiveBriefing(),
+        loadContext(),
+      ]);
+      applyBriefing(fresh);
+    } finally {
+      setBriefingLoading(false);
+    }
+  }, [applyBriefing, loadContext]);
 
   useEffect(() => {
-    void refreshAll();
-  }, [refreshAll]);
+    void loadContext();
+  }, [loadContext]);
+
+  useEffect(() => {
+    void loadBriefing();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- load once on mount
+
+  useEffect(() => {
+    const unsubscribe = window.kae.onExecutiveBriefingUpdated(() => {
+      void window.kae.getExecutiveBriefing().then((result) => {
+        applyBriefing(result.briefing);
+        if (result.stale) {
+          void refreshBriefingInBackground();
+        }
+      });
+    });
+    const onImportComplete = window.kae.onImportComplete(() => {
+      void loadContext();
+      void refreshBriefingInBackground();
+    });
+    return () => {
+      unsubscribe();
+      onImportComplete();
+    };
+  }, [applyBriefing, loadContext, refreshBriefingInBackground]);
 
   return (
     <div className="vigsy-home">
@@ -81,7 +131,8 @@ export function VigsyHomePanel({
       <ExecutiveBriefingPanel
         briefing={briefing}
         loading={briefingLoading}
-        onRefresh={() => void refreshAll()}
+        backgroundRefreshing={backgroundRefreshing}
+        onRefresh={() => void handleManualRefresh()}
       />
 
       {loading ? (

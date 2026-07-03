@@ -1,19 +1,19 @@
-var ys = Object.defineProperty;
-var Is = (e, t, n) => t in e ? ys(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : e[t] = n;
-var U = (e, t, n) => Is(e, typeof t != "symbol" ? t + "" : t, n);
-import { protocol as fn, app as je, BrowserWindow as pn, ipcMain as F, shell as Ze, clipboard as vs, dialog as ws } from "electron";
-import L from "node:fs/promises";
+var ks = Object.defineProperty;
+var Ts = (e, t, n) => t in e ? ks(e, t, { enumerable: !0, configurable: !0, writable: !0, value: n }) : e[t] = n;
+var M = (e, t, n) => Ts(e, typeof t != "symbol" ? t + "" : t, n);
+import { protocol as hn, app as je, BrowserWindow as gn, ipcMain as F, shell as Ve, clipboard as _s, dialog as Ds } from "electron";
+import x from "node:fs/promises";
 import k from "node:path";
-import { fileURLToPath as Es } from "node:url";
-import Ss from "fs";
-import ft from "path";
-import mn from "zlib";
-import Rs from "crypto";
-import { execFile as hn } from "node:child_process";
-import { promisify as gn } from "node:util";
+import { fileURLToPath as xs } from "node:url";
+import Ns from "fs";
+import ht from "path";
+import yn from "zlib";
+import Ls from "crypto";
+import { execFile as In } from "node:child_process";
+import { promisify as vn } from "node:util";
 import { randomUUID as Q } from "node:crypto";
-const yn = "KAE", In = "Knowledge Acquisition Engine";
-function Cs(e) {
+const wn = "KAE", En = "Knowledge Acquisition Engine";
+function $s(e) {
   var s, r;
   if (!e)
     return {
@@ -36,7 +36,7 @@ function Cs(e) {
     subline: "No Issues Found"
   };
 }
-function ks(e) {
+function bs(e) {
   const t = {
     errors: [],
     warnings: [],
@@ -49,28 +49,28 @@ function ks(e) {
   }
   return t;
 }
-class vn extends Error {
+class Sn extends Error {
   constructor(t) {
     super(`${t} is not implemented yet (Phase 1 architecture only).`), this.name = "NotImplementedError";
   }
 }
-const wn = "C:\\Users\\alber\\Axiom-Knowledge", Ts = {
+const Rn = "C:\\Users\\alber\\Axiom-Knowledge", As = {
   theme: "dark",
   logLevel: "info",
   maxConcurrentJobs: 2,
   outputDirectory: "./output"
-}, Ds = {
-  path: wn,
+}, Fs = {
+  path: Rn,
   name: "Axiom Knowledge",
   autoSync: !1
 };
-function _s() {
+function Ps() {
   return {
-    repository: { ...Ds },
-    settings: { ...Ts }
+    repository: { ...Fs },
+    settings: { ...As }
   };
 }
-function Ns(e, t, n) {
+function Os(e, t, n) {
   const s = (/* @__PURE__ */ new Date()).toISOString();
   return {
     id: e,
@@ -82,9 +82,9 @@ function Ns(e, t, n) {
     progress: 0
   };
 }
-class xs {
+class Us {
   constructor() {
-    U(this, "jobs", []);
+    M(this, "jobs", []);
   }
   enqueue(t) {
     this.jobs.push(t);
@@ -113,12 +113,12 @@ class pe {
     return this.supportedExtensions.some((r) => r.toLowerCase() === n);
   }
   async import(t, n) {
-    throw new vn(`Importer "${this.name}"`);
+    throw new Sn(`Importer "${this.name}"`);
   }
 }
-class Ls {
+class Ms {
   constructor() {
-    U(this, "plugins", /* @__PURE__ */ new Map());
+    M(this, "plugins", /* @__PURE__ */ new Map());
   }
   register(t) {
     this.plugins.set(t.id, t);
@@ -136,7 +136,7 @@ class Ls {
     return this.getAll().find((n) => n.canImport(t));
   }
 }
-const Be = new Ls(), En = [
+const ze = new Ms(), Cn = [
   "VIGS",
   "Founder OS",
   "Axiom",
@@ -145,7 +145,7 @@ const Be = new Ls(), En = [
   "Source Material",
   "Technical Build",
   "Other / Review Needed"
-], Lt = 2, $s = 3, dt = {
+], At = 2, Bs = 3, ut = {
   VIGS: [
     "vigs",
     "financial wellness",
@@ -273,11 +273,11 @@ const Be = new Ls(), En = [
     "test"
   ]
 };
-function pt(e) {
+function gt(e) {
   var g, I, w, T;
-  const t = bs(e), n = Fs(t), s = As(t, e, n), r = En.filter((R) => R !== "Other / Review Needed").map((R) => ({ category: R, score: s[R] })).sort((R, C) => C.score - R.score), i = ((g = r[0]) == null ? void 0 : g.score) ?? 0, a = ((I = r[1]) == null ? void 0 : I.score) ?? 0;
-  let c = r.filter((R) => R.score >= Lt).map((R) => R.category), o = !1, l, u;
-  i < $s || i === 0 ? (o = !0, l = "Other / Review Needed", c = c.length > 0 ? [...c, "Other / Review Needed"] : ["Other / Review Needed"], u = `Low classification confidence (top score ${i}). Routed to review.`) : i === a && i >= Lt ? (o = !0, l = "Other / Review Needed", c = [.../* @__PURE__ */ new Set([...c, "Other / Review Needed"])], u = `Tied scores between "${(w = r[0]) == null ? void 0 : w.category}" and "${(T = r[1]) == null ? void 0 : T.category}". Routed to review.`) : (l = r[0].category, c.length === 0 && (c = [l]), u = `Primary match "${l}" (score ${i}) from title, content, and recurring terms.`);
+  const t = js(e), n = Gs(t), s = zs(t, e, n), r = Cn.filter((R) => R !== "Other / Review Needed").map((R) => ({ category: R, score: s[R] })).sort((R, C) => C.score - R.score), i = ((g = r[0]) == null ? void 0 : g.score) ?? 0, a = ((I = r[1]) == null ? void 0 : I.score) ?? 0;
+  let c = r.filter((R) => R.score >= At).map((R) => R.category), o = !1, l, u;
+  i < Bs || i === 0 ? (o = !0, l = "Other / Review Needed", c = c.length > 0 ? [...c, "Other / Review Needed"] : ["Other / Review Needed"], u = `Low classification confidence (top score ${i}). Routed to review.`) : i === a && i >= At ? (o = !0, l = "Other / Review Needed", c = [.../* @__PURE__ */ new Set([...c, "Other / Review Needed"])], u = `Tied scores between "${(w = r[0]) == null ? void 0 : w.category}" and "${(T = r[1]) == null ? void 0 : T.category}". Routed to review.`) : (l = r[0].category, c.length === 0 && (c = [l]), u = `Primary match "${l}" (score ${i}) from title, content, and recurring terms.`);
   const d = e.metadata.messageCount;
   typeof d == "number" && d === 0 && (o = !0, l = "Other / Review Needed", c.includes("Other / Review Needed") || (c = [...c, "Other / Review Needed"]), u = "No extractable messages. Preserved for manual review.");
   const p = Math.min(100, Math.round(i / Math.max(i + a, 1) * 100));
@@ -285,50 +285,50 @@ function pt(e) {
     categories: [...new Set(c)],
     primaryCategory: l,
     confidence: o ? Math.min(p, 40) : p,
-    inferredProject: Ps(l, e.title, n),
+    inferredProject: Ks(l, e.title, n),
     recurringTerms: n.slice(0, 12),
     uncertain: o,
     rationale: u,
     categoryScores: s
   };
 }
-function mt(e) {
+function yt(e) {
   const t = /* @__PURE__ */ new Map();
   for (const n of e)
-    t.set(String(n.metadata.conversationId ?? n.id), pt(n));
+    t.set(String(n.metadata.conversationId ?? n.id), gt(n));
   return t;
 }
-function bs(e) {
+function js(e) {
   const t = Array.isArray(e.metadata.fileReferences) ? e.metadata.fileReferences.filter((n) => typeof n == "string").join(" ") : "";
   return `${e.title} ${e.content} ${t}`.toLowerCase();
 }
-function As(e, t, n) {
-  const s = Object.fromEntries(En.map((r) => [r, 0]));
-  for (const [r, i] of Object.entries(dt))
+function zs(e, t, n) {
+  const s = Object.fromEntries(Cn.map((r) => [r, 0]));
+  for (const [r, i] of Object.entries(ut))
     for (const a of i)
       e.includes(a) && (s[r] += a.includes(" ") ? 3 : 1);
   typeof t.metadata.pastedTranscriptCount == "number" && t.metadata.pastedTranscriptCount > 0 && (s["Source Material"] += 4);
   for (const r of n.slice(0, 5))
-    for (const [i, a] of Object.entries(dt))
+    for (const [i, a] of Object.entries(ut))
       a.some((c) => c.includes(r) || r.includes(c.split(" ")[0] ?? "")) && (s[i] += 1);
   return s["Other / Review Needed"] = 0, s;
 }
-function Fs(e) {
+function Gs(e) {
   const t = e.replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter((s) => s.length >= 5), n = /* @__PURE__ */ new Map();
   for (const s of t)
     n.set(s, (n.get(s) ?? 0) + 1);
   return [...n.entries()].filter(([, s]) => s >= 2).sort((s, r) => r[1] - s[1]).map(([s]) => s);
 }
-function Ps(e, t, n) {
+function Ks(e, t, n) {
   if (e !== "Other / Review Needed")
     return e;
   const s = t.toLowerCase();
-  for (const [r, i] of Object.entries(dt))
+  for (const [r, i] of Object.entries(ut))
     if (i.some((a) => s.includes(a)))
       return `${r} (uncertain)`;
   return n.length > 0 ? `Unlabeled — terms: ${n.slice(0, 3).join(", ")}` : "Unlabeled";
 }
-function Os(e, t) {
+function Zs(e, t) {
   return t.map((n) => ({
     id: n.id,
     title: n.title,
@@ -340,7 +340,7 @@ function Os(e, t) {
     }
   }));
 }
-function Us(e, t, n) {
+function Hs(e, t, n) {
   const s = (/* @__PURE__ */ new Date()).toISOString();
   return n.map((r) => ({
     id: r.id,
@@ -354,8 +354,8 @@ function Us(e, t, n) {
     }
   }));
 }
-function Ms(e, t, n, s) {
-  const r = mt(n);
+function Vs(e, t, n, s) {
+  const r = yt(n);
   return {
     connectorId: e.id,
     source: t,
@@ -368,31 +368,31 @@ function Ms(e, t, n, s) {
     }
   };
 }
-const js = 500, Bs = /* @__PURE__ */ new Set(["system"]);
-function zs(e) {
+const Ws = 500, qs = /* @__PURE__ */ new Set(["system"]);
+function Ys(e) {
   if (!Array.isArray(e) || e.length === 0)
     return !1;
   const t = e[0];
   return typeof t == "object" && t !== null && "mapping" in t && typeof t.mapping == "object";
 }
-function Gs(e) {
-  return Sn(e).map(Rn);
+function Xs(e) {
+  return kn(e).map(Tn);
 }
-function Sn(e) {
+function kn(e) {
   const t = JSON.parse(e);
   if (!Array.isArray(t))
     throw new Error("conversations.json must be a JSON array.");
-  if (!zs(t))
+  if (!Ys(t))
     throw new Error("Unrecognized export format: expected ChatGPT conversations.json structure.");
   return t;
 }
-async function Ks(e, t = {}) {
+async function Js(e, t = {}) {
   const { signal: n, batchSize: s = 25, onProgress: r } = t, i = [];
   let a = 0;
   for (let c = 0; c < e.length; c++) {
     if (n != null && n.aborted)
       throw new Error("Validation cancelled by user.");
-    const o = Rn(e[c]);
+    const o = Tn(e[c]);
     i.push(o), a += o.messages.length, (c % s === 0 || c === e.length - 1) && (r == null || r({
       conversationsTotal: e.length,
       conversationsProcessed: c + 1,
@@ -401,9 +401,9 @@ async function Ks(e, t = {}) {
   }
   return i;
 }
-function Rn(e) {
+function Tn(e) {
   var c;
-  const t = e.conversation_id ?? e.id ?? Ys(), n = (((c = e.title) == null ? void 0 : c.trim()) || "Untitled Conversation").slice(0, 200), r = Zs(e).map((o) => Vs(o.message)).filter((o) => o !== null), i = r.filter((o) => o.isPastedTranscript).map((o) => o.text), a = [...new Set(r.flatMap((o) => o.fileReferences))];
+  const t = e.conversation_id ?? e.id ?? rr(), n = (((c = e.title) == null ? void 0 : c.trim()) || "Untitled Conversation").slice(0, 200), r = Qs(e).map((o) => tr(o.message)).filter((o) => o !== null), i = r.filter((o) => o.isPastedTranscript).map((o) => o.text), a = [...new Set(r.flatMap((o) => o.fileReferences))];
   return {
     conversationId: t,
     title: n,
@@ -415,17 +415,17 @@ function Rn(e) {
     assetPaths: a
   };
 }
-function Zs(e) {
+function Qs(e) {
   const t = e.mapping ?? {};
   let n = e.current_node;
-  if ((!n || !t[n]) && (n = Hs(t)), !n)
+  if ((!n || !t[n]) && (n = er(t)), !n)
     return [];
   const s = [], r = /* @__PURE__ */ new Set();
   for (; n && t[n] && !r.has(n); )
     r.add(n), s.push(t[n]), n = t[n].parent;
   return s.reverse();
 }
-function Hs(e) {
+function er(e) {
   var s;
   let t, n = -1;
   for (const r of Object.values(e)) {
@@ -436,26 +436,26 @@ function Hs(e) {
   }
   return t;
 }
-function Vs(e) {
+function tr(e) {
   var r;
   if (!((r = e == null ? void 0 : e.author) != null && r.role))
     return null;
   const t = e.author.role;
-  if (Bs.has(t))
+  if (qs.has(t))
     return null;
-  const n = Ws(e).trim();
+  const n = nr(e).trim();
   if (!n)
     return null;
-  const s = qs(e, n);
+  const s = sr(e, n);
   return {
     role: t,
     text: n,
     createTime: e.create_time ?? void 0,
-    isPastedTranscript: t === "user" && n.length >= js,
+    isPastedTranscript: t === "user" && n.length >= Ws,
     fileReferences: s
   };
 }
-function Ws(e) {
+function nr(e) {
   const t = e.content;
   return t ? Array.isArray(t.parts) ? t.parts.map((n) => {
     if (typeof n == "string")
@@ -471,7 +471,7 @@ function Ws(e) {
   }).filter(Boolean).join(`
 `) : typeof t.text == "string" ? t.text : "" : "";
 }
-function qs(e, t) {
+function sr(e, t) {
   const n = [], r = (e.metadata ?? {}).attachments;
   if (Array.isArray(r)) {
     for (const c of r)
@@ -483,14 +483,14 @@ function qs(e, t) {
   const i = /(?:file-[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+|dalle-generations\/[^\s"']+|uploaded[^\s"']*\.[a-zA-Z0-9]+)/gi, a = t.match(i);
   return a && n.push(...a), [...new Set(n)];
 }
-function Ys() {
+function rr() {
   return `unknown-${Date.now()}`;
 }
-function Xs(e) {
+function ir(e) {
   const t = [];
   for (const n of e) {
     const s = n.role === "user" ? "User" : n.role === "assistant" ? "Assistant" : n.role;
-    if (t.push(`### ${s}`), n.createTime && t.push(`*${Js(n.createTime)}*`), t.push(""), t.push(n.text), t.push(""), n.fileReferences.length > 0) {
+    if (t.push(`### ${s}`), n.createTime && t.push(`*${or(n.createTime)}*`), t.push(""), t.push(n.text), t.push(""), n.fileReferences.length > 0) {
       t.push("**File references:**");
       for (const r of n.fileReferences)
         t.push(`- ${r}`);
@@ -500,12 +500,12 @@ function Xs(e) {
   return t.join(`
 `).trim();
 }
-function Js(e) {
+function or(e) {
   const t = e > 1e12 ? e : e * 1e3;
   return new Date(t).toISOString();
 }
-function Cn(e, t, n = {}) {
-  const { sharedAssetList: s } = n, r = Xs(e.messages), i = e.pastedTranscripts.length > 0 ? `
+function _n(e, t, n = {}) {
+  const { sharedAssetList: s } = n, r = ir(e.messages), i = e.pastedTranscripts.length > 0 ? `
 
 ## Pasted Source Text
 
@@ -534,12 +534,12 @@ ${e.pastedTranscripts.join(`
     metadata: c
   };
 }
-function Qs(e) {
+function ar(e) {
   return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e;
 }
-var ie = { exports: {} }, He, $t;
-function kn() {
-  return $t || ($t = 1, He = {
+var ie = { exports: {} }, We, Ft;
+function Dn() {
+  return Ft || (Ft = 1, We = {
     /* The local file header */
     LOCHDR: 30,
     // LOC header size
@@ -751,11 +751,11 @@ function kn() {
     EF_ZIP64_SCOMP: 8,
     EF_ZIP64_RHO: 16,
     EF_ZIP64_DSN: 24
-  }), He;
+  }), We;
 }
-var Ve = {}, bt;
-function ht() {
-  return bt || (bt = 1, (function(e) {
+var qe = {}, Pt;
+function It() {
+  return Pt || (Pt = 1, (function(e) {
     const t = {
       /* Header error messages */
       INVALID_LOC: "Invalid LOC header (bad signature)",
@@ -806,13 +806,13 @@ function ht() {
     }
     for (const s of Object.keys(t))
       e[s] = n(t[s]);
-  })(Ve)), Ve;
+  })(qe)), qe;
 }
-var We, At;
-function er() {
-  if (At) return We;
-  At = 1;
-  const e = Ss, t = ft, n = kn(), s = ht(), r = typeof process == "object" && process.platform === "win32", i = (o) => typeof o == "object" && o !== null, a = new Uint32Array(256).map((o, l) => {
+var Ye, Ot;
+function cr() {
+  if (Ot) return Ye;
+  Ot = 1;
+  const e = Ns, t = ht, n = Dn(), s = It(), r = typeof process == "object" && process.platform === "win32", i = (o) => typeof o == "object" && o !== null, a = new Uint32Array(256).map((o, l) => {
     for (let u = 0; u < 8; u++)
       (l & 1) !== 0 ? l = 3988292384 ^ l >>> 1 : l >>>= 1;
     return l >>> 0;
@@ -820,7 +820,7 @@ function er() {
   function c(o) {
     this.sep = t.sep, this.fs = e, i(o) && i(o.fs) && typeof o.fs.statSync == "function" && (this.fs = o.fs);
   }
-  return We = c, c.prototype.makeDir = function(o) {
+  return Ye = c, c.prototype.makeDir = function(o) {
     const l = this;
     function u(d) {
       let p = d.split(l.sep)[0];
@@ -874,8 +874,8 @@ function er() {
           return p(!1);
         var R = t.dirname(o);
         g.fs.exists(R, function(C) {
-          C || g.makeDir(R), g.fs.open(o, "w", 438, function(_, m) {
-            _ ? g.fs.chmod(o, 438, function() {
+          C || g.makeDir(R), g.fs.open(o, "w", 438, function(D, m) {
+            D ? g.fs.chmod(o, 438, function() {
               g.fs.open(o, "w", 438, function(f, v) {
                 g.fs.write(v, l, 0, l.length, 0, function() {
                   g.fs.close(v, function() {
@@ -918,9 +918,9 @@ function er() {
       g.forEach(function(w) {
         w = t.join(o, w), u.fs.stat(w, function(T, R) {
           if (T) return l(T);
-          R && (d.push(t.normalize(w) + (R.isDirectory() ? u.sep : "")), R.isDirectory() ? u.findFilesAsync(w, function(C, _) {
+          R && (d.push(t.normalize(w) + (R.isDirectory() ? u.sep : "")), R.isDirectory() ? u.findFilesAsync(w, function(C, D) {
             if (C) return l(C);
-            d = d.concat(_), --I || l(null, d);
+            d = d.concat(D), --I || l(null, d);
           }) : --I || l(null, d));
         });
       });
@@ -978,14 +978,14 @@ function er() {
   }, c.fromDate2DOS = function(o) {
     let l = 0, u = 0;
     return o.getFullYear() > 1979 && (l = (o.getFullYear() - 1980 & 127) << 9 | o.getMonth() + 1 << 5 | o.getDate(), u = o.getHours() << 11 | o.getMinutes() << 5 | o.getSeconds() >> 1), l << 16 | u;
-  }, c.isWin = r, c.crcTable = a, We;
+  }, c.isWin = r, c.crcTable = a, Ye;
 }
-var qe, Ft;
-function tr() {
-  if (Ft) return qe;
-  Ft = 1;
-  const e = ft;
-  return qe = function(t, { fs: n }) {
+var Xe, Ut;
+function dr() {
+  if (Ut) return Xe;
+  Ut = 1;
+  const e = ht;
+  return Xe = function(t, { fs: n }) {
     var s = t || "", r = a(), i = null;
     function a() {
       return {
@@ -1035,31 +1035,31 @@ function tr() {
         return JSON.stringify(this.toJSON(), null, "	");
       }
     };
-  }, qe;
+  }, Xe;
 }
-var Ye, Pt;
-function nr() {
-  return Pt || (Pt = 1, Ye = {
+var Je, Mt;
+function lr() {
+  return Mt || (Mt = 1, Je = {
     efs: !0,
     encode: (e) => Buffer.from(e, "utf8"),
     decode: (e) => e.toString("utf8")
-  }), Ye;
+  }), Je;
 }
-var Ot;
+var Bt;
 function Ne() {
-  return Ot || (Ot = 1, ie.exports = er(), ie.exports.Constants = kn(), ie.exports.Errors = ht(), ie.exports.FileAttr = tr(), ie.exports.decoder = nr()), ie.exports;
+  return Bt || (Bt = 1, ie.exports = cr(), ie.exports.Constants = Dn(), ie.exports.Errors = It(), ie.exports.FileAttr = dr(), ie.exports.decoder = lr()), ie.exports;
 }
-var $e = {}, Xe, Ut;
-function sr() {
-  if (Ut) return Xe;
-  Ut = 1;
+var be = {}, Qe, jt;
+function ur() {
+  if (jt) return Qe;
+  jt = 1;
   var e = Ne(), t = e.Constants;
-  return Xe = function() {
+  return Qe = function() {
     var n = 20, s = 10, r = 0, i = 0, a = 0, c = 0, o = 0, l = 0, u = 0, d = 0, p = 0, g = 0, I = 0, w = 0, T = 0;
     n |= e.isWin ? 2560 : 768, r |= t.FLG_EFS;
     const R = {
       extraLen: 0
-    }, C = (m) => Math.max(0, m) >>> 0, _ = (m) => Math.max(0, m) & 255;
+    }, C = (m) => Math.max(0, m) >>> 0, D = (m) => Math.max(0, m) & 255;
     return a = e.fromDate2DOS(/* @__PURE__ */ new Date()), {
       get made() {
         return n;
@@ -1118,7 +1118,7 @@ function sr() {
         a = C(m);
       },
       get timeHighByte() {
-        return _(a >>> 8);
+        return D(a >>> 8);
       },
       get crc() {
         return c;
@@ -1250,14 +1250,14 @@ function sr() {
         return JSON.stringify(this.toJSON(), null, "	");
       }
     };
-  }, Xe;
+  }, Qe;
 }
-var Je, Mt;
-function rr() {
-  if (Mt) return Je;
-  Mt = 1;
+var et, zt;
+function fr() {
+  if (zt) return et;
+  zt = 1;
   var e = Ne(), t = e.Constants;
-  return Je = function() {
+  return et = function() {
     var n = 0, s = 0, r = 0, i = 0, a = 0;
     const c = () => n > t.EF_ZIP64_OR_16 || s > t.EF_ZIP64_OR_16 || r > t.EF_ZIP64_OR_32 || i > t.EF_ZIP64_OR_32;
     return {
@@ -1328,16 +1328,16 @@ function rr() {
         return JSON.stringify(this.toJSON(), null, "	");
       }
     };
-  }, Je;
+  }, et;
 }
-var jt;
-function Tn() {
-  return jt || (jt = 1, $e.EntryHeader = sr(), $e.MainHeader = rr()), $e;
+var Gt;
+function xn() {
+  return Gt || (Gt = 1, be.EntryHeader = ur(), be.MainHeader = fr()), be;
 }
-var Ee = {}, Qe, Bt;
-function ir() {
-  return Bt || (Bt = 1, Qe = function(e) {
-    var t = mn, n = { chunkSize: (parseInt(e.length / 1024) + 1) * 1024 };
+var Se = {}, tt, Kt;
+function pr() {
+  return Kt || (Kt = 1, tt = function(e) {
+    var t = yn, n = { chunkSize: (parseInt(e.length / 1024) + 1) * 1024 };
     return {
       deflate: function() {
         return t.deflateRawSync(e, n);
@@ -1357,16 +1357,16 @@ function ir() {
         }), r.end(e);
       }
     };
-  }), Qe;
+  }), tt;
 }
-var et, zt;
-function or() {
+var nt, Zt;
+function mr() {
   var t;
-  if (zt) return et;
-  zt = 1;
+  if (Zt) return nt;
+  Zt = 1;
   const e = +(((t = process == null ? void 0 : process.versions) == null ? void 0 : t.node) ?? "").split(".")[0] || 0;
-  return et = function(n, s) {
-    var r = mn;
+  return nt = function(n, s) {
+    var r = yn;
     const i = e >= 15 && s > 0 ? { maxOutputLength: s } : {};
     return {
       inflate: function() {
@@ -1387,13 +1387,13 @@ function or() {
         }), c.end(n);
       }
     };
-  }, et;
+  }, nt;
 }
-var tt, Gt;
-function ar() {
-  if (Gt) return tt;
-  Gt = 1;
-  const { randomFillSync: e } = Rs, t = ht(), n = new Uint32Array(256).map((g, I) => {
+var st, Ht;
+function hr() {
+  if (Ht) return st;
+  Ht = 1;
+  const { randomFillSync: e } = Ls, t = It(), n = new Uint32Array(256).map((g, I) => {
     for (let w = 0; w < 8; w++)
       (I & 1) !== 0 ? I = I >>> 1 ^ 3988292384 : I >>>= 1;
     return I >>> 0;
@@ -1434,8 +1434,8 @@ function ar() {
     return function(w, T, R = 0) {
       T || (T = Buffer.alloc(w.length));
       for (let C of w) {
-        const _ = I.next();
-        T[R++] = C ^ _, I.updateKeys(C);
+        const D = I.next();
+        T[R++] = C ^ D, I.updateKeys(C);
       }
       return T;
     };
@@ -1457,21 +1457,21 @@ function ar() {
     g == null && (g = Buffer.alloc(0)), Buffer.isBuffer(g) || (g = Buffer.from(g.toString()));
     const R = l(w), C = a.genSalt();
     C[11] = I.crc >>> 24 & 255, T && (C[10] = I.crc >>> 16 & 255);
-    const _ = Buffer.alloc(g.length + 12);
-    return R(C, _), R(g, _, 12);
+    const D = Buffer.alloc(g.length + 12);
+    return R(C, D), R(g, D, 12);
   }
-  return tt = { decrypt: u, encrypt: p, _salter: d }, tt;
+  return st = { decrypt: u, encrypt: p, _salter: d }, st;
 }
-var Kt;
-function cr() {
-  return Kt || (Kt = 1, Ee.Deflater = ir(), Ee.Inflater = or(), Ee.ZipCrypto = ar()), Ee;
+var Vt;
+function gr() {
+  return Vt || (Vt = 1, Se.Deflater = pr(), Se.Inflater = mr(), Se.ZipCrypto = hr()), Se;
 }
-var nt, Zt;
-function Dn() {
-  if (Zt) return nt;
-  Zt = 1;
-  var e = Ne(), t = Tn(), n = e.Constants, s = cr();
-  return nt = function(r, i) {
+var rt, Wt;
+function Nn() {
+  if (Wt) return rt;
+  Wt = 1;
+  var e = Ne(), t = xn(), n = e.Constants, s = gr();
+  return rt = function(r, i) {
     var a = new t.EntryHeader(), c = Buffer.alloc(0), o = Buffer.alloc(0), l = !1, u = null, d = Buffer.alloc(0), p = Buffer.alloc(0), g = !0;
     const I = r, w = typeof I.decoder == "object" ? I.decoder : e.decoder;
     g = w.hasOwnProperty("efs") ? w.efs : !1;
@@ -1510,12 +1510,12 @@ function Dn() {
           throw e.Errors.INVALID_PASS_PARAM();
         S = s.ZipCrypto.decrypt(S, a, E);
       }
-      var D = Buffer.alloc(a.size);
+      var _ = Buffer.alloc(a.size);
       switch (a.method) {
         case e.Constants.STORED:
-          if (S.copy(D), R(D))
-            return h && y && y(D), D;
-          throw h && y && y(D, e.Errors.BAD_CRC()), e.Errors.BAD_CRC();
+          if (S.copy(_), R(_))
+            return h && y && y(_), _;
+          throw h && y && y(_, e.Errors.BAD_CRC()), e.Errors.BAD_CRC();
         case e.Constants.DEFLATED:
           var A = new s.Inflater(S, a.size);
           if (h)
@@ -1523,16 +1523,16 @@ function Dn() {
               N.copy(N, 0), y && (R(N) ? y(N) : y(N, e.Errors.BAD_CRC()));
             });
           else {
-            if (A.inflate(D).copy(D, 0), !R(D))
+            if (A.inflate(_).copy(_, 0), !R(_))
               throw e.Errors.BAD_CRC(`"${w.decode(c)}"`);
-            return D;
+            return _;
           }
           break;
         default:
           throw h && y && y(Buffer.alloc(0), e.Errors.UNKNOWN_METHOD()), e.Errors.UNKNOWN_METHOD();
       }
     }
-    function _(h, y) {
+    function D(h, y) {
       if ((!u || !u.length) && Buffer.isBuffer(i))
         return h && y && y(T()), T();
       if (u.length && !l) {
@@ -1548,8 +1548,8 @@ function Dn() {
                 E = Buffer.alloc(A.length), a.compressedSize = A.length, A.copy(E), y && y(E);
               });
             else {
-              var D = S.deflate();
-              return a.compressedSize = D.length, D;
+              var _ = S.deflate();
+              return a.compressedSize = _.length, _;
             }
             S = null;
             break;
@@ -1564,15 +1564,15 @@ function Dn() {
     }
     function f(h) {
       try {
-        for (var y = 0, E, S, D; y + 4 < h.length; )
-          E = h.readUInt16LE(y), y += 2, S = h.readUInt16LE(y), y += 2, D = h.slice(y, y + S), y += S, n.ID_ZIP64 === E && v(D);
+        for (var y = 0, E, S, _; y + 4 < h.length; )
+          E = h.readUInt16LE(y), y += 2, S = h.readUInt16LE(y), y += 2, _ = h.slice(y, y + S), y += S, n.ID_ZIP64 === E && v(_);
       } catch {
         throw e.Errors.EXTRA_FIELD_PARSE_ERROR();
       }
     }
     function v(h) {
-      var y, E, S, D;
-      h.length >= n.EF_ZIP64_SCOMP && (y = m(h, n.EF_ZIP64_SUNCOMP), a.size === n.EF_ZIP64_OR_32 && (a.size = y)), h.length >= n.EF_ZIP64_RHO && (E = m(h, n.EF_ZIP64_SCOMP), a.compressedSize === n.EF_ZIP64_OR_32 && (a.compressedSize = E)), h.length >= n.EF_ZIP64_DSN && (S = m(h, n.EF_ZIP64_RHO), a.offset === n.EF_ZIP64_OR_32 && (a.offset = S)), h.length >= n.EF_ZIP64_DSN + 4 && (D = h.readUInt32LE(n.EF_ZIP64_DSN), a.diskNumStart === n.EF_ZIP64_OR_16 && (a.diskNumStart = D));
+      var y, E, S, _;
+      h.length >= n.EF_ZIP64_SCOMP && (y = m(h, n.EF_ZIP64_SUNCOMP), a.size === n.EF_ZIP64_OR_32 && (a.size = y)), h.length >= n.EF_ZIP64_RHO && (E = m(h, n.EF_ZIP64_SCOMP), a.compressedSize === n.EF_ZIP64_OR_32 && (a.compressedSize = E)), h.length >= n.EF_ZIP64_DSN && (S = m(h, n.EF_ZIP64_RHO), a.offset === n.EF_ZIP64_OR_32 && (a.offset = S)), h.length >= n.EF_ZIP64_DSN + 4 && (_ = h.readUInt32LE(n.EF_ZIP64_DSN), a.diskNumStart === n.EF_ZIP64_OR_16 && (a.diskNumStart = _));
     }
     return {
       get entryName() {
@@ -1609,10 +1609,10 @@ function Dn() {
         return l;
       },
       getCompressedData: function() {
-        return _(!1, null);
+        return D(!1, null);
       },
       getCompressedDataAsync: function(h) {
-        _(!0, h);
+        D(!0, h);
       },
       setData: function(h) {
         u = e.toBuffer(h, e.decoder.encode), !l && u.length ? (a.size = u.length, a.method = e.Constants.DEFLATED, a.crc = e.crc32(h), a.changed = !0) : a.method = e.Constants.STORED;
@@ -1664,57 +1664,57 @@ function Dn() {
         return JSON.stringify(this.toJSON(), null, "	");
       }
     };
-  }, nt;
+  }, rt;
 }
-var st, Ht;
-function dr() {
-  if (Ht) return st;
-  Ht = 1;
-  const e = Dn(), t = Tn(), n = Ne();
-  return st = function(s, r) {
+var it, qt;
+function yr() {
+  if (qt) return it;
+  qt = 1;
+  const e = Nn(), t = xn(), n = Ne();
+  return it = function(s, r) {
     var i = [], a = {}, c = Buffer.alloc(0), o = new t.MainHeader(), l = !1;
     const u = /* @__PURE__ */ new Set(), d = r, { noSort: p, decoder: g } = d;
     s ? T(d.readEntries) : l = !0;
     function I() {
       const C = /* @__PURE__ */ new Set();
-      for (const _ of Object.keys(a)) {
-        const m = _.split("/");
+      for (const D of Object.keys(a)) {
+        const m = D.split("/");
         if (m.pop(), !!m.length)
           for (let f = 0; f < m.length; f++) {
             const v = m.slice(0, f + 1).join("/") + "/";
             C.add(v);
           }
       }
-      for (const _ of C)
-        if (!(_ in a)) {
+      for (const D of C)
+        if (!(D in a)) {
           const m = new e(d);
-          m.entryName = _, m.attr = 16, m.temporary = !0, i.push(m), a[m.entryName] = m, u.add(m);
+          m.entryName = D, m.attr = 16, m.temporary = !0, i.push(m), a[m.entryName] = m, u.add(m);
         }
     }
     function w() {
       if (l = !0, a = {}, o.diskEntries > (s.length - o.offset) / n.Constants.CENHDR)
         throw n.Errors.DISK_ENTRY_TOO_LARGE();
       i = new Array(o.diskEntries);
-      for (var C = o.offset, _ = 0; _ < i.length; _++) {
+      for (var C = o.offset, D = 0; D < i.length; D++) {
         var m = C, f = new e(d, s);
-        f.header = s.slice(m, m += n.Constants.CENHDR), f.entryName = s.slice(m, m += f.header.fileNameLength), f.header.extraLength && (f.extra = s.slice(m, m += f.header.extraLength)), f.header.commentLength && (f.comment = s.slice(m, m + f.header.commentLength)), C += f.header.centralHeaderSize, i[_] = f, a[f.entryName] = f;
+        f.header = s.slice(m, m += n.Constants.CENHDR), f.entryName = s.slice(m, m += f.header.fileNameLength), f.header.extraLength && (f.extra = s.slice(m, m += f.header.extraLength)), f.header.commentLength && (f.comment = s.slice(m, m + f.header.commentLength)), C += f.header.centralHeaderSize, i[D] = f, a[f.entryName] = f;
       }
       u.clear(), I();
     }
     function T(C) {
-      var _ = s.length - n.Constants.ENDHDR, m = Math.max(0, _ - 65535), f = m, v = s.length, h = -1, y = 0;
-      for ((typeof d.trailingSpace == "boolean" ? d.trailingSpace : !1) && (m = 0), _; _ >= f; _--)
-        if (s[_] === 80) {
-          if (s.readUInt32LE(_) === n.Constants.ENDSIG) {
-            h = _, y = _, v = _ + n.Constants.ENDHDR, f = _ - n.Constants.END64HDR;
+      var D = s.length - n.Constants.ENDHDR, m = Math.max(0, D - 65535), f = m, v = s.length, h = -1, y = 0;
+      for ((typeof d.trailingSpace == "boolean" ? d.trailingSpace : !1) && (m = 0), D; D >= f; D--)
+        if (s[D] === 80) {
+          if (s.readUInt32LE(D) === n.Constants.ENDSIG) {
+            h = D, y = D, v = D + n.Constants.ENDHDR, f = D - n.Constants.END64HDR;
             continue;
           }
-          if (s.readUInt32LE(_) === n.Constants.END64SIG) {
+          if (s.readUInt32LE(D) === n.Constants.END64SIG) {
             f = m;
             continue;
           }
-          if (s.readUInt32LE(_) === n.Constants.ZIP64SIG) {
-            h = _, v = _ + n.readBigUInt64LE(s, _ + n.Constants.ZIP64SIZE) + n.Constants.ZIP64LEAD;
+          if (s.readUInt32LE(D) === n.Constants.ZIP64SIG) {
+            h = D, v = D + n.readBigUInt64LE(s, D + n.Constants.ZIP64SIZE) + n.Constants.ZIP64LEAD;
             break;
           }
         }
@@ -1722,7 +1722,7 @@ function dr() {
       o.loadFromBinary(s.slice(h, v)), o.commentLength && (c = s.slice(y + n.Constants.ENDHDR)), C && w();
     }
     function R() {
-      i.length > 1 && !p && i.sort((C, _) => C.entryName.toLowerCase().localeCompare(_.entryName.toLowerCase()));
+      i.length > 1 && !p && i.sort((C, D) => C.entryName.toLowerCase().localeCompare(D.entryName.toLowerCase()));
     }
     return {
       /**
@@ -1772,10 +1772,10 @@ function dr() {
        * @param entryName
        * @returns {void}
        */
-      deleteFile: function(C, _ = !0) {
+      deleteFile: function(C, D = !0) {
         l || w();
         const m = a[C];
-        this.getEntryChildren(m, _).map((v) => v.entryName).forEach(this.deleteEntry);
+        this.getEntryChildren(m, D).map((v) => v.entryName).forEach(this.deleteEntry);
       },
       /**
        * Removes the entry with the given name from the entry list.
@@ -1785,7 +1785,7 @@ function dr() {
        */
       deleteEntry: function(C) {
         l || w();
-        const _ = a[C], m = i.indexOf(_);
+        const D = a[C], m = i.indexOf(D);
         m >= 0 && (i.splice(m, 1), delete a[C], o.totalEntries = i.length);
       },
       /**
@@ -1794,9 +1794,9 @@ function dr() {
        * @param entry
        * @return Array
        */
-      getEntryChildren: function(C, _ = !0) {
+      getEntryChildren: function(C, D = !0) {
         if (l || w(), typeof C == "object")
-          if (C.isDirectory && _) {
+          if (C.isDirectory && D) {
             const m = [], f = C.entryName;
             for (const v of i)
               v.entryName.startsWith(f) && m.push(v);
@@ -1813,8 +1813,8 @@ function dr() {
        */
       getChildCount: function(C) {
         if (C && C.isDirectory) {
-          const _ = this.getEntryChildren(C);
-          return _.includes(C) ? _.length - 1 : _.length;
+          const D = this.getEntryChildren(C);
+          return D.includes(C) ? D.length - 1 : D.length;
         }
         return 0;
       },
@@ -1825,42 +1825,42 @@ function dr() {
        */
       compressToBuffer: function() {
         l || w(), R();
-        const C = [], _ = [];
+        const C = [], D = [];
         let m = 0, f = 0;
         o.size = 0, o.offset = 0;
         let v = 0;
         for (const E of this.entries) {
           const S = E.getCompressedData();
           E.header.offset = f;
-          const D = E.packLocalHeader(), A = D.length + S.length;
-          f += A, C.push(D), C.push(S);
+          const _ = E.packLocalHeader(), A = _.length + S.length;
+          f += A, C.push(_), C.push(S);
           const N = E.packCentralHeader();
-          _.push(N), o.size += N.length, m += A + N.length, v++;
+          D.push(N), o.size += N.length, m += A + N.length, v++;
         }
         m += o.mainHeaderSize, o.offset = f, o.totalEntries = v, f = 0;
         const h = Buffer.alloc(m);
         for (const E of C)
           E.copy(h, f), f += E.length;
-        for (const E of _)
+        for (const E of D)
           E.copy(h, f), f += E.length;
         const y = o.toBinary();
         return c && c.copy(y, y.length - c.length), y.copy(h, f), s = h, l = !1, h;
       },
-      toAsyncBuffer: function(C, _, m, f) {
+      toAsyncBuffer: function(C, D, m, f) {
         try {
           l || w(), R();
           const v = [], h = [];
           let y = 0, E = 0, S = 0;
           o.size = 0, o.offset = 0;
-          const D = function(A) {
+          const _ = function(A) {
             if (A.length > 0) {
-              const N = A.shift(), x = N.entryName + N.extra.toString();
-              m && m(x), N.getCompressedDataAsync(function(b) {
-                f && f(x), N.header.offset = E;
-                const O = N.packLocalHeader(), B = O.length + b.length;
-                E += B, v.push(O), v.push(b);
+              const N = A.shift(), L = N.entryName + N.extra.toString();
+              m && m(L), N.getCompressedDataAsync(function(b) {
+                f && f(L), N.header.offset = E;
+                const U = N.packLocalHeader(), z = U.length + b.length;
+                E += z, v.push(U), v.push(b);
                 const G = N.packCentralHeader();
-                h.push(G), o.size += G.length, y += B + G.length, S++, D(A);
+                h.push(G), o.size += G.length, y += z + G.length, S++, _(A);
               });
             } else {
               y += o.mainHeaderSize, o.offset = E, o.totalEntries = S, E = 0;
@@ -1870,23 +1870,23 @@ function dr() {
               }), h.forEach(function(b) {
                 b.copy(N, E), E += b.length;
               });
-              const x = o.toBinary();
-              c && c.copy(x, x.length - c.length), x.copy(N, E), s = N, l = !1, C(N);
+              const L = o.toBinary();
+              c && c.copy(L, L.length - c.length), L.copy(N, E), s = N, l = !1, C(N);
             }
           };
-          D(Array.from(this.entries));
+          _(Array.from(this.entries));
         } catch (v) {
-          _(v);
+          D(v);
         }
       }
     };
-  }, st;
+  }, it;
 }
-var rt, Vt;
-function lr() {
-  if (Vt) return rt;
-  Vt = 1;
-  const e = Ne(), t = ft, n = Dn(), s = dr(), r = (...o) => e.findLast(o, (l) => typeof l == "boolean"), i = (...o) => e.findLast(o, (l) => typeof l == "string"), a = (...o) => e.findLast(o, (l) => typeof l == "function"), c = {
+var ot, Yt;
+function Ir() {
+  if (Yt) return ot;
+  Yt = 1;
+  const e = Ne(), t = ht, n = Nn(), s = yr(), r = (...o) => e.findLast(o, (l) => typeof l == "boolean"), i = (...o) => e.findLast(o, (l) => typeof l == "string"), a = (...o) => e.findLast(o, (l) => typeof l == "function"), c = {
     // option "noSort" : if true it disables files sorting
     noSort: !1,
     // read entries during load (initial loading may be slower)
@@ -1896,7 +1896,7 @@ function lr() {
     // file system
     fs: null
   };
-  return rt = function(o, l) {
+  return ot = function(o, l) {
     let u = null;
     const d = Object.assign(/* @__PURE__ */ Object.create(null), c);
     o && typeof o == "object" && (o instanceof Uint8Array || (Object.assign(d, o), o = d.input ? d.input : void 0, d.input && delete d.input), Buffer.isBuffer(o) && (u = o, d.method = e.Constants.BUFFER, o = void 0)), Object.assign(d, l);
@@ -1919,7 +1919,7 @@ function lr() {
       const { join: v, normalize: h, sep: y } = t.posix;
       return v(t.isAbsolute(f) ? "/" : ".", h(y + f.split("\\").join(y) + y));
     }
-    function _(f) {
+    function D(f) {
       return f instanceof RegExp ? /* @__PURE__ */ (function(v) {
         return function(h) {
           return v.test(h);
@@ -2077,8 +2077,8 @@ function lr() {
           v = v ? C(v) : "";
           const E = t.win32.basename(t.win32.normalize(f));
           v += h || E;
-          const S = p.fs.statSync(f), D = S.isFile() ? p.fs.readFileSync(f) : Buffer.alloc(0);
-          S.isDirectory() && (v += p.sep), this.addFile(v, D, y, S);
+          const S = p.fs.statSync(f), _ = S.isFile() ? p.fs.readFileSync(f) : Buffer.alloc(0);
+          S.isDirectory() && (v += p.sep), this.addFile(v, _, y, S);
         } else
           throw e.Errors.FILE_NOT_FOUND(f);
       },
@@ -2103,17 +2103,17 @@ function lr() {
         f = typeof f == "object" ? f : { localPath: f };
         const h = t.resolve(f.localPath), { comment: y } = f;
         let { zipPath: E, zipName: S } = f;
-        const D = this;
+        const _ = this;
         p.fs.stat(h, function(A, N) {
           if (A) return v(A, !1);
           E = E ? C(E) : "";
-          const x = t.win32.basename(t.win32.normalize(h));
-          if (E += S || x, N.isFile())
-            p.fs.readFile(h, function(b, O) {
-              return b ? v(b, !1) : (D.addFile(E, O, y, N), setImmediate(v, void 0, !0));
+          const L = t.win32.basename(t.win32.normalize(h));
+          if (E += S || L, N.isFile())
+            p.fs.readFile(h, function(b, U) {
+              return b ? v(b, !1) : (_.addFile(E, U, y, N), setImmediate(v, void 0, !0));
             });
           else if (N.isDirectory())
-            return E += p.sep, D.addFile(E, Buffer.alloc(0), y, N), setImmediate(v, void 0, !0);
+            return E += p.sep, _.addFile(E, Buffer.alloc(0), y, N), setImmediate(v, void 0, !0);
         });
       },
       /**
@@ -2124,12 +2124,12 @@ function lr() {
        * @param {(RegExp|function)} [filter] - optional RegExp or Function if files match will be included.
        */
       addLocalFolder: function(f, v, h) {
-        if (h = _(h), v = v ? C(v) : "", f = t.normalize(f), p.fs.existsSync(f)) {
+        if (h = D(h), v = v ? C(v) : "", f = t.normalize(f), p.fs.existsSync(f)) {
           const y = p.findFiles(f), E = this;
           if (y.length)
             for (const S of y) {
-              const D = t.join(v, m(f, S));
-              h(D) && E.addLocalFile(S, t.dirname(D));
+              const _ = t.join(v, m(f, S));
+              h(_) && E.addLocalFile(S, t.dirname(_));
             }
         } else
           throw e.Errors.FILE_NOT_FOUND(f);
@@ -2143,7 +2143,7 @@ function lr() {
        *               be included.
        */
       addLocalFolderAsync: function(f, v, h, y) {
-        y = _(y), h = h ? C(h) : "", f = t.normalize(f);
+        y = D(y), h = h ? C(h) : "", f = t.normalize(f);
         var E = this;
         p.fs.open(f, "r", function(S) {
           if (S && S.code === "ENOENT")
@@ -2151,13 +2151,13 @@ function lr() {
           else if (S)
             v(void 0, S);
           else {
-            var D = p.findFiles(f), A = -1, N = function() {
-              if (A += 1, A < D.length) {
-                var x = D[A], b = m(f, x).split("\\").join("/");
-                b = b.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, ""), y(b) ? p.fs.stat(x, function(O, B) {
-                  O && v(void 0, O), B.isFile() ? p.fs.readFile(x, function(G, j) {
-                    G ? v(void 0, G) : (E.addFile(h + b, j, "", B), N());
-                  }) : (E.addFile(h + b + "/", Buffer.alloc(0), "", B), N());
+            var _ = p.findFiles(f), A = -1, N = function() {
+              if (A += 1, A < _.length) {
+                var L = _[A], b = m(f, L).split("\\").join("/");
+                b = b.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, ""), y(b) ? p.fs.stat(L, function(U, z) {
+                  U && v(void 0, U), z.isFile() ? p.fs.readFile(L, function(G, B) {
+                    G ? v(void 0, G) : (E.addFile(h + b, B, "", z), N());
+                  }) : (E.addFile(h + b + "/", Buffer.alloc(0), "", z), N());
                 }) : process.nextTick(() => {
                   N();
                 });
@@ -2183,29 +2183,29 @@ function lr() {
         const h = this;
         f = typeof f == "object" ? f : { localPath: f };
         const y = t.resolve(C(f.localPath));
-        let { zipPath: E, filter: S, namefix: D } = f;
-        S instanceof RegExp ? S = /* @__PURE__ */ (function(x) {
+        let { zipPath: E, filter: S, namefix: _ } = f;
+        S instanceof RegExp ? S = /* @__PURE__ */ (function(L) {
           return function(b) {
-            return x.test(b);
+            return L.test(b);
           };
         })(S) : typeof S != "function" && (S = function() {
           return !0;
-        }), E = E ? C(E) : "", D === "latin1" && (D = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "")), typeof D != "function" && (D = (x) => x);
-        const A = (x) => t.join(E, D(m(y, x))), N = (x) => t.win32.basename(t.win32.normalize(D(x)));
-        p.fs.open(y, "r", function(x) {
-          x && x.code === "ENOENT" ? v(void 0, e.Errors.FILE_NOT_FOUND(y)) : x ? v(void 0, x) : p.findFilesAsync(y, function(b, O) {
+        }), E = E ? C(E) : "", _ === "latin1" && (_ = (L) => L.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "")), typeof _ != "function" && (_ = (L) => L);
+        const A = (L) => t.join(E, _(m(y, L))), N = (L) => t.win32.basename(t.win32.normalize(_(L)));
+        p.fs.open(y, "r", function(L) {
+          L && L.code === "ENOENT" ? v(void 0, e.Errors.FILE_NOT_FOUND(y)) : L ? v(void 0, L) : p.findFilesAsync(y, function(b, U) {
             if (b) return v(b);
-            O = O.filter((B) => S(A(B))), O.length || v(void 0, !1), setImmediate(
-              O.reverse().reduce(function(B, G) {
-                return function(j, V) {
-                  if (j || V === !1) return setImmediate(B, j, !1);
+            U = U.filter((z) => S(A(z))), U.length || v(void 0, !1), setImmediate(
+              U.reverse().reduce(function(z, G) {
+                return function(B, V) {
+                  if (B || V === !1) return setImmediate(z, B, !1);
                   h.addLocalFileAsync(
                     {
                       localPath: G,
                       zipPath: t.dirname(A(G)),
                       zipName: N(G)
                     },
-                    B
+                    z
                   );
                 };
               }, v)
@@ -2244,11 +2244,11 @@ function lr() {
         let E = R(f);
         const S = E != null;
         S || (E = new n(d), E.entryName = f), E.comment = h || "";
-        const D = typeof y == "object" && y instanceof p.fs.Stats;
-        D && (E.header.time = y.mtime);
+        const _ = typeof y == "object" && y instanceof p.fs.Stats;
+        _ && (E.header.time = y.mtime);
         var A = E.isDirectory ? 16 : 0;
         let N = E.isDirectory ? 16384 : 32768;
-        return D ? N |= 4095 & y.mode : typeof y == "number" ? N |= 4095 & y : N |= E.isDirectory ? 493 : 420, A = (A | N << 16) >>> 0, E.attr = A, E.setData(v), S || g.setEntry(E), E;
+        return _ ? N |= 4095 & y.mode : typeof y == "number" ? N |= 4095 & y : N |= E.isDirectory ? 493 : 420, A = (A | N << 16) >>> 0, E.attr = A, E.setData(v), S || g.setEntry(E), E;
       },
       /**
        * Returns an array of ZipEntry objects representing the files and folders inside the archive
@@ -2289,28 +2289,28 @@ function lr() {
        */
       extractEntryTo: function(f, v, h, y, E, S) {
         y = r(!1, y), E = r(!1, E), h = r(!0, h), S = i(E, S);
-        var D = R(f);
-        if (!D)
+        var _ = R(f);
+        if (!_)
           throw e.Errors.NO_ENTRY();
-        var A = I(D.entryName), N = w(v, S && !D.isDirectory ? I(S) : h ? A : t.basename(A));
-        if (D.isDirectory) {
-          var x = g.getEntryChildren(D);
-          return x.forEach(function(B) {
-            if (B.isDirectory) return;
-            var G = B.getData();
+        var A = I(_.entryName), N = w(v, S && !_.isDirectory ? I(S) : h ? A : t.basename(A));
+        if (_.isDirectory) {
+          var L = g.getEntryChildren(_);
+          return L.forEach(function(z) {
+            if (z.isDirectory) return;
+            var G = z.getData();
             if (!G)
               throw e.Errors.CANT_EXTRACT_FILE();
-            var j = I(B.entryName), V = w(v, h ? j : t.basename(j));
-            const Y = E ? B.header.fileAttr : void 0;
+            var B = I(z.entryName), V = w(v, h ? B : t.basename(B));
+            const Y = E ? z.header.fileAttr : void 0;
             p.writeFileTo(V, G, y, Y);
           }), !0;
         }
-        var b = D.getData(g.password);
+        var b = _.getData(g.password);
         if (!b) throw e.Errors.CANT_EXTRACT_FILE();
         if (p.fs.existsSync(N) && !y)
           throw e.Errors.CANT_OVERRIDE();
-        const O = E ? f.header.fileAttr : void 0;
-        return p.writeFileTo(N, b, y, O), !0;
+        const U = E ? f.header.fileAttr : void 0;
+        return p.writeFileTo(N, b, y, U), !0;
       },
       /**
        * Test the archive
@@ -2349,11 +2349,11 @@ function lr() {
             p.makeDir(S);
             return;
           }
-          var D = E.getData(y);
-          if (!D)
+          var _ = E.getData(y);
+          if (!_)
             throw e.Errors.CANT_EXTRACT_FILE();
           const A = h ? E.header.fileAttr : void 0;
-          p.writeFileTo(S, D, v, A);
+          p.writeFileTo(S, _, v, A);
           try {
             p.fs.utimesSync(S, E.header.time, E.header.time);
           } catch {
@@ -2373,9 +2373,9 @@ function lr() {
        */
       extractAllToAsync: function(f, v, h, y) {
         if (y = a(v, h, y), h = r(!1, h), v = r(!1, v), !y)
-          return new Promise((N, x) => {
+          return new Promise((N, L) => {
             this.extractAllToAsync(f, v, h, function(b) {
-              b ? x(b) : N(this);
+              b ? L(b) : N(this);
             });
           });
         if (!g) {
@@ -2383,34 +2383,34 @@ function lr() {
           return;
         }
         f = t.resolve(f);
-        const E = (N) => w(f, t.normalize(I(N.entryName))), S = (N, x) => new Error(N + ': "' + x + '"'), D = [], A = [];
+        const E = (N) => w(f, t.normalize(I(N.entryName))), S = (N, L) => new Error(N + ': "' + L + '"'), _ = [], A = [];
         g.entries.forEach((N) => {
-          N.isDirectory ? D.push(N) : A.push(N);
+          N.isDirectory ? _.push(N) : A.push(N);
         });
-        for (const N of D) {
-          const x = E(N), b = h ? N.header.fileAttr : void 0;
+        for (const N of _) {
+          const L = E(N), b = h ? N.header.fileAttr : void 0;
           try {
-            p.makeDir(x), b && p.fs.chmodSync(x, b), p.fs.utimesSync(x, N.header.time, N.header.time);
+            p.makeDir(L), b && p.fs.chmodSync(L, b), p.fs.utimesSync(L, N.header.time, N.header.time);
           } catch {
-            y(S("Unable to create folder", x));
+            y(S("Unable to create folder", L));
           }
         }
-        A.reverse().reduce(function(N, x) {
+        A.reverse().reduce(function(N, L) {
           return function(b) {
             if (b)
               N(b);
             else {
-              const O = t.normalize(I(x.entryName)), B = w(f, O);
-              x.getDataAsync(function(G, j) {
-                if (j)
-                  N(j);
+              const U = t.normalize(I(L.entryName)), z = w(f, U);
+              L.getDataAsync(function(G, B) {
+                if (B)
+                  N(B);
                 else if (!G)
                   N(e.Errors.CANT_EXTRACT_FILE());
                 else {
-                  const V = h ? x.header.fileAttr : void 0;
-                  p.writeFileToAsync(B, G, v, V, function(Y) {
-                    Y || N(S("Unable to write file", B)), p.fs.utimes(B, x.header.time, x.header.time, function(ue) {
-                      ue ? N(S("Unable to set times", B)) : N();
+                  const V = h ? L.header.fileAttr : void 0;
+                  p.writeFileToAsync(z, G, v, V, function(Y) {
+                    Y || N(S("Unable to write file", z)), p.fs.utimes(z, L.header.time, L.header.time, function(ue) {
+                      ue ? N(S("Unable to set times", z)) : N();
                     });
                   });
                 }
@@ -2446,9 +2446,9 @@ function lr() {
       writeZipPromise: function(f, v) {
         const { overwrite: h, perm: y } = Object.assign({ overwrite: !0 }, v);
         return new Promise((E, S) => {
-          !f && d.filename && (f = d.filename), f || S("ADM-ZIP: ZIP File Name Missing"), this.toBufferPromise().then((D) => {
+          !f && d.filename && (f = d.filename), f || S("ADM-ZIP: ZIP File Name Missing"), this.toBufferPromise().then((_) => {
             const A = (N) => N ? E(N) : S("ADM-ZIP: Wasn't able to write zip file");
-            p.writeFileToAsync(f, D, h, y, A);
+            p.writeFileToAsync(f, _, h, y, A);
           }, S);
         });
       },
@@ -2473,10 +2473,10 @@ function lr() {
         return typeof f == "function" ? (g.toAsyncBuffer(f, v, h, y), null) : g.compressToBuffer();
       }
     };
-  }, rt;
+  }, ot;
 }
-var ur = lr();
-const _n = /* @__PURE__ */ Qs(ur), fr = "conversations.json", pr = [
+var vr = Ir();
+const Ln = /* @__PURE__ */ ar(vr), wr = "conversations.json", Er = [
   /^conversations\.json$/i,
   /^chat\.html$/i,
   /^message_feedback\.json$/i,
@@ -2484,35 +2484,35 @@ const _n = /* @__PURE__ */ Qs(ur), fr = "conversations.json", pr = [
   /^user\.json$/i,
   /^shared_conversations\.json$/i
 ];
-function be(e) {
+function Ae(e) {
   if (e != null && e.aborted)
     throw new Error("Validation cancelled by user.");
 }
-function Nn(e, t = {}) {
+function $n(e, t = {}) {
   var g, I, w;
   const { loadAssetData: n = !0, signal: s, callbacks: r } = t;
-  be(s);
-  const a = new _n(e).getEntries();
-  (g = r == null ? void 0 : r.onZipOpened) == null || g.call(r, a.length), be(s);
-  const c = a.find((T) => !T.isDirectory && T.entryName.replace(/\\/g, "/").endsWith(fr));
+  Ae(s);
+  const a = new Ln(e).getEntries();
+  (g = r == null ? void 0 : r.onZipOpened) == null || g.call(r, a.length), Ae(s);
+  const c = a.find((T) => !T.isDirectory && T.entryName.replace(/\\/g, "/").endsWith(wr));
   if (!c)
     throw new Error("Not a ChatGPT export ZIP: conversations.json was not found in the archive.");
   const o = c.entryName.replace(/\\/g, "/"), l = c.header.size;
-  (I = r == null ? void 0 : r.onConversationsJsonLocated) == null || I.call(r, o, l), be(s);
+  (I = r == null ? void 0 : r.onConversationsJsonLocated) == null || I.call(r, o, l), Ae(s);
   const u = c.getData().toString("utf8"), d = [];
   let p = 0;
   for (const T of a) {
-    if (be(s), T.isDirectory)
+    if (Ae(s), T.isDirectory)
       continue;
     const R = T.entryName.replace(/\\/g, "/"), C = k.basename(R);
-    if (pr.some((m) => m.test(C) || m.test(R)) || R.endsWith(".json") && !R.includes("/"))
+    if (Er.some((m) => m.test(C) || m.test(R)) || R.endsWith(".json") && !R.includes("/"))
       continue;
     p++;
-    const _ = {
+    const D = {
       zipPath: R,
       fileName: C
     };
-    n && (_.data = T.getData()), d.push(_);
+    n && (D.data = T.getData()), d.push(D);
   }
   return (w = r == null ? void 0 : r.onEntriesDiscovered) == null || w.call(r, a.length, p), {
     conversationsJson: u,
@@ -2521,12 +2521,12 @@ function Nn(e, t = {}) {
     archiveEntryCount: a.length
   };
 }
-class mr {
+class Sr {
   constructor() {
-    U(this, "id", "chatgpt-export-zip");
-    U(this, "name", "ChatGPT Connector");
-    U(this, "description", "Acquire knowledge from ChatGPT data export archives (conversations.json + uploads).");
-    U(this, "supportedExtensions", [".zip"]);
+    M(this, "id", "chatgpt-export-zip");
+    M(this, "name", "ChatGPT Connector");
+    M(this, "description", "Acquire knowledge from ChatGPT data export archives (conversations.json + uploads).");
+    M(this, "supportedExtensions", [".zip"]);
   }
   canHandle(t) {
     var n;
@@ -2543,7 +2543,7 @@ class mr {
     };
   }
   async extract(t) {
-    const n = Nn(t.source.path, { loadAssetData: !1 }), s = Gs(n.conversationsJson);
+    const n = $n(t.source.path, { loadAssetData: !1 }), s = Xs(n.conversationsJson);
     return {
       connectorId: this.id,
       source: t.source,
@@ -2569,7 +2569,7 @@ class mr {
       data: Buffer.from(r.dataBase64 ?? "", "base64")
     })), s = n.map((r) => ({ zipPath: r.zipPath, fileName: r.fileName }));
     return t.rawDocuments.map((r, i) => {
-      const a = Cn(r, n, {
+      const a = _n(r, n, {
         sharedAssetList: i === 0 ? s : void 0
       });
       return {
@@ -2582,7 +2582,7 @@ class mr {
     });
   }
 }
-const it = new mr(), hr = {
+const at = new Sr(), Rr = {
   "zip-selected": "ZIP selected",
   "zip-opening": "Opening ZIP archive",
   "zip-opened": "ZIP opened",
@@ -2595,14 +2595,14 @@ const it = new mr(), hr = {
   failed: "Validation failed",
   cancelled: "Validation cancelled"
 };
-function Wt(e) {
+function Xt(e) {
   if (e != null && e.aborted)
     throw new Error("Validation cancelled by user.");
 }
-function qt(e) {
+function Jt(e) {
   return e < 1024 ? `${e} B` : e < 1024 * 1024 ? `${(e / 1024).toFixed(1)} KB` : `${(e / (1024 * 1024)).toFixed(1)} MB`;
 }
-async function xn(e, t = {}) {
+async function bn(e, t = {}) {
   const n = Date.now(), s = [];
   let r = 0, i, a, c = 0, o = 0, l = 0;
   const u = (p, g, I = {}) => {
@@ -2610,7 +2610,7 @@ async function xn(e, t = {}) {
     (w = t.onProgress) == null || w.call(t, {
       status: g,
       stage: p,
-      stageLabel: hr[p],
+      stageLabel: Rr[p],
       fileName: e.name,
       archiveEntryCount: r,
       conversationsJsonPath: i,
@@ -2629,7 +2629,7 @@ async function xn(e, t = {}) {
   };
   try {
     u("zip-selected", "running", { detail: e.name }), d("info", `ZIP selected: ${e.name}`, { path: e.path }), u("zip-opening", "running"), d("info", "Opening ZIP archive (read-only)…");
-    const p = Nn(e.path, {
+    const p = $n(e.path, {
       loadAssetData: !1,
       signal: t.signal,
       callbacks: {
@@ -2649,20 +2649,20 @@ async function xn(e, t = {}) {
           i = m, a = f, u("conversations-json-located", "running", {
             conversationsJsonPath: m,
             conversationsJsonSizeBytes: f,
-            detail: `${m} (${qt(f)})`
-          }), d("info", `conversations.json located: ${m} (${qt(f)})`);
+            detail: `${m} (${Jt(f)})`
+          }), d("info", `conversations.json located: ${m} (${Jt(f)})`);
         }
       }
     });
-    Wt(t.signal), u("parsing-started", "running"), d("info", "Conversations parsing started…");
-    const g = Sn(p.conversationsJson);
+    Xt(t.signal), u("parsing-started", "running"), d("info", "Conversations parsing started…");
+    const g = kn(p.conversationsJson);
     c = g.length, d("info", `Total conversations detected: ${c}`, {
       conversationsTotal: c
     }), u("parsing-started", "running", {
       conversationsTotal: c,
       detail: `${c} conversations`
     });
-    const I = await Ks(g, {
+    const I = await Js(g, {
       signal: t.signal,
       onProgress: (m) => {
         o = m.conversationsProcessed, l = m.messagesProcessed, u("parsing-conversations", "running", {
@@ -2677,20 +2677,20 @@ async function xn(e, t = {}) {
         });
       }
     });
-    Wt(t.signal);
+    Xt(t.signal);
     const w = p.assets.map((m) => ({
       zipPath: m.zipPath,
       fileName: m.fileName
-    })), T = I.map((m, f) => Cn(m, p.assets, {
+    })), T = I.map((m, f) => _n(m, p.assets, {
       validationMode: !0,
       sharedAssetList: f === 0 ? w : void 0
-    })), R = Os(it.id, T), C = Us(it.id, e, R), _ = Ms(it, e, R, C);
+    })), R = Zs(at.id, T), C = Hs(at.id, e, R), D = Vs(at, e, R, C);
     return s.length > 0 && d("warn", `Warnings generated: ${s.length}`, { warnings: s }), u("completed", "complete", {
       conversationsTotal: c,
       conversationsProcessed: o,
       messagesProcessed: l,
       detail: `${o} conversations validated`
-    }), d("info", `Validation pipeline complete: ${R.length} conversation(s), ${l} message(s)`), _;
+    }), d("info", `Validation pipeline complete: ${R.length} conversation(s), ${l} message(s)`), D;
   } catch (p) {
     const g = p instanceof Error ? p.message : String(p), I = g.includes("cancelled");
     throw u(I ? "cancelled" : "failed", I ? "cancelled" : "failed", {
@@ -2701,13 +2701,13 @@ async function xn(e, t = {}) {
     }), p;
   }
 }
-class gr extends pe {
+class Cr extends pe {
   constructor() {
     super(...arguments);
-    U(this, "id", "chatgpt-export-zip");
-    U(this, "name", "ChatGPT Connector");
-    U(this, "description", "Acquire knowledge from ChatGPT data export archives via the KAE connector pipeline.");
-    U(this, "supportedExtensions", [".zip"]);
+    M(this, "id", "chatgpt-export-zip");
+    M(this, "name", "ChatGPT Connector");
+    M(this, "description", "Acquire knowledge from ChatGPT data export archives via the KAE connector pipeline.");
+    M(this, "supportedExtensions", [".zip"]);
   }
   async import(n, s) {
     var a, c, o, l;
@@ -2729,7 +2729,7 @@ class gr extends pe {
       };
     (c = s.log) == null || c.call(s, "info", `Starting memory-safe ChatGPT import: ${n.name}`);
     try {
-      const u = await xn(n, {
+      const u = await bn(n, {
         log: (d, p) => {
           var g;
           return (g = s.log) == null ? void 0 : g.call(s, d, p);
@@ -2776,62 +2776,62 @@ class gr extends pe {
     }
   }
 }
-class yr extends pe {
+class kr extends pe {
   constructor() {
     super(...arguments);
-    U(this, "id", "pdf");
-    U(this, "name", "PDF");
-    U(this, "description", "Import content from PDF documents.");
-    U(this, "supportedExtensions", [".pdf"]);
+    M(this, "id", "pdf");
+    M(this, "name", "PDF");
+    M(this, "description", "Import content from PDF documents.");
+    M(this, "supportedExtensions", [".pdf"]);
   }
 }
-class Ir extends pe {
+class Tr extends pe {
   constructor() {
     super(...arguments);
-    U(this, "id", "markdown");
-    U(this, "name", "Markdown");
-    U(this, "description", "Import Markdown (.md) files.");
-    U(this, "supportedExtensions", [".md", ".markdown"]);
+    M(this, "id", "markdown");
+    M(this, "name", "Markdown");
+    M(this, "description", "Import Markdown (.md) files.");
+    M(this, "supportedExtensions", [".md", ".markdown"]);
   }
 }
-class vr extends pe {
+class _r extends pe {
   constructor() {
     super(...arguments);
-    U(this, "id", "html");
-    U(this, "name", "HTML");
-    U(this, "description", "Import HTML web pages and exports.");
-    U(this, "supportedExtensions", [".html", ".htm"]);
+    M(this, "id", "html");
+    M(this, "name", "HTML");
+    M(this, "description", "Import HTML web pages and exports.");
+    M(this, "supportedExtensions", [".html", ".htm"]);
   }
 }
-class wr extends pe {
+class Dr extends pe {
   constructor() {
     super(...arguments);
-    U(this, "id", "docx");
-    U(this, "name", "DOCX");
-    U(this, "description", "Import Microsoft Word documents.");
-    U(this, "supportedExtensions", [".docx"]);
+    M(this, "id", "docx");
+    M(this, "name", "DOCX");
+    M(this, "description", "Import Microsoft Word documents.");
+    M(this, "supportedExtensions", [".docx"]);
   }
 }
-class Er extends pe {
+class xr extends pe {
   constructor() {
     super(...arguments);
-    U(this, "id", "txt");
-    U(this, "name", "Plain Text");
-    U(this, "description", "Import plain text files.");
-    U(this, "supportedExtensions", [".txt"]);
+    M(this, "id", "txt");
+    M(this, "name", "Plain Text");
+    M(this, "description", "Import plain text files.");
+    M(this, "supportedExtensions", [".txt"]);
   }
 }
-const Yt = [
-  new gr(),
-  new yr(),
-  new Ir(),
-  new vr(),
-  new wr(),
-  new Er()
+const Qt = [
+  new Cr(),
+  new kr(),
+  new Tr(),
+  new _r(),
+  new Dr(),
+  new xr()
 ];
-class Sr {
+class Nr {
   constructor() {
-    U(this, "plugins", /* @__PURE__ */ new Map());
+    M(this, "plugins", /* @__PURE__ */ new Map());
   }
   register(t) {
     this.plugins.set(t.id, t);
@@ -2846,13 +2846,13 @@ class Sr {
     return Array.from(this.plugins.values());
   }
 }
-const Rr = new Sr();
-class Cr {
+const Lr = new Nr();
+class $r {
   async export(t, n, s) {
-    throw new vn(`Exporter "${this.name}"`);
+    throw new Sn(`Exporter "${this.name}"`);
   }
 }
-const kr = /KRC-(\d{4})/gi, Tr = /## ChatGPT Conversation ID\s*\n([^\n]+)/, Dr = [
+const br = /KRC-(\d{4})/gi, Ar = /## ChatGPT Conversation ID\s*\n([^\n]+)/, Fr = [
   "VIGS",
   "Founder_OS",
   "Axiom",
@@ -2862,81 +2862,81 @@ const kr = /KRC-(\d{4})/gi, Tr = /## ChatGPT Conversation ID\s*\n([^\n]+)/, Dr =
   "Technical_Build",
   "Other_Review_Needed"
 ];
-async function gt(e) {
+async function vt(e) {
   const t = [];
   let n;
   try {
-    n = await L.readdir(e, { withFileTypes: !0 });
+    n = await x.readdir(e, { withFileTypes: !0 });
   } catch {
     return t;
   }
   for (const s of n) {
     const r = k.join(e, s.name);
-    s.isDirectory() ? t.push(...await gt(r)) : s.name.endsWith(".md") && t.push(r);
+    s.isDirectory() ? t.push(...await vt(r)) : s.name.endsWith(".md") && t.push(r);
   }
   return t;
 }
-async function yt(e) {
+async function wt(e) {
   let t = 0;
-  const n = k.join(e, "Sources"), s = await gt(n);
+  const n = k.join(e, "Sources"), s = await vt(n);
   for (const i of s) {
     const c = k.basename(i).match(/KRC-(\d{4})/i);
     c && (t = Math.max(t, parseInt(c[1], 10)));
   }
   const r = k.join(e, "Registries", "SOURCE_REGISTRY.md");
   try {
-    const i = await L.readFile(r, "utf8");
-    for (const a of i.matchAll(kr))
+    const i = await x.readFile(r, "utf8");
+    for (const a of i.matchAll(br))
       t = Math.max(t, parseInt(a[1], 10));
   } catch {
   }
   return t;
 }
-function It(e) {
+function Et(e) {
   return `KRC-${String(e).padStart(4, "0")}`;
 }
-function vt(e) {
+function St(e) {
   return e.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").replace(/_+/g, "_").slice(0, 80) || "Untitled";
 }
-async function Ln(e) {
-  const t = /* @__PURE__ */ new Map(), n = k.join(e, "Sources"), s = await gt(n);
+async function An(e) {
+  const t = /* @__PURE__ */ new Map(), n = k.join(e, "Sources"), s = await vt(n);
   for (const r of s) {
     const a = k.basename(r).match(/^(KRC-\d{4})/i);
     if (!a)
       continue;
-    const o = (await L.readFile(r, "utf8")).match(Tr);
+    const o = (await x.readFile(r, "utf8")).match(Ar);
     o && t.set(o[1].trim(), a[1].toUpperCase());
   }
   return t;
 }
-async function _r(e) {
-  await L.mkdir(k.join(e, "Sources"), { recursive: !0 }), await L.mkdir(k.join(e, "Uploads"), { recursive: !0 }), await L.mkdir(k.join(e, "Registries"), { recursive: !0 }), await L.mkdir(k.join(e, "ExecutiveSessions"), { recursive: !0 });
-  for (const t of Dr)
-    await L.mkdir(k.join(e, "Sources", t), { recursive: !0 }), await L.mkdir(k.join(e, "ExecutiveSessions", t), { recursive: !0 });
+async function Pr(e) {
+  await x.mkdir(k.join(e, "Sources"), { recursive: !0 }), await x.mkdir(k.join(e, "Uploads"), { recursive: !0 }), await x.mkdir(k.join(e, "Registries"), { recursive: !0 }), await x.mkdir(k.join(e, "ExecutiveSessions"), { recursive: !0 });
+  for (const t of Fr)
+    await x.mkdir(k.join(e, "Sources", t), { recursive: !0 }), await x.mkdir(k.join(e, "ExecutiveSessions", t), { recursive: !0 });
 }
-async function Xt(e, t, n) {
-  await L.mkdir(k.dirname(e), { recursive: !0 });
+async function en(e, t, n) {
+  await x.mkdir(k.dirname(e), { recursive: !0 });
   try {
-    return await L.access(e), n ? (await L.writeFile(e, t, "utf8"), "updated") : "skipped";
+    return await x.access(e), n ? (await x.writeFile(e, t, "utf8"), "updated") : "skipped";
   } catch {
-    return await L.writeFile(e, t, "utf8"), "created";
+    return await x.writeFile(e, t, "utf8"), "created";
   }
 }
-async function Nr(e, t, n) {
-  await L.mkdir(k.dirname(e), { recursive: !0 });
+async function Or(e, t, n) {
+  await x.mkdir(k.dirname(e), { recursive: !0 });
   try {
-    return await L.access(e), n ? (await L.writeFile(e, t), "updated") : "skipped";
+    return await x.access(e), n ? (await x.writeFile(e, t), "updated") : "skipped";
   } catch {
-    return await L.writeFile(e, t), "created";
+    return await x.writeFile(e, t), "created";
   }
 }
-function xr(e) {
+function Ur(e) {
   if (typeof e != "number")
     return "Unknown";
   const t = e > 1e12 ? e : e * 1e3;
   return new Date(t).toISOString();
 }
-function Lr(e) {
+function Mr(e) {
   var c, o;
   const t = e.content.trim();
   if (!t)
@@ -2946,14 +2946,14 @@ function Lr(e) {
 
 `) || t.slice(0, 600);
 }
-function $r(e, t) {
+function Br(e, t) {
   const n = /* @__PURE__ */ new Set();
   n.add(t.inferredProject);
   for (const s of t.recurringTerms.slice(0, 5))
     n.add(s);
   return typeof e.metadata.pastedTranscriptCount == "number" && e.metadata.pastedTranscriptCount > 0 && n.add("Pasted source material"), [...n].filter(Boolean);
 }
-function br(e, t, n, s) {
+function jr(e, t, n, s) {
   const r = t.title.trim() || "Untitled Conversation", i = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   return [
     `# Executive Session Record — ${r}`,
@@ -2962,7 +2962,7 @@ function br(e, t, n, s) {
     e,
     "",
     "## Session Date",
-    xr(t.metadata.createTime),
+    Ur(t.metadata.createTime),
     "",
     "## Classification",
     `- Primary: ${n.primaryCategory}`,
@@ -2975,10 +2975,10 @@ function br(e, t, n, s) {
     n.rationale,
     "",
     "## Session Summary",
-    Lr(t),
+    Mr(t),
     "",
     "## Key Topics",
-    ...$r(t, n).map((c) => `- ${c}`),
+    ...Br(t, n).map((c) => `- ${c}`),
     "",
     "## Recurring Terms",
     ...n.recurringTerms.length > 0 ? n.recurringTerms.map((c) => `- ${c}`) : ["- None detected"],
@@ -2994,22 +2994,22 @@ function br(e, t, n, s) {
   ].join(`
 `);
 }
-function $n(e, t) {
+function Fn(e, t) {
   const n = t.title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 60) || "Untitled";
   return `${e}_${n}_SESSION.md`;
 }
-function Ar(e) {
+function zr(e) {
   var n;
   const t = e.match(/## Topic\s*\n([^\n#]+)/);
   return ((n = t == null ? void 0 : t[1]) == null ? void 0 : n.trim()) ?? "ChatGPT conversation import";
 }
-async function wt(e, t) {
+async function Rt(e, t) {
   if (t.length === 0)
     return;
   const n = k.join(e, "Registries", "SOURCE_REGISTRY.md");
   let s;
   try {
-    s = await L.readFile(n, "utf8");
+    s = await x.readFile(n, "utf8");
   } catch {
     s = [
       "# Axiom Source Registry",
@@ -3029,15 +3029,15 @@ async function wt(e, t) {
 ` + r + `
 `;
   const i = s.match(/Sources Inventoried:\s*(\d+)/), c = (i ? parseInt(i[1], 10) : 0) + t.length;
-  s = s.replace(/Sources Inventoried:\s*\d+/, `Sources Inventoried: ${c}`), await L.writeFile(n, s, "utf8");
+  s = s.replace(/Sources Inventoried:\s*\d+/, `Sources Inventoried: ${c}`), await x.writeFile(n, s, "utf8");
 }
-async function Fr(e, t, n) {
+async function Gr(e, t, n) {
   if (t === 0)
     return;
   const s = k.join(e, "Registries", "KRC_STATUS.md");
   let r;
   try {
-    r = await L.readFile(s, "utf8");
+    r = await x.readFile(s, "utf8");
   } catch {
     r = [
       "# Knowledge Recovery Campaign",
@@ -3054,30 +3054,30 @@ async function Fr(e, t, n) {
 ${n}
 - KAE import: ${t} new source(s) on ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}`;
   r.includes(n) || (r = r.trimEnd() + c + `
-`), await L.writeFile(s, r, "utf8");
+`), await x.writeFile(s, r, "utf8");
 }
-function Et(e, t, n, s) {
+function Ct(e, t, n, s) {
   return {
     krcId: e,
     title: t,
-    topic: Ar(n),
+    topic: zr(n),
     primaryProduct: s ?? "TBD",
     status: n.includes("Review Needed") ? "Review Needed" : "Inventoried"
   };
 }
-function Jt(e) {
+function tn(e) {
   if (typeof e != "number")
     return "Unknown";
   const t = e > 1e12 ? e : e * 1e3;
   return new Date(t).toISOString();
 }
-function Pr(e, t) {
+function Kr(e, t) {
   if (t.uncertain)
     return "Unclassified — review needed";
   const n = e.metadata.pastedTranscriptCount;
   return typeof n == "number" && n > 0 ? "Pasted source text / ChatGPT conversation" : `${t.primaryCategory} / ChatGPT conversation`;
 }
-function Or(e) {
+function Zr(e) {
   const t = [], n = ["Axiom", "Founder OS", "VIGS"];
   for (const s of n) {
     const r = e.categories.some((i) => i === s || s === "Founder OS" && i === "Founder OS");
@@ -3085,7 +3085,7 @@ function Or(e) {
   }
   return t;
 }
-function Ur(e, t, n) {
+function Hr(e, t, n) {
   const s = t.title.trim() || "Untitled Conversation", r = String(t.metadata.conversationId ?? t.id), i = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), a = t.metadata.messageCount ?? 0, c = [
     `# ${e} — ${s}`,
     "",
@@ -3096,7 +3096,7 @@ function Ur(e, t, n) {
     a === 0 ? "Empty or unparseable ChatGPT conversation — preserved for review." : `ChatGPT conversation acquired by KAE (${a} messages).`,
     "",
     "## Topic",
-    Pr(t, n),
+    Kr(t, n),
     "",
     "## Primary Product",
     n.uncertain ? "Review Needed" : n.primaryCategory,
@@ -3114,16 +3114,16 @@ function Ur(e, t, n) {
     n.rationale,
     "",
     "## Applies To",
-    ...Or(n),
+    ...Zr(n),
     "",
     "## ChatGPT Conversation ID",
     r,
     "",
     "## Create Time",
-    Jt(t.metadata.createTime),
+    tn(t.metadata.createTime),
     "",
     "## Update Time",
-    Jt(t.metadata.updateTime),
+    tn(t.metadata.updateTime),
     "",
     "## Extraction Status",
     "Pending detailed capability extraction.",
@@ -3149,10 +3149,10 @@ function Ur(e, t, n) {
   return c.join(`
 `);
 }
-function bn(e, t) {
-  return `${e}_${vt(t.title)}.md`;
+function Pn(e, t) {
+  return `${e}_${St(t.title)}.md`;
 }
-function An(e) {
+function On(e) {
   return e.uncertain || e.primaryCategory === "Other / Review Needed" ? "Other_Review_Needed" : {
     VIGS: "VIGS",
     "Founder OS": "Founder_OS",
@@ -3164,7 +3164,7 @@ function An(e) {
     "Other / Review Needed": "Other_Review_Needed"
   }[e.primaryCategory] ?? "Other_Review_Needed";
 }
-function Mr(e) {
+function Vr(e) {
   const t = [
     `## Import Batch — ${e.importDate}`,
     "",
@@ -3176,21 +3176,21 @@ function Mr(e) {
     `- **Errors:** ${e.errors.length}`,
     ""
   ];
-  return e.classified.length > 0 && t.push("### Classified", "", Ae(e.classified), ""), e.uncertain.length > 0 && t.push("### Uncertain / Review Needed", "", Ae(e.uncertain), ""), e.skipped.length > 0 && t.push("### Skipped", "", Ae(e.skipped), ""), e.errors.length > 0 && t.push("### Errors", "", Ae(e.errors), ""), t.push("---", ""), t.join(`
+  return e.classified.length > 0 && t.push("### Classified", "", Fe(e.classified), ""), e.uncertain.length > 0 && t.push("### Uncertain / Review Needed", "", Fe(e.uncertain), ""), e.skipped.length > 0 && t.push("### Skipped", "", Fe(e.skipped), ""), e.errors.length > 0 && t.push("### Errors", "", Fe(e.errors), ""), t.push("---", ""), t.join(`
 `);
 }
-function Ae(e) {
+function Fe(e) {
   const t = "| KRC ID | Title | Primary Category | All Categories | Confidence | Status | Notes |", n = "|---|---|---|---|---|---|---|", s = e.map((r) => {
     const i = [r.notes, r.sourcePath ? `Source: ${r.sourcePath}` : ""].filter(Boolean).join("; ");
-    return `| ${r.krcId} | ${Qt(r.title)} | ${r.primaryCategory} | ${r.categories.join(", ")} | ${r.confidence}% | ${r.status} | ${Qt(i)} |`;
+    return `| ${r.krcId} | ${nn(r.title)} | ${r.primaryCategory} | ${r.categories.join(", ")} | ${r.confidence}% | ${r.status} | ${nn(i)} |`;
   });
   return [t, n, ...s].join(`
 `);
 }
-function Qt(e) {
+function nn(e) {
   return e.replace(/\|/g, "\\|").replace(/\n/g, " ");
 }
-function jr() {
+function Wr() {
   return [
     "# Import Review",
     "",
@@ -3199,20 +3199,20 @@ function jr() {
   ].join(`
 `);
 }
-async function Br(e, t) {
+async function qr(e, t) {
   const n = k.join(e, "Registries", "IMPORT_REVIEW.md");
   let s;
   try {
-    s = await L.readFile(n, "utf8");
+    s = await x.readFile(n, "utf8");
   } catch {
-    s = jr();
+    s = Wr();
   }
   return s = s.trimEnd() + `
 
-` + Mr(t), await L.writeFile(n, s, "utf8"), n;
+` + Vr(t), await x.writeFile(n, s, "utf8"), n;
 }
-function zr(e, t) {
-  const s = new _n(e).getEntries(), r = /* @__PURE__ */ new Map();
+function Yr(e, t) {
+  const s = new Ln(e).getEntries(), r = /* @__PURE__ */ new Map();
   for (const a of s)
     a.isDirectory || r.set(a.entryName.replace(/\\/g, "/"), a);
   const i = /* @__PURE__ */ new Map();
@@ -3222,18 +3222,18 @@ function zr(e, t) {
   }
   return i;
 }
-async function Gr(e, t, n) {
-  var v, h, y, E, S, D, A, N;
+async function Xr(e, t, n) {
+  var v, h, y, E, S, _, A, N;
   const s = [], r = [];
   let i = 0, a = 0, c = 0, o = 0, l = 0;
-  await _r(t);
-  const u = mt(e);
-  for (const x of e) {
-    const b = String(x.metadata.conversationId ?? x.id);
-    x.metadata.classification = u.get(b);
+  await Pr(t);
+  const u = yt(e);
+  for (const L of e) {
+    const b = String(L.metadata.conversationId ?? L.id);
+    L.metadata.classification = u.get(b);
   }
-  let d = await yt(t) + 1;
-  const p = await Ln(t), g = [], I = `KAE Import — ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}`, w = k.join(t, "Uploads", `chatgpt-import-${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}`);
+  let d = await wt(t) + 1;
+  const p = await An(t), g = [], I = `KAE Import — ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}`, w = k.join(t, "Uploads", `chatgpt-import-${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}`);
   let T = !1;
   const R = {
     importDate: (/* @__PURE__ */ new Date()).toISOString(),
@@ -3244,43 +3244,43 @@ async function Gr(e, t, n) {
     skipped: [],
     errors: []
   }, C = e.length;
-  let _ = 0;
-  for (const x of e) {
-    _++, (v = n == null ? void 0 : n.onProgress) == null || v.call(n, Math.round(_ / C * 100));
-    const b = String(x.metadata.conversationId ?? x.id), O = u.get(b) ?? pt(x);
-    x.metadata.classification = O;
-    const B = p.get(b), G = An(O);
-    let j, V;
-    B ? (j = B, V = !0, (h = n == null ? void 0 : n.log) == null || h.call(n, "info", `Updating existing source ${j} for conversation ${b}`)) : (j = It(d), d++, V = !1);
-    const Y = bn(j, x), ue = k.join(t, "Sources", G, Y), fe = `Sources/${G}/${Y}`, ge = Ur(j, x, O), ye = $n(j, x), xe = k.join(t, "ExecutiveSessions", G, ye), Ie = `ExecutiveSessions/${G}/${ye}`, Le = br(j, x, O, fe), $ = {
-      krcId: j,
+  let D = 0;
+  for (const L of e) {
+    D++, (v = n == null ? void 0 : n.onProgress) == null || v.call(n, Math.round(D / C * 100));
+    const b = String(L.metadata.conversationId ?? L.id), U = u.get(b) ?? gt(L);
+    L.metadata.classification = U;
+    const z = p.get(b), G = On(U);
+    let B, V;
+    z ? (B = z, V = !0, (h = n == null ? void 0 : n.log) == null || h.call(n, "info", `Updating existing source ${B} for conversation ${b}`)) : (B = Et(d), d++, V = !1);
+    const Y = Pn(B, L), ue = k.join(t, "Sources", G, Y), fe = `Sources/${G}/${Y}`, ye = Hr(B, L, U), Ie = Fn(B, L), Le = k.join(t, "ExecutiveSessions", G, Ie), ve = `ExecutiveSessions/${G}/${Ie}`, $e = jr(B, L, U, fe), $ = {
+      krcId: B,
       conversationId: b,
-      title: x.title,
-      primaryCategory: O.primaryCategory,
-      categories: O.categories,
-      confidence: O.confidence,
-      uncertain: O.uncertain,
+      title: L.title,
+      primaryCategory: U.primaryCategory,
+      categories: U.categories,
+      confidence: U.confidence,
+      uncertain: U.uncertain,
       status: "classified",
       sourcePath: fe,
-      sessionPath: Ie
+      sessionPath: ve
     };
     try {
-      const K = await Xt(ue, ge, V);
+      const K = await en(ue, ye, V);
       if (K === "skipped") {
         c++, $.status = "skipped", $.notes = "Duplicate file — not overwritten", R.skipped.push($), (y = n == null ? void 0 : n.log) == null || y.call(n, "warn", `Skipped duplicate file: ${Y}`);
         continue;
       }
-      p.set(b, j), K === "created" ? (i++, r.push(j), g.push(Et(j, x.title, ge, O.uncertain ? "Review Needed" : O.primaryCategory))) : K === "updated" && ($.status = "updated"), await Xt(xe, Le, V), a++, (E = n == null ? void 0 : n.log) == null || E.call(n, "info", `Executive session: ${Ie}`), O.uncertain ? (l++, $.status = $.status === "updated" ? "updated" : "uncertain", R.uncertain.push($)) : (o++, R.classified.push($)), (S = n == null ? void 0 : n.log) == null || S.call(n, "info", `${K === "created" ? "Created" : "Updated"} [${O.primaryCategory}] ${j}: ${fe}`), T || (await Kr(w, x, n), T = !0);
+      p.set(b, B), K === "created" ? (i++, r.push(B), g.push(Ct(B, L.title, ye, U.uncertain ? "Review Needed" : U.primaryCategory))) : K === "updated" && ($.status = "updated"), await en(Le, $e, V), a++, (E = n == null ? void 0 : n.log) == null || E.call(n, "info", `Executive session: ${ve}`), U.uncertain ? (l++, $.status = $.status === "updated" ? "updated" : "uncertain", R.uncertain.push($)) : (o++, R.classified.push($)), (S = n == null ? void 0 : n.log) == null || S.call(n, "info", `${K === "created" ? "Created" : "Updated"} [${U.primaryCategory}] ${B}: ${fe}`), T || (await Jr(w, L, n), T = !0);
     } catch (K) {
       const q = K instanceof Error ? K.message : String(K);
-      s.push(`${j}: ${q}`), $.status = "error", $.notes = q, R.errors.push($), (D = n == null ? void 0 : n.log) == null || D.call(n, "error", `Failed to write ${j}: ${q}`);
+      s.push(`${B}: ${q}`), $.status = "error", $.notes = q, R.errors.push($), (_ = n == null ? void 0 : n.log) == null || _.call(n, "error", `Failed to write ${B}: ${q}`);
     }
   }
   let m;
   try {
-    g.length > 0 && await wt(t, g), await Fr(t, g.length, I), m = await Br(t, R), (A = n == null ? void 0 : n.log) == null || A.call(n, "info", `Import review written: ${m}`);
-  } catch (x) {
-    const b = x instanceof Error ? x.message : String(x);
+    g.length > 0 && await Rt(t, g), await Gr(t, g.length, I), m = await qr(t, R), (A = n == null ? void 0 : n.log) == null || A.call(n, "info", `Import review written: ${m}`);
+  } catch (L) {
+    const b = L instanceof Error ? L.message : String(L);
     s.push(`Registry/review update: ${b}`), (N = n == null ? void 0 : n.log) == null || N.call(n, "error", b);
   }
   const f = k.join(t, "Sources");
@@ -3296,43 +3296,43 @@ async function Gr(e, t, n) {
     reviewFile: m
   };
 }
-async function Kr(e, t, n) {
+async function Jr(e, t, n) {
   var a, c;
   const s = t.metadata.allZipAssets;
   if (!Array.isArray(s) || s.length === 0)
     return;
-  await L.mkdir(e, { recursive: !0 });
+  await x.mkdir(e, { recursive: !0 });
   const r = s.some((o) => !o.dataBase64);
   let i;
-  r && (n != null && n.sourceZipPath) && ((a = n.log) == null || a.call(n, "info", `Extracting ${s.length} asset(s) from ZIP at write time`), i = zr(n.sourceZipPath, s));
+  r && (n != null && n.sourceZipPath) && ((a = n.log) == null || a.call(n, "info", `Extracting ${s.length} asset(s) from ZIP at write time`), i = Yr(n.sourceZipPath, s));
   for (const o of s) {
     const l = o.dataBase64 ? Buffer.from(o.dataBase64, "base64") : i == null ? void 0 : i.get(o.zipPath);
     if (!l || !o.fileName)
       continue;
     const u = k.join(e, o.fileName);
-    await Nr(u, l, !1) !== "skipped" && ((c = n == null ? void 0 : n.log) == null || c.call(n, "info", `Preserved asset: Uploads/${k.basename(e)}/${o.fileName}`));
+    await Or(u, l, !1) !== "skipped" && ((c = n == null ? void 0 : n.log) == null || c.call(n, "info", `Preserved asset: Uploads/${k.basename(e)}/${o.fileName}`));
   }
 }
-class Zr extends Cr {
+class Qr extends $r {
   constructor() {
     super(...arguments);
-    U(this, "id", "axiom");
-    U(this, "name", "Axiom Knowledge Repository");
+    M(this, "id", "axiom");
+    M(this, "name", "Axiom Knowledge Repository");
   }
   async export(n, s, r) {
-    return Gr(n, s, r);
+    return Xr(n, s, r);
   }
 }
-const Fn = new Zr(), Hr = [
+const Un = new Qr(), ei = [
   "Registries/SOURCE_REGISTRY.md",
   "Registries/KRC_STATUS.md",
   "Registries/IMPORT_REVIEW.md"
 ];
-function Pn(e, t) {
+function Mn(e, t) {
   const n = [], s = [], r = [], i = [], a = [];
   for (const d of e)
     d.action === "create" ? (n.push(d.sourcePath), r.push(d.sessionPath)) : d.action === "update" ? (s.push(d.sourcePath), i.push(d.sessionPath)) : d.action === "skip" && a.push(d.sourcePath);
-  const c = n.length + s.length > 0, o = c ? [...Hr] : [], l = c ? [t.replace("{timestamp}", "<timestamp>")] : [], u = [...n, ...s, ...r, ...i];
+  const c = n.length + s.length > 0, o = c ? [...ei] : [], l = c ? [t.replace("{timestamp}", "<timestamp>")] : [], u = [...n, ...s, ...r, ...i];
   return {
     sourcesAdded: n,
     sourcesUpdated: s,
@@ -3346,47 +3346,47 @@ function Pn(e, t) {
     estimatedTotalChanges: n.length + s.length + r.length + i.length + o.length + l.length
   };
 }
-async function Vr(e, t, n) {
+async function ti(e, t, n) {
   const s = [], r = [], i = [], a = [];
   let c = 0, o = 0, l = 0, u = 0;
-  const d = mt(e);
-  let p = await yt(t) + 1;
-  const g = await Ln(t), I = k.join(t, "Sources"), w = k.join(t, "Uploads", "chatgpt-import-{timestamp}"), T = k.join(t, "ExecutiveSessions"), R = k.join(t, "Registries", "SOURCE_REGISTRY.md"), C = k.join(t, "Registries", "IMPORT_REVIEW.md");
-  let _ = 0;
+  const d = yt(e);
+  let p = await wt(t) + 1;
+  const g = await An(t), I = k.join(t, "Sources"), w = k.join(t, "Uploads", "chatgpt-import-{timestamp}"), T = k.join(t, "ExecutiveSessions"), R = k.join(t, "Registries", "SOURCE_REGISTRY.md"), C = k.join(t, "Registries", "IMPORT_REVIEW.md");
+  let D = 0;
   const m = [], f = e[0];
   if (f) {
     const y = f.metadata.allZipAssets;
-    Array.isArray(y) && (_ = y.length, m.push(...y.map((E) => E.fileName).filter(Boolean)));
+    Array.isArray(y) && (D = y.length, m.push(...y.map((E) => E.fileName).filter(Boolean)));
   }
   for (const y of e) {
-    const E = String(y.metadata.conversationId ?? y.id), S = d.get(E) ?? pt(y), D = g.get(E), A = An(S);
-    let N, x;
-    D ? (N = D, x = "update") : (N = It(p), p++, x = "create");
-    const b = bn(N, y), O = k.join(I, A, b), B = `Sources/${A}/${b}`, G = $n(N, y), j = `ExecutiveSessions/${A}/${G}`;
-    if (x === "create")
+    const E = String(y.metadata.conversationId ?? y.id), S = d.get(E) ?? gt(y), _ = g.get(E), A = On(S);
+    let N, L;
+    _ ? (N = _, L = "update") : (N = Et(p), p++, L = "create");
+    const b = Pn(N, y), U = k.join(I, A, b), z = `Sources/${A}/${b}`, G = Fn(N, y), B = `ExecutiveSessions/${A}/${G}`;
+    if (L === "create")
       try {
-        await L.access(O), x = "skip";
+        await x.access(U), L = "skip";
       } catch {
       }
-    x === "create" ? c++ : x === "update" ? o++ : x === "skip" && l++, S.uncertain && u++, a.push({
+    L === "create" ? c++ : L === "update" ? o++ : L === "skip" && l++, S.uncertain && u++, a.push({
       conversationId: E,
       title: y.title,
       krcId: N,
-      action: x,
+      action: L,
       primaryCategory: S.primaryCategory,
       categories: S.categories,
       uncertain: S.uncertain,
-      sourcePath: B,
-      sessionPath: j
+      sourcePath: z,
+      sessionPath: B
     });
   }
   u > 0 && r.push(`${u} conversation(s) require manual review (uncertain classification).`), l > 0 && r.push(`${l} file(s) already exist and will be skipped.`);
   try {
-    await L.access(t);
+    await x.access(t);
   } catch {
     r.push("Repository path does not exist yet — it will be created on import.");
   }
-  const v = i.length === 0 && e.length > 0, h = Pn(a, w);
+  const v = i.length === 0 && e.length > 0, h = Mn(a, w);
   return {
     valid: v,
     fileName: n,
@@ -3395,7 +3395,7 @@ async function Vr(e, t, n) {
     chatGptStructureDetected: !0,
     conversationsJsonPresent: !0,
     conversationsFound: e.length,
-    uploadedFilesCount: _,
+    uploadedFilesCount: D,
     uploadedFileNames: m,
     estimatedSourcesToCreate: c,
     estimatedSourcesToUpdate: o,
@@ -3417,7 +3417,7 @@ async function Vr(e, t, n) {
     repositoryPath: t
   };
 }
-function Wr(e, t, n, s) {
+function ni(e, t, n, s) {
   return {
     valid: !1,
     fileName: e,
@@ -3436,7 +3436,7 @@ function Wr(e, t, n, s) {
     warnings: [],
     blockingErrors: [s],
     plannedRecords: [],
-    diffPreview: Pn([], k.join(n, "Uploads", "chatgpt-import-{timestamp}")),
+    diffPreview: Mn([], k.join(n, "Uploads", "chatgpt-import-{timestamp}")),
     validatedAt: (/* @__PURE__ */ new Date()).toISOString(),
     outputLocations: {
       sourcesRoot: k.join(n, "Sources"),
@@ -3448,7 +3448,7 @@ function Wr(e, t, n, s) {
     repositoryPath: n
   };
 }
-async function On(e, t, n = {}) {
+async function Bn(e, t, n = {}) {
   var a, c, o, l;
   const s = Date.now(), r = [], i = (u, d, p) => {
     var g;
@@ -3459,7 +3459,7 @@ async function On(e, t, n = {}) {
       fileName: e.name,
       repositoryPath: t
     });
-    const u = await xn(e, {
+    const u = await bn(e, {
       log: n.log,
       onProgress: n.onProgress,
       signal: n.signal
@@ -3477,7 +3477,7 @@ async function On(e, t, n = {}) {
       elapsedMs: Date.now() - s,
       detail: "Scanning repository for planned changes"
     }), i("info", "Planning import (read-only repository scan)…");
-    const d = await Vr(u.documents, t, e.name);
+    const d = await ti(u.documents, t, e.name);
     if (d.filePath = e.path, d.zipReadable = !0, d.chatGptStructureDetected = !0, d.conversationsJsonPresent = !0, d.valid = d.blockingErrors.length === 0 && u.documents.length > 0, d.validatedAt = (/* @__PURE__ */ new Date()).toISOString(), d.durationMs = Date.now() - s, u.documents.length === 0) {
       const p = "No conversations found in export.";
       d.errors.push(p), d.blockingErrors.push(p), d.valid = !1;
@@ -3513,7 +3513,7 @@ async function On(e, t, n = {}) {
       errors: d.errors
     }), d;
   } catch (u) {
-    const d = u instanceof Error ? u.message : String(u), p = d.includes("cancelled"), g = Wr(e.name, e.path, t, d);
+    const d = u instanceof Error ? u.message : String(u), p = d.includes("cancelled"), g = ni(e.name, e.path, t, d);
     return g.durationMs = Date.now() - s, g.validatedAt = (/* @__PURE__ */ new Date()).toISOString(), (l = n.onProgress) == null || l.call(n, {
       status: p ? "cancelled" : "failed",
       stage: p ? "cancelled" : "failed",
@@ -3530,28 +3530,28 @@ async function On(e, t, n = {}) {
     }), i(p ? "warn" : "error", `Validation ${p ? "cancelled" : "failed"} — repository unchanged. ${d}`, { error: d }), g;
   }
 }
-const en = gn(hn);
-async function qr(e) {
+const sn = vn(In);
+async function si(e) {
   try {
-    return await L.access(e), !0;
+    return await x.access(e), !0;
   } catch {
     return !1;
   }
 }
-async function Yr(e) {
+async function ri(e) {
   const t = k.join(e, ".kae-snapshots");
   try {
-    const s = (await L.readdir(t)).sort().reverse();
+    const s = (await x.readdir(t)).sort().reverse();
     return s[0] ? k.join(t, s[0]) : void 0;
   } catch {
     return;
   }
 }
-async function Xr(e, t) {
+async function ii(e, t) {
   const n = [];
   let s = !1, r, i = !1;
   try {
-    const { stdout: p } = await en("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    const { stdout: p } = await sn("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
       cwd: e
     });
     r = p.trim(), s = !0, n.push({
@@ -3572,7 +3572,7 @@ async function Xr(e, t) {
   }
   if (s)
     try {
-      const { stdout: p } = await en("git", ["status", "--porcelain"], {
+      const { stdout: p } = await sn("git", ["status", "--porcelain"], {
         cwd: e
       });
       i = p.trim().length > 0, n.push({
@@ -3615,14 +3615,14 @@ async function Xr(e, t) {
     message: o.length === 0 ? "No broken references or integrity errors detected." : `${o.length} integrity error(s) require attention.`,
     severity: o.length > 0 ? "error" : "info"
   });
-  const l = await Yr(e);
+  const l = await ri(e);
   n.push({
     id: "snapshot",
     label: "Import snapshot available",
     passed: !!l,
     message: l ? `Latest snapshot: ${k.basename(l)}` : "No import snapshot found (created automatically before imports).",
     severity: "info"
-  }), await qr(e) || n.push({
+  }), await si(e) || n.push({
     id: "repo-exists",
     label: "Repository path exists",
     passed: !1,
@@ -3636,20 +3636,20 @@ async function Xr(e, t) {
     checks: n
   };
 }
-const tn = gn(hn), nn = /KRC-\d{4}/g;
+const rn = vn(In), on = /KRC-\d{4}/g;
 async function ae(e) {
   try {
-    return await L.access(e), !0;
+    return await x.access(e), !0;
   } catch {
     return !1;
   }
 }
-async function sn(e) {
+async function an(e) {
   const t = [];
   if (!await ae(e))
     return t;
   async function n(s) {
-    const r = await L.readdir(s, { withFileTypes: !0 });
+    const r = await x.readdir(s, { withFileTypes: !0 });
     for (const i of r) {
       const a = k.join(s, i.name);
       i.isDirectory() ? await n(a) : i.name.endsWith(".md") && t.push(a);
@@ -3657,7 +3657,7 @@ async function sn(e) {
   }
   return await n(e), t;
 }
-function rn(e, t) {
+function cn(e, t) {
   return k.relative(e, t).replace(/\\/g, "/");
 }
 function W(e, t) {
@@ -3699,14 +3699,14 @@ async function le(e) {
       recovery: "Registry files are created during the first successful import."
     });
   }
-  const a = await sn(k.join(e, "Sources")), c = await sn(k.join(e, "ExecutiveSessions")), o = /* @__PURE__ */ new Map();
+  const a = await an(k.join(e, "Sources")), c = await an(k.join(e, "ExecutiveSessions")), o = /* @__PURE__ */ new Map();
   for (const T of c) {
-    const C = k.basename(T).match(nn);
+    const C = k.basename(T).match(on);
     C != null && C[0] && o.set(C[0], T);
   }
   for (const T of a) {
-    const R = k.basename(T), C = rn(e, T), _ = R.match(nn);
-    if (!_) {
+    const R = k.basename(T), C = cn(e, T), D = R.match(on);
+    if (!D) {
       W(t, {
         severity: "info",
         category: "info",
@@ -3717,7 +3717,7 @@ async function le(e) {
       });
       continue;
     }
-    for (const f of _) {
+    for (const f of D) {
       const v = s.get(f) ?? [];
       v.push(T), s.set(f, v);
     }
@@ -3730,7 +3730,7 @@ async function le(e) {
       relativePath: C,
       recovery: "Rename the file to remove invalid characters."
     });
-    const m = _[0];
+    const m = D[0];
     o.has(m) || W(t, {
       severity: "warning",
       category: "warning",
@@ -3741,7 +3741,7 @@ async function le(e) {
       recovery: "Re-import or manually create the executive session record."
     });
     try {
-      const f = await L.readFile(T, "utf8");
+      const f = await x.readFile(T, "utf8");
       !f.includes("## Metadata") && !f.includes("Acquired by KAE") && W(t, {
         severity: "info",
         category: "info",
@@ -3769,7 +3769,7 @@ async function le(e) {
       code: "DUPLICATE_ID",
       message: `Duplicate KRC ID ${T} found in ${R.length} files`,
       path: R[0],
-      relativePath: rn(e, R[0]),
+      relativePath: cn(e, R[0]),
       recovery: "Remove or merge duplicate source files before committing."
     }));
   a.length === 0 && await ae(e) && W(t, {
@@ -3787,9 +3787,9 @@ async function le(e) {
   });
   let l = !1, u, d;
   try {
-    const { stdout: T } = await tn("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    const { stdout: T } = await rn("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
       cwd: e
-    }), { stdout: R } = await tn("git", ["status", "--porcelain"], {
+    }), { stdout: R } = await rn("git", ["status", "--porcelain"], {
       cwd: e
     });
     l = !0, u = T.trim(), d = R.trim().length > 0, d && W(t, {
@@ -3808,7 +3808,7 @@ async function le(e) {
       recovery: "Run git init in the repository folder for version control."
     });
   }
-  const p = ks(t), I = {
+  const p = bs(t), I = {
     ready: !(p.errors.length > 0) && await ae(e),
     statusLevel: "healthy",
     statusHeadline: "",
@@ -3824,38 +3824,38 @@ async function le(e) {
     gitBranch: u,
     gitDirty: d,
     gitReadiness: { ready: !1, status: "NOT READY", checks: [] }
-  }, w = Cs(I);
-  return I.statusLevel = w.level, I.statusHeadline = w.headline, I.statusSubline = w.subline, I.gitReadiness = await Xr(e, I), I;
+  }, w = $s(I);
+  return I.statusLevel = w.level, I.statusHeadline = w.headline, I.statusSubline = w.subline, I.gitReadiness = await ii(e, I), I;
 }
-async function Un(e, t) {
-  await L.mkdir(t, { recursive: !0 });
-  const n = await L.readdir(e, { withFileTypes: !0 });
+async function jn(e, t) {
+  await x.mkdir(t, { recursive: !0 });
+  const n = await x.readdir(e, { withFileTypes: !0 });
   for (const s of n) {
     const r = k.join(e, s.name), i = k.join(t, s.name);
-    s.isDirectory() ? await Un(r, i) : await L.copyFile(r, i);
+    s.isDirectory() ? await jn(r, i) : await x.copyFile(r, i);
   }
 }
-async function Mn(e, t) {
+async function zn(e, t) {
   const n = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-"), s = k.join(e, ".kae-snapshots", `${n}_${t}`);
-  await L.mkdir(s, { recursive: !0 });
+  await x.mkdir(s, { recursive: !0 });
   const r = ["Sources", "ExecutiveSessions", "Registries"];
   for (const i of r) {
     const a = k.join(e, i);
     try {
-      await L.access(a), await Un(a, k.join(s, i));
+      await x.access(a), await jn(a, k.join(s, i));
     } catch {
     }
   }
   return s;
 }
-async function Jr(e, t) {
+async function oi(e, t) {
   const n = k.join(e, ".kae-sessions");
-  await L.mkdir(n, { recursive: !0 });
+  await x.mkdir(n, { recursive: !0 });
   const s = k.join(n, `${t.sessionId}.json`);
-  return await L.writeFile(s, JSON.stringify(t, null, 2), "utf8"), s;
+  return await x.writeFile(s, JSON.stringify(t, null, 2), "utf8"), s;
 }
-const Qr = 53, ei = 122;
-function ti(e) {
+const ai = 53, ci = 122;
+function di(e) {
   var s;
   const t = e.slice(0, 4096), n = t.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m);
   return {
@@ -3865,15 +3865,15 @@ function ti(e) {
     updateTime: ce(t, "Update Time")
   };
 }
-async function jn(e) {
-  const n = (await Ke(e)).filter((r) => r.category === "sources" && St(r.name)), s = [];
+async function Gn(e) {
+  const n = (await Ze(e)).filter((r) => r.category === "sources" && kt(r.name)), s = [];
   for (const r of n) {
     let i = "";
     try {
       i = (await De(e, r.relativePath)).slice(0, 4096);
     } catch {
     }
-    const a = ti(i), c = a.updateTime ?? a.createTime ?? r.modifiedAt ?? "";
+    const a = di(i), c = a.updateTime ?? a.createTime ?? r.modifiedAt ?? "";
     s.push({
       name: r.name,
       relativePath: r.relativePath,
@@ -3888,23 +3888,23 @@ async function jn(e) {
   }
   return s.sort((r, i) => new Date(i.sortTime).getTime() - new Date(r.sortTime).getTime());
 }
-function St(e) {
+function kt(e) {
   const t = e.match(/^KRC-(\d{4})_/i);
   if (!t)
     return !1;
   const n = parseInt(t[1], 10);
-  return n >= Qr && n <= ei;
+  return n >= ai && n <= ci;
 }
 function ce(e, t) {
   var r;
   const n = new RegExp(`^## ${t}\\s*\\n([\\s\\S]*?)(?=^## |\\z)`, "m"), s = e.match(n);
   return (r = s == null ? void 0 : s[1]) == null ? void 0 : r.trim();
 }
-function ni(e) {
+function li(e) {
   return e ? e.split(`
 `).map((t) => t.replace(/^-\s*/, "").trim()).filter(Boolean) : [];
 }
-function si(e) {
+function ui(e) {
   var l, u, d, p;
   const t = e.split(`
 `), n = (l = t[0]) == null ? void 0 : l.trim();
@@ -3922,13 +3922,13 @@ function si(e) {
     }
   return { role: n, timestamp: s, text: c, fileReferences: o };
 }
-function Rt(e) {
+function Tt(e) {
   const t = e.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m);
   if (!t)
     return null;
   const n = e.indexOf("## Transcript"), s = n >= 0 ? e.slice(0, n) : e, r = n >= 0 ? e.slice(n + 13) : "", i = [];
   for (const a of r.split(/^### /m).slice(1)) {
-    const c = si(a);
+    const c = ui(a);
     c && i.push(c);
   }
   return {
@@ -3938,11 +3938,11 @@ function Rt(e) {
     createTime: ce(s, "Create Time"),
     updateTime: ce(s, "Update Time"),
     description: ce(s, "Description"),
-    fileReferences: ni(ce(s, "File References")),
+    fileReferences: li(ce(s, "File References")),
     messages: i
   };
 }
-function Ct(e, t) {
+function _t(e, t) {
   if (e.length >= 4 && e[0] === 137 && e[1] === 80 && e[2] === 78 && e[3] === 71)
     return "image/png";
   if (e.length >= 3 && e[0] === 255 && e[1] === 216 && e[2] === 255)
@@ -3956,25 +3956,25 @@ function Ct(e, t) {
   const n = (t == null ? void 0 : t.toLowerCase()) ?? "";
   return n.endsWith(".png") ? "image/png" : n.endsWith(".jpg") || n.endsWith(".jpeg") ? "image/jpeg" : n.endsWith(".gif") ? "image/gif" : n.endsWith(".webp") ? "image/webp" : n.endsWith(".mp4") ? "video/mp4" : n.endsWith(".webm") ? "video/webm" : n.endsWith(".mov") ? "video/quicktime" : "application/octet-stream";
 }
-function ri(e) {
+function fi(e) {
   return e.startsWith("image/") ? "image" : e.startsWith("video/") ? "video" : "other";
 }
-async function Bn(e) {
+async function Kn(e) {
   const t = k.join(e, "Uploads");
   let n;
   try {
-    n = await L.readdir(t);
+    n = await x.readdir(t);
   } catch {
     return null;
   }
   const s = n.filter((r) => r.startsWith("chatgpt-import-")).sort().reverse();
   return s.length === 0 ? null : `Uploads/${s[0]}`;
 }
-async function zn(e, t) {
+async function Zn(e, t) {
   const n = /* @__PURE__ */ new Map(), s = k.join(e, t);
   let r;
   try {
-    r = await L.readdir(s);
+    r = await x.readdir(s);
   } catch {
     return n;
   }
@@ -3986,7 +3986,7 @@ async function zn(e, t) {
   }
   return n;
 }
-function Gn(e, t) {
+function Hn(e, t) {
   const n = e.trim();
   if (!n)
     return null;
@@ -4010,45 +4010,45 @@ function Gn(e, t) {
       return a;
   return null;
 }
-async function ii(e, t) {
-  const n = await Bn(e);
+async function pi(e, t) {
+  const n = await Kn(e);
   if (!n)
     return [];
-  const s = await zn(e, n), r = [], i = /* @__PURE__ */ new Set();
+  const s = await Zn(e, n), r = [], i = /* @__PURE__ */ new Set();
   for (const a of t) {
-    const c = Gn(a, s);
+    const c = Hn(a, s);
     if (!c || i.has(c))
       continue;
     i.add(c);
     const o = k.join(e, c);
     let l;
     try {
-      l = await L.readFile(o);
+      l = await x.readFile(o);
     } catch {
       continue;
     }
-    const u = Ct(l, a);
+    const u = _t(l, a);
     r.push({
       ref: a,
       relativePath: c,
       fileName: k.basename(c),
       mimeType: u,
-      kind: ri(u)
+      kind: fi(u)
     });
   }
   return r;
 }
-function Se(e, t) {
+function Re(e, t) {
   var r;
   const n = new RegExp(`^## ${t}\\s*\\n([\\s\\S]*?)(?=^## |\\z)`, "m"), s = e.match(n);
   return (r = s == null ? void 0 : s[1]) == null ? void 0 : r.trim();
 }
-function oi(e, t) {
+function mi(e, t) {
   var u;
-  const n = e.match(/^#\s*Executive Session Record\s*[—–-]\s*(.+)$/m), s = ((u = n == null ? void 0 : n[1]) == null ? void 0 : u.trim()) ?? t.replace(/\.md$/i, ""), r = Se(e, "Source ID"), i = Se(e, "Session Date"), a = Se(e, "Session Summary") ?? "", c = Se(e, "Transcript Reference"), o = [];
+  const n = e.match(/^#\s*Executive Session Record\s*[—–-]\s*(.+)$/m), s = ((u = n == null ? void 0 : n[1]) == null ? void 0 : u.trim()) ?? t.replace(/\.md$/i, ""), r = Re(e, "Source ID"), i = Re(e, "Session Date"), a = Re(e, "Session Summary") ?? "", c = Re(e, "Transcript Reference"), o = [];
   c && o.push(c);
   for (const d of ["Key Topics", "Recurring Terms", "Classification", "Rationale"]) {
-    const p = Se(e, d);
+    const p = Re(e, d);
     if (p)
       for (const g of p.split(`
 `)) {
@@ -4066,26 +4066,26 @@ function oi(e, t) {
     transcriptReference: c
   };
 }
-const Ge = ".kae-index", ai = "evidence-index.json", Kn = 1;
-function Zn(e) {
-  return k.join(e, Ge, ai);
+const me = ".kae-index", hi = "evidence-index.json", Vn = 1;
+function Ke(e) {
+  return k.join(e, me, hi);
 }
-async function ci(e) {
-  const t = Zn(e);
+async function Wn(e) {
+  const t = Ke(e);
   try {
-    const n = await L.readFile(t, "utf8"), s = JSON.parse(n);
-    return s.version !== Kn || !Array.isArray(s.records) ? null : s;
+    const n = await x.readFile(t, "utf8"), s = JSON.parse(n);
+    return s.version !== Vn || !Array.isArray(s.records) ? null : s;
   } catch {
     return null;
   }
 }
-async function di(e, t) {
-  const n = k.join(e, Ge);
-  await L.mkdir(n, { recursive: !0 });
-  const s = Zn(e);
-  return await L.writeFile(s, JSON.stringify(t, null, 2), "utf8"), s;
+async function gi(e, t) {
+  const n = k.join(e, me);
+  await x.mkdir(n, { recursive: !0 });
+  const s = Ke(e);
+  return await x.writeFile(s, JSON.stringify(t, null, 2), "utf8"), s;
 }
-const li = /* @__PURE__ */ new Set([
+const yi = /* @__PURE__ */ new Set([
   "the",
   "and",
   "for",
@@ -4118,26 +4118,26 @@ const li = /* @__PURE__ */ new Set([
   "why",
   "which"
 ]);
-function Te(e) {
-  const t = e.toLowerCase().replace(/[^\w\s-]/g, " ").split(/\s+/).filter((n) => n.length > 1 && !li.has(n));
+function _e(e) {
+  const t = e.toLowerCase().replace(/[^\w\s-]/g, " ").split(/\s+/).filter((n) => n.length > 1 && !yi.has(n));
   return [...new Set(t)];
 }
-function me(e) {
+function he(e) {
   const t = e.trim();
   if (!t)
     return [];
   if (/^krc-\d{4}$/i.test(t))
     return [t.toLowerCase()];
-  const n = t.toLowerCase(), s = Te(t);
+  const n = t.toLowerCase(), s = _e(t);
   return s.length === 0 && n.length > 0 ? [n] : s;
 }
-function Ce(e, t = 160) {
+function ke(e, t = 160) {
   return e.replace(/\s+/g, " ").trim().slice(0, t);
 }
-function Hn(e) {
-  return St(e) ? "chatgpt-import" : e.startsWith("KRC-") ? "krc-source" : "markdown";
+function qn(e) {
+  return kt(e) ? "chatgpt-import" : e.startsWith("KRC-") ? "krc-source" : "markdown";
 }
-function ui(e) {
+function Ii(e) {
   const t = {
     builtAt: (/* @__PURE__ */ new Date()).toISOString(),
     recordCount: e.length,
@@ -4167,11 +4167,11 @@ function ui(e) {
     }
   return t;
 }
-function fi(e, t, n, s) {
-  const r = Rt(t);
+function vi(e, t, n, s) {
+  const r = Tt(t);
   if (!r)
     return;
-  const i = Hn(k.basename(e)), a = {
+  const i = qn(k.basename(e)), a = {
     krcId: r.krcId,
     repositoryPath: e,
     category: "sources",
@@ -4187,17 +4187,17 @@ function fi(e, t, n, s) {
     kind: "source",
     repository: a,
     conversation: c,
-    excerpt: Ce(r.description ?? r.title)
+    excerpt: ke(r.description ?? r.title)
   }), s.push({
     id: `${r.krcId}:conversation`,
     kind: "conversation",
     repository: a,
     conversation: c,
-    excerpt: Ce(r.title)
+    excerpt: ke(r.title)
   });
   const o = new Set(r.fileReferences), l = /* @__PURE__ */ new Map();
   r.messages.forEach((u, d) => {
-    const p = `${r.krcId}:msg:${d}`, g = Te(u.text);
+    const p = `${r.krcId}:msg:${d}`, g = _e(u.text);
     l.set(p, u.fileReferences), s.push({
       id: p,
       kind: "message",
@@ -4210,13 +4210,13 @@ function fi(e, t, n, s) {
         text: u.text,
         searchTerms: g
       },
-      excerpt: Ce(u.text)
+      excerpt: ke(u.text)
     });
     for (const I of u.fileReferences)
       o.add(I);
   });
   for (const u of o) {
-    const d = `${r.krcId}:att:${u}`, p = n ? Gn(u, n) : null, g = k.basename(u);
+    const d = `${r.krcId}:att:${u}`, p = n ? Hn(u, n) : null, g = k.basename(u);
     let I;
     for (const [w, T] of l.entries())
       if (T.includes(u)) {
@@ -4239,7 +4239,7 @@ function fi(e, t, n, s) {
     });
   }
 }
-function pi(e, t, n) {
+function wi(e, t, n) {
   var c;
   const s = k.basename(e), r = t.match(/^#\s*(KRC-\d{4})?\s*[—–-]?\s*(.+)$/m), i = r == null ? void 0 : r[1], a = ((c = r == null ? void 0 : r[2]) == null ? void 0 : c.trim()) ?? s.replace(/\.md$/i, "");
   n.push({
@@ -4249,14 +4249,14 @@ function pi(e, t, n) {
       krcId: i,
       repositoryPath: e,
       category: "sources",
-      sourceType: Hn(s)
+      sourceType: qn(s)
     },
     conversation: { title: a },
-    excerpt: Ce(t)
+    excerpt: ke(t)
   });
 }
-function mi(e, t, n) {
-  const s = oi(t, k.basename(e));
+function Ei(e, t, n) {
+  const s = mi(t, k.basename(e));
   if (!s)
     return;
   const r = [s.summaryText, ...s.summaryReferences].join(`
@@ -4280,11 +4280,11 @@ function mi(e, t, n) {
       summaryReferences: s.summaryReferences,
       transcriptReference: s.transcriptReference
     },
-    excerpt: Ce(r || s.title)
+    excerpt: ke(r || s.title)
   });
 }
-async function Vn(e) {
-  const t = await Ke(e), n = [], s = await Bn(e), r = s ? await zn(e, s) : null;
+async function Yn(e) {
+  const t = await Ze(e), n = [], s = await Kn(e), r = s ? await Zn(e, s) : null;
   for (const c of t) {
     if (!c.relativePath.endsWith(".md") || c.category !== "sources" && c.category !== "sessions")
       continue;
@@ -4295,43 +4295,43 @@ async function Vn(e) {
       continue;
     }
     if (c.category === "sessions") {
-      mi(c.relativePath, o, n);
+      Ei(c.relativePath, o, n);
       continue;
     }
-    St(c.name) && Rt(o) ? fi(c.relativePath, o, r, n) : pi(c.relativePath, o, n);
+    kt(c.name) && Tt(o) ? vi(c.relativePath, o, r, n) : wi(c.relativePath, o, n);
   }
   const i = (/* @__PURE__ */ new Date()).toISOString(), a = {
-    version: Kn,
+    version: Vn,
     repositoryPath: e,
     builtAt: i,
     recordCount: n.length,
     records: n
   };
-  return await di(e, a), a;
+  return await gi(e, a), a;
 }
-function hi(e) {
-  const t = ui(e.records);
+function Si(e) {
+  const t = Ii(e.records);
   return t.builtAt = e.builtAt, t;
 }
-function Wn(e) {
+function Xn(e) {
   return e.trim().toLowerCase();
 }
-function gi(e) {
-  const t = Wn(e);
+function Ri(e) {
+  const t = Xn(e);
   return t === "user" || t.startsWith("user ");
 }
-function yi(e) {
-  const t = Wn(e);
+function Ci(e) {
+  const t = Xn(e);
   return t === "assistant" || t.startsWith("assistant ");
 }
-function Ii(e) {
+function ki(e) {
   return e.kind === "executive_session" ? "session" : e.kind === "attachment" ? "attachment" : e.repository.category === "sessions" ? "session" : "source";
 }
-function vi(e) {
+function Ti(e) {
   var t, n, s, r;
   return e.kind === "attachment" && e.attachment ? e.attachment.filename : e.kind === "executive_session" ? ((t = e.conversation) == null ? void 0 : t.title) ?? ((n = e.session) == null ? void 0 : n.sessionId) ?? "Executive Session" : e.kind === "message" && e.message ? `${((s = e.conversation) == null ? void 0 : s.title) ?? e.repository.krcId ?? "Message"} — ${e.message.role}` : ((r = e.conversation) == null ? void 0 : r.title) ?? e.repository.krcId ?? e.repository.repositoryPath;
 }
-function wi(e) {
+function _i(e) {
   var t, n, s;
   if (e.kind === "executive_session") {
     if ((t = e.session) != null && t.transcriptReference)
@@ -4341,7 +4341,7 @@ function wi(e) {
   }
   return e.kind === "attachment" && ((s = e.attachment) != null && s.assetPath), e.repository.repositoryPath;
 }
-function Fe(e) {
+function Pe(e) {
   var n, s;
   const t = [
     e.repository.krcId ?? "",
@@ -4353,7 +4353,7 @@ function Fe(e) {
   return e.message && t.push(e.message.text, e.message.role, ...e.message.searchTerms), e.attachment && t.push(e.attachment.filename, e.attachment.assetPath ?? ""), e.session && t.push(e.session.sessionId, e.session.linkedKrcId ?? "", ...e.session.summaryReferences), t.join(`
 `).toLowerCase();
 }
-function Ei(e, t, n) {
+function Di(e, t, n) {
   var o, l, u;
   const s = /* @__PURE__ */ new Set();
   let r = 0;
@@ -4366,18 +4366,18 @@ function Ei(e, t, n) {
   }
   if (e.kind === "message" && e.message) {
     const d = e.message.text.toLowerCase(), p = d.includes(i), g = n.filter((I) => d.includes(I)).length;
-    (p || g > 0) && (r += p ? 30 : g * 8, s.add("message"), s.add("keyword"), gi(e.message.role) && (s.add("prompt"), p && (r += 10)), yi(e.message.role) && (s.add("response"), p && (r += 10)));
+    (p || g > 0) && (r += p ? 30 : g * 8, s.add("message"), s.add("keyword"), Ri(e.message.role) && (s.add("prompt"), p && (r += 10)), Ci(e.message.role) && (s.add("response"), p && (r += 10)));
   }
   if (e.kind === "executive_session") {
-    const d = Fe(e);
+    const d = Pe(e);
     (d.includes(i) || n.some((p) => d.includes(p))) && (r += 25, s.add("session"), s.add("keyword"));
   }
   if (e.kind === "source" || e.kind === "conversation") {
-    const d = Fe(e);
+    const d = Pe(e);
     (d.includes(i) || n.some((p) => d.includes(p))) && (r += 15, s.add("keyword"));
   }
   if (r === 0) {
-    const d = Fe(e);
+    const d = Pe(e);
     if (d.includes(i))
       r += 5, s.add("keyword");
     else {
@@ -4386,40 +4386,40 @@ function Ei(e, t, n) {
     }
   }
   if (n.length > 1) {
-    const d = Fe(e);
+    const d = Pe(e);
     n.every((p) => d.includes(p)) && (r += 25, s.add("keyword"));
   }
   return { score: r, matchFields: [...s] };
 }
-function Si(e, t, n) {
+function xi(e, t, n) {
   var s, r, i;
   return {
     recordId: e.id,
     kind: e.kind,
     score: t,
     matchFields: n,
-    title: vi(e),
+    title: Ti(e),
     snippet: e.excerpt,
-    drilldownPath: wi(e),
+    drilldownPath: _i(e),
     krcId: e.repository.krcId,
     conversationTitle: (s = e.conversation) == null ? void 0 : s.title,
     messageRole: (r = e.message) == null ? void 0 : r.role,
     attachmentFilename: (i = e.attachment) == null ? void 0 : i.filename,
-    category: Ii(e)
+    category: ki(e)
   };
 }
-function qn(e, t, n = 50) {
+function Jn(e, t, n = 50) {
   const s = t.trim();
   if (!s)
     return [];
-  const r = me(s), i = [];
+  const r = he(s), i = [];
   for (const a of e.records) {
-    const { score: c, matchFields: o } = Ei(a, s, r);
-    c <= 0 || o.length === 0 || i.push(Si(a, c, o));
+    const { score: c, matchFields: o } = Di(a, s, r);
+    c <= 0 || o.length === 0 || i.push(xi(a, c, o));
   }
   return i.sort((a, c) => c.score - a.score).slice(0, n);
 }
-function Yn(e) {
+function Qn(e) {
   return e.map((t) => ({
     path: t.drilldownPath,
     title: t.title,
@@ -4435,47 +4435,47 @@ function Yn(e) {
     attachmentFilename: t.attachmentFilename
   }));
 }
-async function he(e) {
-  const t = await ci(e);
-  return t && t.repositoryPath === e ? t : Vn(e);
+async function ge(e) {
+  const t = await Wn(e);
+  return t && t.repositoryPath === e ? t : Yn(e);
 }
-async function Xn(e, t, n = 50) {
-  const s = await he(e);
-  return qn(s, t, n);
+async function es(e, t, n = 50) {
+  const s = await ge(e);
+  return Jn(s, t, n);
 }
-function Ri(e) {
+function Ni(e) {
   const t = e.replace(/\\/g, "/");
   return t.startsWith("Sources/") ? "sources" : t.startsWith("ExecutiveSessions/") ? "sessions" : t.startsWith("Registries/") ? "registries" : t.startsWith("ImportReports/") ? "reports" : t.startsWith("Uploads/") ? "uploads" : "other";
 }
-async function Jn(e, t, n) {
-  const s = await L.readdir(t, { withFileTypes: !0 });
+async function ts(e, t, n) {
+  const s = await x.readdir(t, { withFileTypes: !0 });
   for (const r of s) {
     if (r.name.startsWith(".kae-"))
       continue;
     const i = k.join(t, r.name), a = k.relative(e, i).replace(/\\/g, "/");
     if (r.isDirectory())
-      await Jn(e, i, n);
+      await ts(e, i, n);
     else if (r.name.endsWith(".md") || r.name.endsWith(".json")) {
       let c, o;
       try {
-        const l = await L.stat(i);
+        const l = await x.stat(i);
         c = l.size, o = l.mtime.toISOString();
       } catch {
       }
       n.push({
         name: r.name,
         relativePath: a,
-        category: Ri(a),
+        category: Ni(a),
         sizeBytes: c,
         modifiedAt: o
       });
     }
   }
 }
-async function Ke(e) {
+async function Ze(e) {
   const t = [];
   try {
-    await L.access(e), await Jn(e, e, t);
+    await x.access(e), await ts(e, e, t);
   } catch {
     return [];
   }
@@ -4485,26 +4485,26 @@ async function De(e, t) {
   const n = k.join(e, t), s = k.resolve(e);
   if (!k.resolve(n).startsWith(s))
     throw new Error("Invalid file path.");
-  return L.readFile(n, "utf8");
+  return x.readFile(n, "utf8");
 }
-function Ci(e, t, n = 80) {
+function Li(e, t, n = 80) {
   const s = Math.max(0, t - n), r = Math.min(e.length, t + n);
   return e.slice(s, r).replace(/\s+/g, " ").trim();
 }
-async function ki(e, t, n = 50) {
+async function $i(e, t, n = 50) {
   const s = t.trim();
   if (!s)
     return [];
   try {
-    const r = await Xn(e, s, n);
+    const r = await es(e, s, n);
     if (r.length > 0)
-      return Yn(r);
+      return Qn(r);
   } catch {
   }
-  return Ti(e, s, n);
+  return bi(e, s, n);
 }
-async function Ti(e, t, n = 50) {
-  const s = t.toLowerCase(), r = await Ke(e), i = [];
+async function bi(e, t, n = 50) {
+  const s = t.toLowerCase(), r = await Ze(e), i = [];
   for (const a of r) {
     if (!a.relativePath.endsWith(".md"))
       continue;
@@ -4525,38 +4525,38 @@ async function Ti(e, t, n = 50) {
     i.push({
       path: a.relativePath,
       title: l,
-      snippet: Ci(c, p),
+      snippet: Li(c, p),
       category: a.category === "sessions" ? "session" : a.category === "registries" ? "registry" : a.category === "reports" ? "report" : "source",
       score: u
     });
   }
   return i.sort((a, c) => c.score - a.score).slice(0, n);
 }
-async function Di(e) {
+async function Ai(e) {
   const t = k.join(e, ".kae-snapshots");
   try {
-    const s = (await L.readdir(t)).sort().reverse();
+    const s = (await x.readdir(t)).sort().reverse();
     return s[0] ? k.join(t, s[0]) : void 0;
   } catch {
     return;
   }
 }
-async function _i(e) {
+async function Fi(e) {
   var n;
   const t = k.join(e, "Registries", "IMPORT_REVIEW.md");
   try {
-    const r = (await L.readFile(t, "utf8")).match(/Import Date:\s*([^\n]+)/i);
+    const r = (await x.readFile(t, "utf8")).match(/Import Date:\s*([^\n]+)/i);
     return (n = r == null ? void 0 : r[1]) == null ? void 0 : n.trim();
   } catch {
     return;
   }
 }
-async function Qn(e) {
+async function ns(e) {
   const t = await le(e);
   let n = 0;
   try {
     const s = k.join(e, "Registries");
-    n = (await L.readdir(s)).filter((i) => i.endsWith(".md")).length;
+    n = (await x.readdir(s)).filter((i) => i.endsWith(".md")).length;
   } catch {
     n = 0;
   }
@@ -4565,22 +4565,22 @@ async function Qn(e) {
     sourceCount: t.sourceCount,
     sessionCount: t.sessionCount,
     registryCount: n,
-    lastImportDate: await _i(e),
-    lastSnapshotPath: await Di(e),
+    lastImportDate: await Fi(e),
+    lastSnapshotPath: await Ai(e),
     healthReady: t.ready,
     issueCount: t.issues.length
   };
 }
-function Ni(e) {
+function Pi(e) {
   return e < 1e3 ? `${e}ms` : `${(e / 1e3).toFixed(1)}s`;
 }
-function xi(e) {
+function Oi(e) {
   const t = [
     "# KAE Import Report",
     "",
     `**Report ID:** ${e.reportId}`,
     `**Generated:** ${e.generatedAt}`,
-    `**Duration:** ${Ni(e.durationMs)}`,
+    `**Duration:** ${Pi(e.durationMs)}`,
     "",
     "## Summary",
     "",
@@ -4626,26 +4626,26 @@ function xi(e) {
   return t.push("", "---", "*Generated by KAE — Knowledge Acquisition Engine*"), t.join(`
 `);
 }
-async function Li(e, t) {
+async function Ui(e, t) {
   const n = k.join(e, "ImportReports");
-  await L.mkdir(n, { recursive: !0 });
-  const r = `import-report-${t.generatedAt.replace(/[:.]/g, "-")}.md`, i = k.join(n, r), a = xi({ ...t });
-  return await L.writeFile(i, a, "utf8"), i;
+  await x.mkdir(n, { recursive: !0 });
+  const r = `import-report-${t.generatedAt.replace(/[:.]/g, "-")}.md`, i = k.join(n, r), a = Oi({ ...t });
+  return await x.writeFile(i, a, "utf8"), i;
 }
-const $i = /KRC-(\d{4})/i;
-async function es(e) {
+const Mi = /KRC-(\d{4})/i;
+async function ss(e) {
   try {
-    return await L.access(e), !0;
+    return await x.access(e), !0;
   } catch {
     return !1;
   }
 }
-async function ts(e) {
+async function rs(e) {
   const t = [];
-  if (!await es(e))
+  if (!await ss(e))
     return t;
   async function n(s) {
-    const r = await L.readdir(s, { withFileTypes: !0 });
+    const r = await x.readdir(s, { withFileTypes: !0 });
     for (const i of r) {
       const a = k.join(s, i.name);
       i.isDirectory() ? await n(a) : i.name.endsWith(".md") && t.push(a);
@@ -4653,50 +4653,50 @@ async function ts(e) {
   }
   return await n(e), t;
 }
-function ns(e, t) {
+function is(e, t) {
   return k.relative(e, t).replace(/\\/g, "/");
 }
-function ss(e) {
-  const t = e.match($i);
+function os(e) {
+  const t = e.match(Mi);
   return t ? t[0].toUpperCase() : null;
 }
-function rs(e, t) {
+function as(e, t) {
   const n = e.replace(/\\/g, "/").split("/");
   return n[0] === t && n.length >= 2 ? n[1] ?? "" : "";
 }
-async function bi(e) {
-  const t = k.join(e, "Sources"), n = await ts(t), s = [];
+async function Bi(e) {
+  const t = k.join(e, "Sources"), n = await rs(t), s = [];
   for (const r of n) {
-    const i = ns(e, r), a = k.basename(r), c = await L.stat(r);
+    const i = is(e, r), a = k.basename(r), c = await x.stat(r);
     s.push({
       absolutePath: r,
       relativePath: i,
       fileName: a,
-      krcId: ss(a),
-      categoryFolder: rs(i, "Sources"),
+      krcId: os(a),
+      categoryFolder: as(i, "Sources"),
       mtimeMs: c.mtimeMs
     });
   }
   return s;
 }
-async function Ai(e) {
-  const t = k.join(e, "ExecutiveSessions"), n = await ts(t), s = [];
+async function ji(e) {
+  const t = k.join(e, "ExecutiveSessions"), n = await rs(t), s = [];
   for (const r of n) {
-    const i = ns(e, r), a = k.basename(r);
+    const i = is(e, r), a = k.basename(r);
     s.push({
       absolutePath: r,
       relativePath: i,
       fileName: a,
-      krcId: ss(a),
-      categoryFolder: rs(i, "ExecutiveSessions")
+      krcId: os(a),
+      categoryFolder: as(i, "ExecutiveSessions")
     });
   }
   return s;
 }
-async function Fi(e) {
+async function zi(e) {
   const t = k.join(e, "Registries", "SOURCE_REGISTRY.md"), n = [];
   try {
-    const s = await L.readFile(t, "utf8");
+    const s = await x.readFile(t, "utf8");
     for (const r of s.split(`
 `)) {
       const i = r.match(/^\|\s*(KRC-\d{4})\s*\|\s*([^|]+)\s*\|/);
@@ -4710,9 +4710,9 @@ async function Fi(e) {
   }
   return n;
 }
-async function Pi(e) {
+async function Gi(e) {
   const t = k.join(e, "Uploads");
-  return await es(t) ? (await L.readdir(t, { withFileTypes: !0 })).filter((s) => s.isDirectory()).map((s) => `Uploads/${s.name}`) : [];
+  return await ss(t) ? (await x.readdir(t, { withFileTypes: !0 })).filter((s) => s.isDirectory()).map((s) => `Uploads/${s.name}`) : [];
 }
 function ee(e, t, n, s) {
   return {
@@ -4723,8 +4723,8 @@ function ee(e, t, n, s) {
     ...s
   };
 }
-async function Oi(e) {
-  const t = [], n = await bi(e), s = await Ai(e), r = await Fi(e), i = await Pi(e), a = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Map(), o = new Map(r.map((u) => [u.krcId, u]));
+async function Ki(e) {
+  const t = [], n = await Bi(e), s = await ji(e), r = await zi(e), i = await Gi(e), a = /* @__PURE__ */ new Map(), c = /* @__PURE__ */ new Map(), o = new Map(r.map((u) => [u.krcId, u]));
   for (const u of n) {
     if (!u.krcId) {
       t.push(ee("invalid-krc-filename", `Source file has no valid KRC ID pattern: ${u.fileName}`, [u.relativePath]));
@@ -4770,9 +4770,9 @@ async function Oi(e) {
     l.has(u.krcId) || t.push(ee("broken-registry-reference", `Registry references ${u.krcId} but no matching source file exists`, ["Registries/SOURCE_REGISTRY.md"], { krcId: u.krcId, details: { registryTitle: u.title } }));
   return i.length === 0 && n.length > 0 && t.push(ee("upload-folder-mismatch", "No upload folders found under Uploads/ — imported assets may be missing", ["Uploads/"])), t;
 }
-async function Ui(e) {
+async function Zi(e) {
   var i;
-  const t = await Oi(e), n = [];
+  const t = await Ki(e), n = [];
   for (const a of t)
     switch (a.type) {
       case "duplicate-krc-id": {
@@ -4909,7 +4909,7 @@ function oe(e, t) {
   const n = new RegExp(`## ${t}\\s*\\n([^#\\n][^\\n]*)`, "i");
   return (r = (s = e.match(n)) == null ? void 0 : s[1]) == null ? void 0 : r.trim();
 }
-function kt(e, t) {
+function Dt(e, t) {
   var o, l, u;
   const s = ((l = (o = (t.split("/").pop() ?? t).match(/KRC-\d{4}/i)) == null ? void 0 : o[0]) == null ? void 0 : l.toUpperCase()) ?? "KRC-0000", r = e.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m), i = ((u = r == null ? void 0 : r[2]) == null ? void 0 : u.trim()) ?? oe(e, "Description") ?? "Untitled", a = t.replace(/\\/g, "/").split("/"), c = a[0] === "Sources" && a.length >= 2 ? a[1] : "Other_Review_Needed";
   return {
@@ -4924,7 +4924,7 @@ function kt(e, t) {
     categoryFolder: c
   };
 }
-function Mi(e, t, n, s) {
+function Hi(e, t, n, s) {
   let r = e;
   const i = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), a = e.match(new RegExp(`^#\\s*${i}\\s*[—–-]\\s*(.+)$`, "m"));
   return a && (r = r.replace(new RegExp(`^#\\s*${i}\\s*[—–-]\\s*.+$`, "m"), `# ${n} — ${a[1].trim()}`)), r.includes("## Source ID") && (r = r.replace(new RegExp(`(## Source ID\\s*\\n)${i}`, "i"), `$1${n}`)), r.includes("## KAE Repair Provenance") || (r = `${r.trimEnd()}
@@ -4933,8 +4933,8 @@ function Mi(e, t, n, s) {
 ${s}
 `), r;
 }
-const ji = "Generated by KAE Repository Repair because source KRC existed without matching executive session.";
-function is(e, t, n, s = ji) {
+const Vi = "Generated by KAE Repository Repair because source KRC existed without matching executive session.";
+function cs(e, t, n, s = Vi) {
   const r = n.title, i = n.createTime ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
   return [
     `# Executive Session Record — ${r}`,
@@ -4968,14 +4968,14 @@ function is(e, t, n, s = ji) {
   ].join(`
 `);
 }
-function os(e, t) {
-  return `${e}_${vt(t)}_SESSION.md`;
+function ds(e, t) {
+  return `${e}_${St(t)}_SESSION.md`;
 }
-function Bi(e, t) {
-  return `${e}_${vt(t)}.md`;
+function Wi(e, t) {
+  return `${e}_${St(t)}.md`;
 }
-const zi = (e, t, n) => `Reassigned from ${e} to ${t} by KAE Repository Repair on ${n}. Canonical record retains ${e}; this duplicate was preserved with a new ID.`;
-async function Gi(e, t, n, s) {
+const qi = (e, t, n) => `Reassigned from ${e} to ${t} by KAE Repository Repair on ${n}. Canonical record retains ${e}; this duplicate was preserved with a new ID.`;
+async function Yi(e, t, n, s) {
   var v;
   const r = t.affectedFiles[0];
   if (!r)
@@ -4986,15 +4986,15 @@ async function Gi(e, t, n, s) {
       message: "No source file specified",
       filesChanged: []
     };
-  const i = String(((v = t.metadata) == null ? void 0 : v.oldKrcId) ?? ""), a = k.join(e, r), c = await L.readFile(a, "utf8"), o = kt(c, r);
+  const i = String(((v = t.metadata) == null ? void 0 : v.oldKrcId) ?? ""), a = k.join(e, r), c = await x.readFile(a, "utf8"), o = Dt(c, r);
   n.value += 1;
-  const l = It(n.value), u = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), d = zi(i, l, u), p = Mi(c, i, l, d), g = k.join(e, "Sources", o.categoryFolder), I = Bi(l, o.title), w = k.join(g, I), T = `Sources/${o.categoryFolder}/${I}`;
-  await L.mkdir(g, { recursive: !0 }), await L.writeFile(w, p, "utf8"), w !== a && await L.unlink(a);
+  const l = Et(n.value), u = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10), d = qi(i, l, u), p = Hi(c, i, l, d), g = k.join(e, "Sources", o.categoryFolder), I = Wi(l, o.title), w = k.join(g, I), T = `Sources/${o.categoryFolder}/${I}`;
+  await x.mkdir(g, { recursive: !0 }), await x.writeFile(w, p, "utf8"), w !== a && await x.unlink(a);
   const R = k.join(e, "ExecutiveSessions", o.categoryFolder);
-  await L.mkdir(R, { recursive: !0 });
-  const C = os(l, o.title), _ = k.join(R, C), m = `ExecutiveSessions/${o.categoryFolder}/${C}`, f = is(l, T, { ...o, title: o.title }, `Generated by KAE Repository Repair after reassigning duplicate ${i} → ${l}.`);
-  return await L.writeFile(_, f, "utf8"), await wt(e, [
-    Et(l, o.title, p, o.primaryProduct)
+  await x.mkdir(R, { recursive: !0 });
+  const C = ds(l, o.title), D = k.join(R, C), m = `ExecutiveSessions/${o.categoryFolder}/${C}`, f = cs(l, T, { ...o, title: o.title }, `Generated by KAE Repository Repair after reassigning duplicate ${i} → ${l}.`);
+  return await x.writeFile(D, f, "utf8"), await Rt(e, [
+    Ct(l, o.title, p, o.primaryProduct)
   ]), s("info", `Reassigned duplicate ${i} → ${l}`, {
     oldPath: r,
     newPath: T,
@@ -5007,7 +5007,7 @@ async function Gi(e, t, n, s) {
     filesChanged: [T, m, "Registries/SOURCE_REGISTRY.md"]
   };
 }
-async function Ki(e, t, n) {
+async function Xi(e, t, n) {
   var g;
   const s = t.affectedFiles.find((I) => I.startsWith("Sources/"));
   if (!s)
@@ -5018,10 +5018,10 @@ async function Ki(e, t, n) {
       message: "No source file found for session generation",
       filesChanged: []
     };
-  const r = String(((g = t.metadata) == null ? void 0 : g.krcId) ?? ""), i = k.join(e, s), a = await L.readFile(i, "utf8"), c = kt(a, s), o = k.join(e, "ExecutiveSessions", c.categoryFolder);
-  await L.mkdir(o, { recursive: !0 });
-  const l = os(r || c.krcId, c.title), u = k.join(o, l), d = `ExecutiveSessions/${c.categoryFolder}/${l}`;
-  if (await Hi(u))
+  const r = String(((g = t.metadata) == null ? void 0 : g.krcId) ?? ""), i = k.join(e, s), a = await x.readFile(i, "utf8"), c = Dt(a, s), o = k.join(e, "ExecutiveSessions", c.categoryFolder);
+  await x.mkdir(o, { recursive: !0 });
+  const l = ds(r || c.krcId, c.title), u = k.join(o, l), d = `ExecutiveSessions/${c.categoryFolder}/${l}`;
+  if (await Qi(u))
     return {
       actionId: t.id,
       type: t.type,
@@ -5029,8 +5029,8 @@ async function Ki(e, t, n) {
       message: `Session already exists: ${d}`,
       filesChanged: []
     };
-  const p = is(r || c.krcId, s, c);
-  return await L.writeFile(u, p, "utf8"), n("info", `Generated executive session for ${r || c.krcId}`, {
+  const p = cs(r || c.krcId, s, c);
+  return await x.writeFile(u, p, "utf8"), n("info", `Generated executive session for ${r || c.krcId}`, {
     sessionPath: d,
     sourcePath: s
   }), {
@@ -5041,7 +5041,7 @@ async function Ki(e, t, n) {
     filesChanged: [d]
   };
 }
-async function Zi(e, t, n) {
+async function Ji(e, t, n) {
   const s = t.affectedFiles.find((c) => c.startsWith("Sources/"));
   if (!s)
     return {
@@ -5051,9 +5051,9 @@ async function Zi(e, t, n) {
       message: "No source file for registry entry",
       filesChanged: []
     };
-  const r = k.join(e, s), i = await L.readFile(r, "utf8"), a = kt(i, s);
-  return await wt(e, [
-    Et(a.krcId, a.title, i, a.primaryProduct)
+  const r = k.join(e, s), i = await x.readFile(r, "utf8"), a = Dt(i, s);
+  return await Rt(e, [
+    Ct(a.krcId, a.title, i, a.primaryProduct)
   ]), n("info", `Added registry entry for ${a.krcId}`, { sourcePath: s }), {
     actionId: t.id,
     type: t.type,
@@ -5062,35 +5062,35 @@ async function Zi(e, t, n) {
     filesChanged: ["Registries/SOURCE_REGISTRY.md"]
   };
 }
-async function Hi(e) {
+async function Qi(e) {
   try {
-    return await L.access(e), !0;
+    return await x.access(e), !0;
   } catch {
     return !1;
   }
 }
-async function Vi(e, t = {}) {
+async function eo(e, t = {}) {
   const n = t.log ?? (() => {
   }), s = t.sessionId ?? `repair-${crypto.randomUUID()}`, r = e.repositoryPath, i = await le(r);
   n("info", "Pre-repair health check complete", {
     duplicateIds: i.duplicateIds,
     issueCount: i.issues.length
   });
-  const a = await Mn(r, s);
+  const a = await zn(r, s);
   n("info", `Pre-repair snapshot created: ${a}`, { snapshotPath: a });
-  const c = e.actions.filter((I) => I.autoRepairSafe && !I.manualReviewRequired), o = e.actions.length - c.length, u = { value: await yt(r) }, d = [], p = [];
+  const c = e.actions.filter((I) => I.autoRepairSafe && !I.manualReviewRequired), o = e.actions.length - c.length, u = { value: await wt(r) }, d = [], p = [];
   for (const I of c)
     try {
       let w;
       switch (I.type) {
         case "reassign-krc-id":
-          w = await Gi(r, I, u, n);
+          w = await Yi(r, I, u, n);
           break;
         case "generate-executive-session":
-          w = await Ki(r, I, n);
+          w = await Xi(r, I, n);
           break;
         case "add-registry-entry":
-          w = await Zi(r, I, n);
+          w = await Ji(r, I, n);
           break;
         default:
           w = {
@@ -5130,11 +5130,11 @@ async function Vi(e, t = {}) {
     healthAfter: g
   };
 }
-function Wi(e, t) {
+function to(e, t) {
   const n = `${e} ${t ?? ""}`.toLowerCase();
   return /\.(png|jpe?g|gif|webp|bmp|svg)/.test(n) || n.includes("screenshot") ? "image" : /\.(mp4|webm|mov|m4v|avi)/.test(n) || n.includes("video") ? "video" : "other";
 }
-function on(e) {
+function dn(e) {
   if (!e)
     return 0;
   const t = Date.parse(e);
@@ -5146,7 +5146,7 @@ function te(e, t, n, s) {
 function ne(e, t, n) {
   return { label: e, explorerPath: t, ...n };
 }
-function qi(e) {
+function no(e) {
   var t, n, s;
   return e.kind === "executive_session" ? {
     krcId: ((t = e.session) == null ? void 0 : t.linkedKrcId) ?? e.repository.krcId,
@@ -5156,46 +5156,46 @@ function qi(e) {
     sourcePath: e.repository.repositoryPath
   };
 }
-function Yi(e, t) {
+function so(e, t) {
   return e.records.filter((n) => n.repository.krcId === t);
 }
-function Xi(e, t) {
+function ro(e, t) {
   return e.records.find((n) => n.id === t);
 }
-function Ji(e, t) {
+function io(e, t) {
   return e.find((n) => n.kind === "source" && n.id === `${t}:source`);
 }
-function Qi(e, t) {
+function oo(e, t) {
   return e.find((n) => n.kind === "conversation" && n.id === `${t}:conversation`);
 }
-function eo(e, t) {
+function ao(e, t) {
   if (t)
     return e.records.find((n) => {
       var s;
       return n.kind === "executive_session" && (((s = n.session) == null ? void 0 : s.linkedKrcId) === t || n.repository.krcId === t);
     });
 }
-function to(e, t) {
+function co(e, t) {
   if (!t || !e.message)
     return !1;
   const n = t.toLowerCase();
-  return e.message.text.toLowerCase().includes(n) || me(t).some((s) => e.message.text.toLowerCase().includes(s));
+  return e.message.text.toLowerCase().includes(n) || he(t).some((s) => e.message.text.toLowerCase().includes(s));
 }
-function no(e, t) {
+function lo(e, t) {
   if (!t || !e.attachment)
     return !1;
   const n = t.toLowerCase(), s = e.attachment.filename.toLowerCase();
-  return s.includes(n) || me(t).some((r) => s.includes(r));
+  return s.includes(n) || he(t).some((r) => s.includes(r));
 }
-function so(e, t, n, s, r) {
+function uo(e, t, n, s, r) {
   const i = [];
   return i.push(`Evidence anchor: ${e.kind.replace(/_/g, " ")}`), t && i.push(`KRC ${t}`), n && i.push(`"${n}"`), s && i.push(`matched query "${s}"`), r != null && r.excerpt ? i.push(`Session summary: ${r.excerpt}`) : e.excerpt && i.push(e.excerpt), i.join(" · ");
 }
-function ro(e, t, n, s, r = 5) {
+function fo(e, t, n, s, r = 5) {
   var c;
   const i = /* @__PURE__ */ new Set([
-    ...Te(n),
-    ...s ? me(s) : []
+    ..._e(n),
+    ...s ? he(s) : []
   ]);
   if (i.size === 0)
     return [];
@@ -5204,7 +5204,7 @@ function ro(e, t, n, s, r = 5) {
     if (o.kind !== "source" || o.repository.krcId === t)
       continue;
     const l = ((c = o.conversation) == null ? void 0 : c.title) ?? "";
-    let d = Te(l).filter((p) => i.has(p)).length;
+    let d = _e(l).filter((p) => i.has(p)).length;
     s && l.toLowerCase().includes(s.toLowerCase()) && (d += 3), d > 0 && a.push({ record: o, score: d });
   }
   return a.sort((o, l) => {
@@ -5212,31 +5212,31 @@ function ro(e, t, n, s, r = 5) {
     return l.score - o.score || (((u = l.record.conversation) == null ? void 0 : u.title) ?? "").localeCompare(((d = o.record.conversation) == null ? void 0 : d.title) ?? "");
   }).slice(0, r).map((o) => o.record);
 }
-function io(e) {
+function po(e) {
   var n, s, r, i;
   let t = null;
   for (const a of e) {
     if (a.kind === "message" && a.message) {
-      const c = a.message.timestamp ?? ((n = a.conversation) == null ? void 0 : n.updated) ?? "", o = on(c);
+      const c = a.message.timestamp ?? ((n = a.conversation) == null ? void 0 : n.updated) ?? "", o = dn(c);
       (!t || o >= t.ms) && (t = { record: a, timestamp: c, ms: o });
     }
     if (a.kind === "attachment" && ((s = a.attachment) != null && s.resolved)) {
-      const c = ((r = a.conversation) == null ? void 0 : r.updated) ?? ((i = a.conversation) == null ? void 0 : i.created) ?? "", o = on(c);
+      const c = ((r = a.conversation) == null ? void 0 : r.updated) ?? ((i = a.conversation) == null ? void 0 : i.created) ?? "", o = dn(c);
       (!t || o >= t.ms) && (t = { record: a, timestamp: c, ms: o });
     }
   }
   return t ? { record: t.record, timestamp: t.timestamp } : null;
 }
-function as(e, t, n) {
-  var E, S, D, A, N, x, b, O, B, G, j, V, Y, ue, fe, ge, ye, xe, Ie, Le;
-  const s = Xi(e, t);
+function ls(e, t, n) {
+  var E, S, _, A, N, L, b, U, z, G, B, V, Y, ue, fe, ye, Ie, Le, ve, $e;
+  const s = ro(e, t);
   if (!s)
     return null;
-  const { krcId: r, sourcePath: i } = qi(s), a = r ? Yi(e, r) : [s], c = (r ? Ji(a, r) : void 0) ?? e.records.find(($) => $.kind === "source" && $.repository.repositoryPath === i) ?? (s.kind === "source" ? s : void 0), o = r ? Qi(a, r) : void 0, l = o ?? c, u = eo(e, r), d = ((E = o == null ? void 0 : o.conversation) == null ? void 0 : E.title) ?? ((S = l == null ? void 0 : l.conversation) == null ? void 0 : S.title) ?? ((D = s.conversation) == null ? void 0 : D.title) ?? ((A = c == null ? void 0 : c.conversation) == null ? void 0 : A.title) ?? "Untitled", p = a.filter(($) => $.kind === "message").sort(($, K) => {
-    var ve, we;
-    const q = Number(((ve = $.message) == null ? void 0 : ve.messageId.split(":msg:")[1]) ?? 0), Nt = Number(((we = K.message) == null ? void 0 : we.messageId.split(":msg:")[1]) ?? 0);
-    return q - Nt;
-  }), g = a.filter(($) => $.kind === "attachment"), I = ro(e, r, d, n), w = io(a), T = so(s, r, d, n, u), R = te("sourceFile", "Source File", [
+  const { krcId: r, sourcePath: i } = no(s), a = r ? so(e, r) : [s], c = (r ? io(a, r) : void 0) ?? e.records.find(($) => $.kind === "source" && $.repository.repositoryPath === i) ?? (s.kind === "source" ? s : void 0), o = r ? oo(a, r) : void 0, l = o ?? c, u = ao(e, r), d = ((E = o == null ? void 0 : o.conversation) == null ? void 0 : E.title) ?? ((S = l == null ? void 0 : l.conversation) == null ? void 0 : S.title) ?? ((_ = s.conversation) == null ? void 0 : _.title) ?? ((A = c == null ? void 0 : c.conversation) == null ? void 0 : A.title) ?? "Untitled", p = a.filter(($) => $.kind === "message").sort(($, K) => {
+    var we, Ee;
+    const q = Number(((we = $.message) == null ? void 0 : we.messageId.split(":msg:")[1]) ?? 0), $t = Number(((Ee = K.message) == null ? void 0 : Ee.messageId.split(":msg:")[1]) ?? 0);
+    return q - $t;
+  }), g = a.filter(($) => $.kind === "attachment"), I = fo(e, r, d, n), w = po(a), T = uo(s, r, d, n, u), R = te("sourceFile", "Source File", [
     ne((c == null ? void 0 : c.repository.repositoryPath.split("/").pop()) ?? i, i, {
       recordId: c == null ? void 0 : c.id,
       kind: "source",
@@ -5249,30 +5249,30 @@ function as(e, t, n) {
       kind: (o == null ? void 0 : o.kind) ?? "conversation",
       subtitle: [
         (N = l.conversation) == null ? void 0 : N.conversationId,
-        (x = l.conversation) != null && x.created ? `Created ${l.conversation.created}` : void 0,
+        (L = l.conversation) != null && L.created ? `Created ${l.conversation.created}` : void 0,
         (b = l.conversation) != null && b.updated ? `Updated ${l.conversation.updated}` : void 0
       ].filter(Boolean).join(" · "),
       highlighted: s.kind === "conversation"
     })
-  ] : [], "No conversation metadata indexed."), _ = te("messages", "Messages", p.map(($) => {
+  ] : [], "No conversation metadata indexed."), D = te("messages", "Messages", p.map(($) => {
     var K, q;
     return ne(`${((K = $.message) == null ? void 0 : K.role) ?? "Message"}: ${$.excerpt}`, i, {
       recordId: $.id,
       kind: "message",
       subtitle: (q = $.message) == null ? void 0 : q.timestamp,
-      highlighted: $.id === s.id || to($, n)
+      highlighted: $.id === s.id || co($, n)
     });
   }), "No messages indexed."), m = te("attachments", "Attachments", g.map(($) => {
-    var ve, we, xt;
-    const K = ((ve = $.attachment) == null ? void 0 : ve.filename) ?? "Attachment", q = Wi(K, (we = $.attachment) == null ? void 0 : we.assetPath);
+    var we, Ee, bt;
+    const K = ((we = $.attachment) == null ? void 0 : we.filename) ?? "Attachment", q = to(K, (Ee = $.attachment) == null ? void 0 : Ee.assetPath);
     return ne(`${q === "image" ? "Screenshot" : q === "video" ? "Video" : "File"}: ${K}`, i, {
       recordId: $.id,
       kind: "attachment",
-      subtitle: (xt = $.attachment) != null && xt.resolved ? $.attachment.assetPath : "Unresolved reference",
-      highlighted: $.id === s.id || no($, n)
+      subtitle: (bt = $.attachment) != null && bt.resolved ? $.attachment.assetPath : "Unresolved reference",
+      highlighted: $.id === s.id || lo($, n)
     });
   }), "No attachments indexed."), f = te("executiveSession", "Executive Session", u ? [
-    ne(((O = u.conversation) == null ? void 0 : O.title) ?? ((B = u.session) == null ? void 0 : B.sessionId) ?? "Session", u.repository.repositoryPath, {
+    ne(((U = u.conversation) == null ? void 0 : U.title) ?? ((z = u.session) == null ? void 0 : z.sessionId) ?? "Session", u.repository.repositoryPath, {
       recordId: u.id,
       kind: "executive_session",
       subtitle: (G = u.session) == null ? void 0 : G.linkedKrcId,
@@ -5290,7 +5290,7 @@ function as(e, t, n) {
     kind: "conversation",
     label: d,
     subtitle: r,
-    timestamp: ((j = o == null ? void 0 : o.conversation) == null ? void 0 : j.updated) ?? ((V = o == null ? void 0 : o.conversation) == null ? void 0 : V.created),
+    timestamp: ((B = o == null ? void 0 : o.conversation) == null ? void 0 : B.updated) ?? ((V = o == null ? void 0 : o.conversation) == null ? void 0 : V.created),
     explorerPath: i,
     recordId: o == null ? void 0 : o.id
   }), u && h.push({
@@ -5304,10 +5304,10 @@ function as(e, t, n) {
     kind: "related_sources",
     label: I.length > 0 ? `${I.length} related source${I.length === 1 ? "" : "s"}` : "No related sources",
     subtitle: I.slice(0, 3).map(($) => $.repository.krcId).filter(Boolean).join(", "),
-    explorerPath: ((ge = I[0]) == null ? void 0 : ge.repository.repositoryPath) ?? i,
-    recordId: (ye = I[0]) == null ? void 0 : ye.id
+    explorerPath: ((ye = I[0]) == null ? void 0 : ye.repository.repositoryPath) ?? i,
+    recordId: (Ie = I[0]) == null ? void 0 : Ie.id
   }), w) {
-    const $ = w.record.kind === "message" ? `${(xe = w.record.message) == null ? void 0 : xe.role}: ${w.record.excerpt}` : ((Ie = w.record.attachment) == null ? void 0 : Ie.filename) ?? w.record.excerpt;
+    const $ = w.record.kind === "message" ? `${(Le = w.record.message) == null ? void 0 : Le.role}: ${w.record.excerpt}` : ((ve = w.record.attachment) == null ? void 0 : ve.filename) ?? w.record.excerpt;
     h.push({
       kind: "newest_evidence",
       label: $,
@@ -5319,7 +5319,7 @@ function as(e, t, n) {
     h.push({
       kind: "newest_evidence",
       label: s.excerpt || d,
-      timestamp: (Le = o == null ? void 0 : o.conversation) == null ? void 0 : Le.updated,
+      timestamp: ($e = o == null ? void 0 : o.conversation) == null ? void 0 : $e.updated,
       explorerPath: i,
       recordId: s.id
     });
@@ -5339,7 +5339,7 @@ function as(e, t, n) {
       ]),
       sourceFile: R,
       conversation: C,
-      messages: _,
+      messages: D,
       attachments: m,
       executiveSession: f,
       relatedSources: v,
@@ -5348,21 +5348,21 @@ function as(e, t, n) {
     timeline: h
   };
 }
-async function oo(e, t, n) {
-  const s = await he(e);
-  return as(s, t, n);
+async function mo(e, t, n) {
+  const s = await ge(e);
+  return ls(s, t, n);
 }
-function ke(e) {
+function Te(e) {
   return e.toLowerCase().replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 80);
 }
-function ao(e, t, n) {
-  return `${ke(e)}::${t}::${ke(n)}`;
+function ho(e, t, n) {
+  return `${Te(e)}::${t}::${Te(n)}`;
 }
 function X(e, t, n) {
-  const s = ao(n.fromId, n.relationshipType, n.toId);
+  const s = ho(n.fromId, n.relationshipType, n.toId);
   t.has(s) || (t.add(s), e.push({ ...n, relationshipId: s, createdAutomatically: !0 }));
 }
-function co(e) {
+function go(e) {
   const t = /* @__PURE__ */ new Map();
   for (const n of e.records) {
     const s = n.repository.krcId;
@@ -5373,25 +5373,25 @@ function co(e) {
   }
   return t;
 }
-function an(e) {
+function ln(e) {
   return e.find((t) => t.kind === "conversation") ?? e.find((t) => t.kind === "source");
 }
-function lo(e) {
+function yo(e) {
   var n, s;
   const t = [(n = e.conversation) == null ? void 0 : n.title, e.excerpt, (s = e.message) == null ? void 0 : s.text].filter(Boolean).join(" ");
-  return new Set(Te(t));
+  return new Set(_e(t));
 }
-function uo(e, t) {
+function Io(e, t) {
   return [...e].filter((n) => t.has(n));
 }
-function fo(e) {
+function vo(e) {
   const t = e.match(/Campaign\s+[\d.]+[a-z]?/gi) ?? [];
   return [...new Set(t.map((n) => n.trim()))];
 }
-function Pe(e, t, n, s) {
+function Oe(e, t, n, s) {
   const r = new Map(e.map((l) => [l.id, l])), i = /* @__PURE__ */ new Map(), a = /* @__PURE__ */ new Map();
   for (const l of e) {
-    const u = lo(l);
+    const u = yo(l);
     a.set(l.id, u);
     for (const d of u) {
       if (d.length < 4)
@@ -5414,7 +5414,7 @@ function Pe(e, t, n, s) {
     const [d, p] = l.split("|"), g = r.get(d), I = r.get(p);
     if (!g || !I || s.skipSameKrc && g.repository.krcId === I.repository.krcId)
       continue;
-    const w = uo(a.get(d) ?? /* @__PURE__ */ new Set(), a.get(p) ?? /* @__PURE__ */ new Set());
+    const w = Io(a.get(d) ?? /* @__PURE__ */ new Set(), a.get(p) ?? /* @__PURE__ */ new Set());
     X(t, n, {
       fromId: g.id,
       toId: I.id,
@@ -5425,17 +5425,17 @@ function Pe(e, t, n, s) {
     });
   }
 }
-function po(e) {
+function wo(e) {
   var t;
   return (t = e.session) != null && t.summaryReferences ? e.session.summaryReferences.filter((n) => n.length > 2 && !n.startsWith("Sources/")).slice(0, 8) : [];
 }
-function mo(e) {
-  var p, g, I, w, T, R, C, _, m;
-  const t = [], n = /* @__PURE__ */ new Set(), s = co(e), r = /* @__PURE__ */ new Map();
+function Eo(e) {
+  var p, g, I, w, T, R, C, D, m;
+  const t = [], n = /* @__PURE__ */ new Set(), s = go(e), r = /* @__PURE__ */ new Map();
   for (const f of e.records)
     f.kind === "executive_session" && ((p = f.session) != null && p.linkedKrcId) && r.set(f.session.linkedKrcId, f);
   for (const [f, v] of s.entries()) {
-    const h = an(v), y = v.find((D) => D.kind === "source"), E = v.filter((D) => D.kind === "attachment");
+    const h = ln(v), y = v.find((_) => _.kind === "source"), E = v.filter((_) => _.kind === "attachment");
     h && y && X(t, n, {
       fromId: h.id,
       toId: y.id,
@@ -5460,36 +5460,36 @@ function mo(e) {
       confidence: 96,
       supportingEvidenceIds: [S.id, y.id]
     }));
-    for (const D of E)
+    for (const _ of E)
       h && (X(t, n, {
-        fromId: D.id,
+        fromId: _.id,
         toId: h.id,
         relationshipType: "attachment_conversation",
         reason: `Attachment linked to conversation ${f}`,
-        confidence: (g = D.attachment) != null && g.resolved ? 90 : 70,
-        supportingEvidenceIds: [D.id, h.id]
+        confidence: (g = _.attachment) != null && g.resolved ? 90 : 70,
+        supportingEvidenceIds: [_.id, h.id]
       }), X(t, n, {
         fromId: h.id,
-        toId: D.id,
+        toId: _.id,
         relationshipType: "conversation_attachment",
         reason: `Conversation references attachment in ${f}`,
-        confidence: (I = D.attachment) != null && I.resolved ? 88 : 68,
-        supportingEvidenceIds: [h.id, D.id]
+        confidence: (I = _.attachment) != null && I.resolved ? 88 : 68,
+        supportingEvidenceIds: [h.id, _.id]
       })), y && X(t, n, {
-        fromId: D.id,
+        fromId: _.id,
         toId: y.id,
         relationshipType: "attachment_source",
         reason: `Attachment referenced by source ${f}`,
-        confidence: (w = D.attachment) != null && w.resolved ? 92 : 72,
-        supportingEvidenceIds: [D.id, y.id]
+        confidence: (w = _.attachment) != null && w.resolved ? 92 : 72,
+        supportingEvidenceIds: [_.id, y.id]
       });
   }
   const i = [];
   for (const [, f] of s.entries()) {
-    const v = an(f);
+    const v = ln(f);
     v && i.push(v);
   }
-  Pe(i, t, n, {
+  Oe(i, t, n, {
     relationshipType: "conversation_conversation",
     reasonPrefix: "Shared title concepts",
     minShared: 2,
@@ -5497,7 +5497,7 @@ function mo(e) {
     skipSameKrc: !1
   });
   const a = e.records.filter((f) => f.kind === "executive_session");
-  Pe(a, t, n, {
+  Oe(a, t, n, {
     relationshipType: "executive_session_executive_session",
     reasonPrefix: "Shared session topics",
     minShared: 2,
@@ -5511,14 +5511,14 @@ function mo(e) {
     const v = `${f.excerpt} ${((h = f.message) == null ? void 0 : h.text) ?? ""}`.toLowerCase();
     return /\b(decision|decided|agreed|conclusion)\b/.test(v);
   });
-  Pe(c, t, n, {
+  Oe(c, t, n, {
     relationshipType: "decision_decision",
     reasonPrefix: "Shared decision language",
     minShared: 2,
     maxConfidence: 78,
     skipSameKrc: !0,
     maxBucketSize: 25
-  }), Pe(i, t, n, {
+  }), Oe(i, t, n, {
     relationshipType: "topic_topic",
     reasonPrefix: "Shared topic",
     minShared: 1,
@@ -5529,8 +5529,8 @@ function mo(e) {
   const o = /* @__PURE__ */ new Map();
   for (const f of e.records) {
     const v = [f.excerpt, (T = f.message) == null ? void 0 : T.text, (R = f.conversation) == null ? void 0 : R.title].filter(Boolean).join(" ");
-    for (const h of fo(v)) {
-      const y = ke(h), E = o.get(y) ?? [];
+    for (const h of vo(v)) {
+      const y = Te(h), E = o.get(y) ?? [];
       E.push(f), o.set(y, E);
     }
   }
@@ -5550,8 +5550,8 @@ function mo(e) {
   }
   const l = /* @__PURE__ */ new Map();
   for (const f of a)
-    for (const v of po(f)) {
-      const h = ke(v), y = l.get(h) ?? [];
+    for (const v of wo(f)) {
+      const h = Te(v), y = l.get(h) ?? [];
       y.push(f), l.set(h, y);
     }
   for (const [, f] of l.entries())
@@ -5568,7 +5568,7 @@ function mo(e) {
           });
   const u = e.records.filter((f) => f.kind === "attachment"), d = /* @__PURE__ */ new Map();
   for (const f of u) {
-    const v = ke(((_ = f.attachment) == null ? void 0 : _.filename) ?? f.excerpt), h = d.get(v) ?? [];
+    const v = Te(((D = f.attachment) == null ? void 0 : D.filename) ?? f.excerpt), h = d.get(v) ?? [];
     h.push(f), d.set(v, h);
   }
   for (const [, f] of d.entries())
@@ -5585,32 +5585,32 @@ function mo(e) {
           });
   return t;
 }
-const ho = "relationship-index.json", go = 1;
-function cs(e) {
-  return k.join(e, Ge, ho);
+const So = "relationship-index.json", Ro = 1;
+function He(e) {
+  return k.join(e, me, So);
 }
-async function yo(e) {
+async function us(e) {
   try {
-    const t = await L.readFile(cs(e), "utf8"), n = JSON.parse(t);
-    return n.version !== go || !Array.isArray(n.relationships) ? null : n;
+    const t = await x.readFile(He(e), "utf8"), n = JSON.parse(t);
+    return n.version !== Ro || !Array.isArray(n.relationships) ? null : n;
   } catch {
     return null;
   }
 }
-async function Io(e, t) {
-  const n = k.join(e, Ge);
-  await L.mkdir(n, { recursive: !0 });
-  const s = cs(e);
-  return await L.writeFile(s, JSON.stringify(t, null, 2), "utf8"), s;
+async function Co(e, t) {
+  const n = k.join(e, me);
+  await x.mkdir(n, { recursive: !0 });
+  const s = He(e);
+  return await x.writeFile(s, JSON.stringify(t, null, 2), "utf8"), s;
 }
-function vo(e) {
+function ko(e) {
   var t;
   return e.kind === "attachment" && e.attachment ? e.attachment.filename : ((t = e.conversation) == null ? void 0 : t.title) ?? e.repository.krcId ?? e.id;
 }
-function wo(e, t) {
+function To(e, t) {
   return {
     recordId: e.id,
-    label: vo(e),
+    label: ko(e),
     excerpt: e.excerpt,
     explorerPath: e.repository.repositoryPath,
     krcId: e.repository.krcId,
@@ -5620,24 +5620,24 @@ function wo(e, t) {
     confidence: t.confidence
   };
 }
-function Eo(e, t) {
+function _o(e, t) {
   return e.records.find((n) => n.id === t) ?? e.records.find((n) => n.repository.krcId === t) ?? e.records.find((n) => n.id.startsWith(`${t}:`));
 }
-async function lt(e) {
-  const t = await he(e), n = mo(t), s = (/* @__PURE__ */ new Date()).toISOString(), r = {
+async function ft(e) {
+  const t = await ge(e), n = Eo(t), s = (/* @__PURE__ */ new Date()).toISOString(), r = {
     version: 1,
     repositoryPath: e,
     builtAt: s,
     relationshipCount: n.length,
     relationships: n
   };
-  return await Io(e, r), r;
+  return await Co(e, r), r;
 }
-async function _e(e) {
-  const t = await yo(e);
-  return t && t.repositoryPath === e ? t : lt(e);
+async function xe(e) {
+  const t = await us(e);
+  return t && t.repositoryPath === e ? t : ft(e);
 }
-function So(e) {
+function Do(e) {
   const t = {};
   for (const n of e.relationships)
     t[n.relationshipType] = (t[n.relationshipType] ?? 0) + 1;
@@ -5647,8 +5647,8 @@ function So(e) {
     byType: t
   };
 }
-function ut(e, t, n = 50) {
-  const s = me(t), r = t.toLowerCase(), i = [];
+function pt(e, t, n = 50) {
+  const s = he(t), r = t.toLowerCase(), i = [];
   for (const a of e.relationships) {
     const c = `${a.fromId} ${a.toId} ${a.relationshipType} ${a.reason}`.toLowerCase();
     let o = 0;
@@ -5656,7 +5656,7 @@ function ut(e, t, n = 50) {
   }
   return i.sort((a, c) => c.score - a.score || c.rel.confidence - a.rel.confidence).slice(0, n).map((a) => a.rel);
 }
-function ds(e, t) {
+function fs(e, t) {
   const n = t.toLowerCase();
   return e.relationships.filter((s) => {
     if (s.fromId === t || s.toId === t || s.supportingEvidenceIds.includes(t))
@@ -5669,22 +5669,22 @@ function ds(e, t) {
     return s.reason.toLowerCase().includes(n);
   });
 }
-async function ls(e, t, n, s = 20) {
+async function ps(e, t, n, s = 20) {
   const [r, i] = await Promise.all([
-    he(e),
-    _e(e)
+    ge(e),
+    xe(e)
   ]);
-  let a = ds(i, t);
-  a.length === 0 && n && (a = ut(i, n, s * 3)), a.length === 0 && (a = ut(i, t, s * 3));
+  let a = fs(i, t);
+  a.length === 0 && n && (a = pt(i, n, s * 3)), a.length === 0 && (a = pt(i, t, s * 3));
   const c = [], o = /* @__PURE__ */ new Set();
   for (const l of a.sort((u, d) => d.confidence - u.confidence)) {
-    const u = l.fromId === t || l.supportingEvidenceIds[0] === t ? l.toId : l.fromId, d = Eo(r, u);
-    if (!(!d || o.has(d.id)) && (o.add(d.id), c.push(wo(d, l)), c.length >= s))
+    const u = l.fromId === t || l.supportingEvidenceIds[0] === t ? l.toId : l.fromId, d = _o(r, u);
+    if (!(!d || o.has(d.id)) && (o.add(d.id), c.push(To(d, l)), c.length >= s))
       break;
   }
   return c;
 }
-function Ro(e) {
+function xo(e) {
   const t = [], n = [], s = [], r = [], i = [];
   for (const a of e)
     a.relationshipType === "decision_decision" && t.push(a), (a.relationshipType === "conversation_conversation" || a.relationshipType === "conversation_source" || a.kind === "conversation" || a.kind === "source") && n.push(a), a.relationshipType === "campaign_campaign" && s.push(a), (a.relationshipType === "attachment_source" || a.relationshipType === "attachment_conversation" || a.relationshipType === "conversation_attachment" || a.kind === "attachment") && r.push(a), (a.relationshipType === "conversation_executive_session" || a.relationshipType === "executive_session_executive_session" || a.relationshipType === "executive_session_source" || a.kind === "executive_session") && i.push(a);
@@ -5696,14 +5696,14 @@ function Ro(e) {
     relatedExecutiveSessions: i
   };
 }
-async function Co(e, t) {
-  await _e(e);
+async function No(e, t) {
+  await xe(e);
   const n = [
     ...t.evidenceUsed.map((u) => u.recordId),
     ...t.explorerLinks.map((u) => u.krcId).filter(Boolean)
   ], s = [...new Set(n)].slice(0, 5), r = [];
   for (const u of s) {
-    const d = await ls(e, u, t.searchQuery, 12);
+    const d = await ps(e, u, t.searchQuery, 12);
     r.push(...d);
   }
   const i = /* @__PURE__ */ new Map();
@@ -5711,7 +5711,7 @@ async function Co(e, t) {
     const d = i.get(u.recordId);
     (!d || u.confidence > d.confidence) && i.set(u.recordId, u);
   }
-  const a = Ro([...i.values()]), c = {
+  const a = xo([...i.values()]), c = {
     relatedDecisions: a.relatedDecisions.slice(0, 6),
     relatedConversations: a.relatedConversations.slice(0, 6),
     relatedCampaigns: a.relatedCampaigns.slice(0, 6),
@@ -5733,17 +5733,17 @@ async function Co(e, t) {
     relationshipInsights: c
   };
 }
-const ko = [
+const Lo = [
   /\bwhat did we decide\b/i,
   /\bwhat was decided\b/i,
   /\bour decision\b/i,
   /\bdecide about\b/i
-], To = [/\bsummarize\b/i, /\bsummary of\b/i, /\bgive me an overview\b/i], Do = [
+], $o = [/\bsummarize\b/i, /\bsummary of\b/i, /\bgive me an overview\b/i], bo = [
   /\bshow evidence\b/i,
   /\bprove that\b/i,
   /\bevidence that\b/i,
   /\bdemonstrate\b/i
-], _o = [
+], Ao = [
   /\bblockers?\b/i,
   /\bunresolved\b/i,
   /\bremaining\b/i,
@@ -5751,7 +5751,7 @@ const ko = [
   /\brisks?\b/i,
   /\btodo\b/i,
   /\bopen problems?\b/i
-], No = [
+], Fo = [
   /^what did we decide about\s+/i,
   /^what happened with\s+/i,
   /^what are the\s+/i,
@@ -5764,17 +5764,17 @@ const ko = [
   /^why did\s+/i,
   /\?+$/g
 ];
-function xo(e) {
+function Po(e) {
   const t = e.trim();
-  return ko.some((n) => n.test(t)) ? "decision" : To.some((n) => n.test(t)) ? "summarize" : Do.some((n) => n.test(t)) ? "show_evidence" : _o.some((n) => n.test(t)) ? "blockers" : "general";
+  return Lo.some((n) => n.test(t)) ? "decision" : $o.some((n) => n.test(t)) ? "summarize" : bo.some((n) => n.test(t)) ? "show_evidence" : Ao.some((n) => n.test(t)) ? "blockers" : "general";
 }
-function Lo(e) {
+function Oo(e) {
   let t = e.trim();
-  for (const n of No)
+  for (const n of Fo)
     t = t.replace(n, "");
   return t = t.replace(/\b(in kae|for kae)\b/gi, "").trim(), t || e.trim();
 }
-const $o = ["decided", "decision", "agreed", "conclusion", "resolved", "plan"], bo = [
+const Uo = ["decided", "decision", "agreed", "conclusion", "resolved", "plan"], Mo = [
   "blocker",
   "unresolved",
   "remaining",
@@ -5785,29 +5785,29 @@ const $o = ["decided", "decision", "agreed", "conclusion", "resolved", "plan"], 
   "failed",
   "missing"
 ];
-function us(e) {
+function ms(e) {
   const t = e.toLowerCase();
-  return bo.some((n) => t.includes(n));
+  return Mo.some((n) => t.includes(n));
 }
-function Tt(e) {
+function xt(e) {
   const t = e.toLowerCase();
-  return $o.some((n) => t.includes(n));
+  return Uo.some((n) => t.includes(n));
 }
-function Ao(e) {
+function Bo(e) {
   if (!e)
     return 0;
   const t = Date.parse(e);
   return Number.isNaN(t) ? 0 : t;
 }
-function cn(e) {
+function un(e) {
   var r, i, a;
-  const t = ((r = e.message) == null ? void 0 : r.timestamp) ?? ((i = e.conversation) == null ? void 0 : i.updated) ?? ((a = e.conversation) == null ? void 0 : a.created) ?? "", n = Ao(t);
+  const t = ((r = e.message) == null ? void 0 : r.timestamp) ?? ((i = e.conversation) == null ? void 0 : i.updated) ?? ((a = e.conversation) == null ? void 0 : a.created) ?? "", n = Bo(t);
   if (!n)
     return 0;
   const s = (Date.now() - n) / (1e3 * 60 * 60 * 24);
   return s < 30 ? 15 : s < 180 ? 8 : 0;
 }
-function Fo(e, t, n) {
+function jo(e, t, n) {
   var a, c, o, l, u, d;
   const s = [];
   let r = 0;
@@ -5817,7 +5817,7 @@ function Fo(e, t, n) {
     (c = e.conversation) == null ? void 0 : c.title,
     (l = (o = e.session) == null ? void 0 : o.summaryReferences) == null ? void 0 : l.join(" ")
   ].filter(Boolean).join(" ").toLowerCase();
-  if (t === "decision" && (e.kind === "executive_session" && (r += 45, s.push("executive session")), e.kind === "message" && ((u = e.message) != null && u.role.toLowerCase().includes("assistant")) && (r += 20, s.push("assistant response")), Tt(i) && (r += 25, s.push("decision language")), r += cn(e), cn(e) > 0 && s.push("recent evidence")), t === "summarize" && ((e.kind === "conversation" || e.kind === "source") && (r += 30, s.push("conversation source")), e.kind === "executive_session" && (r += 25, s.push("session summary"))), t === "show_evidence") {
+  if (t === "decision" && (e.kind === "executive_session" && (r += 45, s.push("executive session")), e.kind === "message" && ((u = e.message) != null && u.role.toLowerCase().includes("assistant")) && (r += 20, s.push("assistant response")), xt(i) && (r += 25, s.push("decision language")), r += un(e), un(e) > 0 && s.push("recent evidence")), t === "summarize" && ((e.kind === "conversation" || e.kind === "source") && (r += 30, s.push("conversation source")), e.kind === "executive_session" && (r += 25, s.push("session summary"))), t === "show_evidence") {
     if (e.kind === "attachment") {
       r += 50, s.push("attachment evidence");
       const p = ((d = e.attachment) == null ? void 0 : d.filename.toLowerCase()) ?? "";
@@ -5825,9 +5825,9 @@ function Fo(e, t, n) {
     }
     e.kind === "source" && (r += 25, s.push("source file")), e.kind === "message" && (r += 15, s.push("message evidence"));
   }
-  return t === "blockers" && (us(i) && (r += 50, s.push("blocker language")), (e.kind === "executive_session" || e.kind === "message") && (r += 15, s.push("narrative evidence"))), n.length > 1 && n.every((p) => i.includes(p)) && (r += 20, s.push("all query terms matched")), { boost: r, reasons: s };
+  return t === "blockers" && (ms(i) && (r += 50, s.push("blocker language")), (e.kind === "executive_session" || e.kind === "message") && (r += 15, s.push("narrative evidence"))), n.length > 1 && n.every((p) => i.includes(p)) && (r += 20, s.push("all query terms matched")), { boost: r, reasons: s };
 }
-function Po(e, t, n) {
+function zo(e, t, n) {
   var s, r, i;
   return {
     recordId: e.recordId,
@@ -5843,16 +5843,16 @@ function Po(e, t, n) {
     timestamp: ((s = t.message) == null ? void 0 : s.timestamp) ?? ((r = t.conversation) == null ? void 0 : r.updated) ?? ((i = t.conversation) == null ? void 0 : i.created)
   };
 }
-function Oo(e, t, n = 30) {
+function Go(e, t, n = 30) {
   var d;
-  const s = xo(t), r = Lo(t), i = me(r), a = qn(e, r, 80), c = new Map(e.records.map((p) => [p.id, p])), o = [];
+  const s = Po(t), r = Oo(t), i = he(r), a = Jn(e, r, 80), c = new Map(e.records.map((p) => [p.id, p])), o = [];
   for (const p of a) {
     const g = c.get(p.recordId);
     if (!g)
       continue;
-    const { boost: I, reasons: w } = Fo(g, s, i);
+    const { boost: I, reasons: w } = jo(g, s, i);
     o.push({
-      ...Po(p, g, w),
+      ...zo(p, g, w),
       score: p.score + I
     });
   }
@@ -5884,7 +5884,7 @@ function Oo(e, t, n = 30) {
   }
   return { intent: s, searchQuery: r, queryTerms: i, items: l };
 }
-function Uo(e, t, n, s = 3) {
+function Ko(e, t, n, s = 3) {
   const r = /* @__PURE__ */ new Set(), i = [];
   for (const a of t) {
     if (!a.krcId || r.has(a.krcId))
@@ -5893,19 +5893,19 @@ function Uo(e, t, n, s = 3) {
     const c = t.find((l) => l.krcId === a.krcId);
     if (!c)
       continue;
-    const o = as(e, c.recordId, n);
+    const o = ls(e, c.recordId, n);
     if (o && i.push(o), i.length >= s)
       break;
   }
   return i;
 }
-function Mo(e) {
+function Zo(e) {
   const t = [], n = /* @__PURE__ */ new Set();
   for (const s of e)
     !s.krcId || n.has(s.krcId) || (n.add(s.krcId), t.push(s.krcId));
   return t;
 }
-function jo(e) {
+function Ho(e) {
   const t = [], n = /* @__PURE__ */ new Set();
   for (const s of e)
     for (const r of s.timeline) {
@@ -5914,7 +5914,7 @@ function jo(e) {
     }
   return t.slice(0, 8);
 }
-function Bo(e) {
+function Vo(e) {
   const t = [];
   for (const n of e)
     for (const s of n.sections.relatedSources.items)
@@ -5930,8 +5930,8 @@ function Bo(e) {
       });
   return t;
 }
-function zo(e, t) {
-  const { intent: n, searchQuery: s, queryTerms: r, items: i } = Oo(e, t), a = Uo(e, i, s).filter((d) => d !== null), c = i.filter((d) => d.kind === "executive_session");
+function Wo(e, t) {
+  const { intent: n, searchQuery: s, queryTerms: r, items: i } = Go(e, t), a = Ko(e, i, s).filter((d) => d !== null), c = i.filter((d) => d.kind === "executive_session");
   let o = i.filter((d) => d.kind === "attachment");
   const l = i.filter((d) => d.kind === "message");
   if (n === "show_evidence" && o.length === 0)
@@ -5947,22 +5947,22 @@ function zo(e, t) {
           krcId: d.anchorKrcId,
           matchReasons: ["drilldown attachment"]
         });
-  const u = Bo(a);
+  const u = Vo(a);
   return {
     question: t,
     intent: n,
     searchQuery: s,
     queryTerms: r,
     items: i,
-    topKrcIds: Mo(i),
+    topKrcIds: Zo(i),
     executiveSessions: c,
     attachments: o,
     messages: l,
     relatedSources: u,
-    timeline: jo(a)
+    timeline: Ho(a)
   };
 }
-function Go(e) {
+function qo(e) {
   return {
     recordId: e.recordId,
     label: e.title,
@@ -5972,14 +5972,14 @@ function Go(e) {
     kind: e.kind
   };
 }
-function ot(e, t) {
+function ct(e, t) {
   const n = [], s = /* @__PURE__ */ new Set();
   for (const r of e)
-    if (!s.has(r.recordId) && (s.add(r.recordId), n.push(Go(r)), n.length >= t))
+    if (!s.has(r.recordId) && (s.add(r.recordId), n.push(qo(r)), n.length >= t))
       break;
   return n;
 }
-function Ko(e) {
+function Yo(e) {
   const t = e.items[0];
   if (!t || e.items.length === 0)
     return {
@@ -5999,7 +5999,7 @@ function Ko(e) {
     rationale: s.join("; ")
   };
 }
-function Zo(e, t) {
+function Xo(e, t) {
   if (t.level === "insufficient")
     return `I found limited evidence for "${e.searchQuery}". ${t.rationale}. Consider refining the question or checking the Search screen for raw hits.`;
   const n = e.items.slice(0, 3), s = n[0];
@@ -6028,7 +6028,7 @@ function Zo(e, t) {
       return `Based on retrieved evidence (${s.krcId ?? s.title}): ${s.excerpt}`;
   }
 }
-function Ho(e) {
+function Jo(e) {
   const t = [], n = e.items.slice(0, 6);
   if (n.length === 0)
     return "No evidence items available to summarize.";
@@ -6040,7 +6040,7 @@ function Ho(e) {
   return e.topKrcIds.length > 1 && t.push(`- Sources span ${e.topKrcIds.length} KRC records: ${e.topKrcIds.slice(0, 5).join(", ")}.`), e.attachments.length > 0 && t.push(`- ${e.attachments.length} attachment reference(s) included in evidence.`), t.join(`
 `);
 }
-function Vo(e) {
+function Qo(e) {
   const t = [], n = /* @__PURE__ */ new Set();
   for (const s of e.topKrcIds.slice(0, 5)) {
     const r = e.items.find((i) => i.krcId === s);
@@ -6058,43 +6058,43 @@ function Vo(e) {
     }));
   return t;
 }
-class Wo {
+class ea {
   compose(t) {
-    const n = Ko(t), s = ot(t.items, 8), r = ot(t.attachments, 6), i = ot(t.relatedSources, 5);
+    const n = Yo(t), s = ct(t.items, 8), r = ct(t.attachments, 6), i = ct(t.relatedSources, 5);
     return {
       question: t.question,
       intent: t.intent,
       searchQuery: t.searchQuery,
-      directAnswer: Zo(t, n),
-      reasonedSummary: Ho(t),
+      directAnswer: Xo(t, n),
+      reasonedSummary: Jo(t),
       evidenceUsed: s,
       confidence: n,
       timeline: t.timeline,
       relatedSources: i,
       attachments: r,
-      explorerLinks: Vo(t)
+      explorerLinks: Qo(t)
     };
   }
 }
-const qo = new Wo();
-function Yo(e, t = qo) {
+const ta = new ea();
+function na(e, t = ta) {
   return t.compose(e);
 }
-async function Xo(e, t, n) {
-  const s = await he(e), r = zo(s, t), i = Yo(r, n);
-  return Co(e, i);
+async function sa(e, t, n) {
+  const s = await ge(e), r = Wo(s, t), i = na(r, n);
+  return No(e, i);
 }
-function Jo(e) {
+function ra(e) {
   if (!e)
     return 0;
   const t = Date.parse(e);
   return Number.isNaN(t) ? 0 : t;
 }
-function ze(e) {
+function Ge(e) {
   var t, n, s;
-  return Jo(((t = e.message) == null ? void 0 : t.timestamp) ?? ((n = e.conversation) == null ? void 0 : n.updated) ?? ((s = e.conversation) == null ? void 0 : s.created));
+  return ra(((t = e.message) == null ? void 0 : t.timestamp) ?? ((n = e.conversation) == null ? void 0 : n.updated) ?? ((s = e.conversation) == null ? void 0 : s.created));
 }
-function Dt(e) {
+function Nt(e) {
   var t, n, s, r;
   return [
     e.excerpt,
@@ -6103,50 +6103,50 @@ function Dt(e) {
     (r = (s = e.session) == null ? void 0 : s.summaryReferences) == null ? void 0 : r.join(" ")
   ].filter(Boolean).join(" ");
 }
-function fs(e) {
+function hs(e) {
   var t;
   return e.kind === "attachment" && e.attachment ? e.attachment.filename : ((t = e.conversation) == null ? void 0 : t.title) ?? e.repository.krcId ?? e.id;
 }
-function _t(e) {
+function Lt(e) {
   return {
     recordId: e.id,
-    label: fs(e),
+    label: hs(e),
     explorerPath: e.repository.repositoryPath,
     krcId: e.repository.krcId,
     kind: e.kind
   };
 }
-function ps(e) {
+function gs(e) {
   return {
     label: e.message,
     explorerPath: e.relativePath ?? "Registries/SOURCE_REGISTRY.md"
   };
 }
-function Qo(e) {
-  return e.kind === "executive_session" ? 92 : Tt(Dt(e)) ? 78 : 65;
+function ia(e) {
+  return e.kind === "executive_session" ? 92 : xt(Nt(e)) ? 78 : 65;
 }
-function dn(e, t) {
+function fn(e, t) {
   return e.find((n) => n.id === t) ?? e.find((n) => n.repository.krcId === t) ?? e.find((n) => t.startsWith(n.repository.krcId ?? ""));
 }
-function ea(e) {
+function oa(e) {
   const t = e.filter((r) => {
-    const i = Dt(r);
-    return r.kind === "executive_session" || Tt(i);
-  }).sort((r, i) => ze(i) - ze(r)).slice(0, 4), n = t[0], s = n ? Qo(n) : 50;
+    const i = Nt(r);
+    return r.kind === "executive_session" || xt(i);
+  }).sort((r, i) => Ge(i) - Ge(r)).slice(0, 4), n = t[0], s = n ? ia(n) : 50;
   return {
     cardId: "recent-decisions",
     category: "recent_decision",
     title: "Recent Decisions",
-    summary: n ? `${fs(n)} — ${n.excerpt.slice(0, 140)}${n.excerpt.length > 140 ? "…" : ""}` : "No indexed decision evidence found yet.",
+    summary: n ? `${hs(n)} — ${n.excerpt.slice(0, 140)}${n.excerpt.length > 140 ? "…" : ""}` : "No indexed decision evidence found yet.",
     whyItMatters: "Recent decisions anchor what the team agreed to and what Vigsy can ground answers on.",
     confidence: s,
-    evidenceLinks: t.map(_t)
+    evidenceLinks: t.map(Lt)
   };
 }
-function ta(e, t) {
-  const n = t.issues.filter((o) => o.severity === "error" || o.severity === "warning"), s = e.filter((o) => us(Dt(o))).sort((o, l) => ze(l) - ze(o)).slice(0, 4), r = [
-    ...n.slice(0, 2).map(ps),
-    ...s.map(_t)
+function aa(e, t) {
+  const n = t.issues.filter((o) => o.severity === "error" || o.severity === "warning"), s = e.filter((o) => ms(Nt(o))).sort((o, l) => Ge(l) - Ge(o)).slice(0, 4), r = [
+    ...n.slice(0, 2).map(gs),
+    ...s.map(Lt)
   ], i = /* @__PURE__ */ new Set(), a = r.filter((o) => {
     const l = o.recordId ?? o.explorerPath;
     return i.has(l) ? !1 : (i.add(l), !0);
@@ -6175,7 +6175,7 @@ function ta(e, t) {
     evidenceLinks: a.slice(0, 4)
   };
 }
-function na(e) {
+function ca(e) {
   const t = [...e].sort((s, r) => r.sortTime.localeCompare(s.sortTime)), n = t[0];
   return {
     cardId: "recent-imports",
@@ -6192,16 +6192,16 @@ function na(e) {
     }))
   };
 }
-function sa(e) {
+function da(e) {
   const t = e.reason.match(/"([^"]+)"/);
   return (t == null ? void 0 : t[1]) ?? e.reason.replace(/^Shared (topic|campaign reference) /i, "").trim();
 }
-function ra(e, t) {
+function la(e, t) {
   const n = /* @__PURE__ */ new Map();
   for (const l of t) {
     if (l.relationshipType !== "campaign_campaign" && l.relationshipType !== "topic_topic" && l.relationshipType !== "conversation_conversation")
       continue;
-    const u = sa(l), d = n.get(u);
+    const u = da(l), d = n.get(u);
     d ? d.count += 1 : n.set(u, { count: 1, rel: l });
   }
   const r = [...n.entries()].sort((l, u) => u[1].count - l[1].count)[0];
@@ -6215,7 +6215,7 @@ function ra(e, t) {
       confidence: 55,
       evidenceLinks: []
     };
-  const [i, { count: a, rel: c }] = r, o = dn(e, c.toId) ?? dn(e, c.fromId) ?? e[0];
+  const [i, { count: a, rel: c }] = r, o = fn(e, c.toId) ?? fn(e, c.fromId) ?? e[0];
   return {
     cardId: "high-relationship-topic",
     category: "high_relationship_topic",
@@ -6223,7 +6223,7 @@ function ra(e, t) {
     summary: `"${i}" appears in ${a} indexed relationships.`,
     whyItMatters: "Topics with many relationships are strong anchors for executive awareness and follow-up questions.",
     confidence: Math.min(95, 60 + a * 3),
-    evidenceLinks: o ? [_t(o)] : [
+    evidenceLinks: o ? [Lt(o)] : [
       {
         label: c.reason,
         explorerPath: c.supportingEvidenceIds[0] ?? "Registries/SOURCE_REGISTRY.md"
@@ -6231,7 +6231,7 @@ function ra(e, t) {
     ]
   };
 }
-function ia(e) {
+function ua(e) {
   const t = [];
   for (const i of e.categorizedIssues.recommendations.slice(0, 3))
     t.push({
@@ -6269,7 +6269,7 @@ function ia(e) {
     evidenceLinks: r.slice(0, 4)
   };
 }
-function oa(e) {
+function fa(e) {
   const t = e.statusLevel === "healthy" ? 93 : e.statusLevel === "attention" ? 78 : 62;
   return {
     cardId: "repository-health",
@@ -6278,7 +6278,7 @@ function oa(e) {
     summary: e.statusHeadline,
     whyItMatters: e.statusSubline,
     confidence: t,
-    evidenceLinks: e.issues.length > 0 ? e.issues.slice(0, 4).map(ps) : [
+    evidenceLinks: e.issues.length > 0 ? e.issues.slice(0, 4).map(gs) : [
       {
         label: "Repository structure verified",
         explorerPath: "Registries/SOURCE_REGISTRY.md"
@@ -6286,20 +6286,20 @@ function oa(e) {
     ]
   };
 }
-async function aa(e) {
+async function ys(e) {
   const [t, n, s, , r] = await Promise.all([
-    he(e),
-    _e(e),
+    ge(e),
+    xe(e),
     le(e),
-    Qn(e),
-    jn(e)
+    ns(e),
+    Gn(e)
   ]), i = [
-    ea(t.records),
-    ta(t.records, s),
-    na(r),
-    ra(t.records, n.relationships),
-    ia(s),
-    oa(s)
+    oa(t.records),
+    aa(t.records, s),
+    ca(r),
+    la(t.records, n.relationships),
+    ua(s),
+    fa(s)
   ];
   return {
     version: 1,
@@ -6310,8 +6310,84 @@ async function aa(e) {
     cards: i
   };
 }
-const ln = k.dirname(Es(import.meta.url));
-fn.registerSchemesAsPrivileged([
+const pa = "executive-briefing-cache.json", Is = 1;
+function vs(e) {
+  return k.join(e, me, pa);
+}
+async function ma(e) {
+  const t = Ke(e), n = He(e), [s, r] = await Promise.all([
+    Wn(e),
+    us(e)
+  ]);
+  let i = 0, a = 0;
+  try {
+    i = (await x.stat(t)).mtimeMs;
+  } catch {
+  }
+  try {
+    a = (await x.stat(n)).mtimeMs;
+  } catch {
+  }
+  return {
+    evidenceIndexBuiltAt: (s == null ? void 0 : s.builtAt) ?? "",
+    evidenceIndexMtimeMs: i,
+    relationshipIndexBuiltAt: (r == null ? void 0 : r.builtAt) ?? "",
+    relationshipIndexMtimeMs: a
+  };
+}
+async function ha(e) {
+  try {
+    const t = await x.readFile(vs(e), "utf8"), n = JSON.parse(t);
+    return n.version !== Is || !n.briefing || !Array.isArray(n.briefing.cards) ? null : n;
+  } catch {
+    return null;
+  }
+}
+async function ws(e, t, n) {
+  const s = await ma(e), r = {
+    version: Is,
+    repositoryPath: e,
+    cachedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    evidenceIndexBuiltAt: s.evidenceIndexBuiltAt,
+    evidenceIndexMtimeMs: s.evidenceIndexMtimeMs,
+    relationshipIndexBuiltAt: s.relationshipIndexBuiltAt,
+    relationshipIndexMtimeMs: s.relationshipIndexMtimeMs,
+    briefing: t
+  }, i = k.join(e, me);
+  await x.mkdir(i, { recursive: !0 });
+  const a = vs(e);
+  return await x.writeFile(a, JSON.stringify(r, null, 2), "utf8"), a;
+}
+async function ga(e, t) {
+  try {
+    if ((await x.stat(Ke(e))).mtimeMs > t.evidenceIndexMtimeMs)
+      return !0;
+  } catch {
+    return !0;
+  }
+  try {
+    if ((await x.stat(He(e))).mtimeMs > t.relationshipIndexMtimeMs)
+      return !0;
+  } catch {
+    return !0;
+  }
+  return !1;
+}
+async function ya(e) {
+  const t = await ha(e);
+  if (!t || t.repositoryPath !== e) {
+    const s = await ys(e);
+    return await ws(e, s), { briefing: s, fromCache: !1, stale: !1 };
+  }
+  const n = await ga(e, t);
+  return { briefing: t.briefing, fromCache: !0, stale: n };
+}
+async function Es(e) {
+  const t = await ys(e);
+  return await ws(e, t), t;
+}
+const pn = k.dirname(xs(import.meta.url));
+hn.registerSchemesAsPrivileged([
   {
     scheme: "kae-asset",
     privileges: {
@@ -6323,23 +6399,23 @@ fn.registerSchemesAsPrivileged([
     }
   }
 ]);
-function ca(e) {
+function Ia(e) {
   const t = "kae-asset://resolve/";
   if (!e.startsWith(t))
     throw new Error("Invalid asset URL.");
   return decodeURIComponent(e.slice(t.length));
 }
-let P = null, se = null, J = null, Re = null, ms = null, de = null, at = null, ct = null;
-const re = _s(), H = new xs(), Oe = [];
-function M() {
+let P = null, se = null, J = null, Ce = null, Ss = null, de = null, dt = null, lt = null;
+const re = Ps(), H = new Us(), Ue = [];
+function O() {
   return re.repository.path;
 }
-function Ue(e) {
-  const t = k.resolve(M(), e), n = k.resolve(M());
+function Me(e) {
+  const t = k.resolve(O(), e), n = k.resolve(O());
   if (!t.startsWith(n)) throw new Error("Invalid file path.");
   return t;
 }
-function z(e, t, n, s) {
+function j(e, t, n, s) {
   const r = {
     id: crypto.randomUUID(),
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
@@ -6348,17 +6424,25 @@ function z(e, t, n, s) {
     message: n,
     context: s
   };
-  return Oe.unshift(r), Oe.length > 500 && Oe.pop(), P == null || P.webContents.send("kae:log-added", r), r;
+  return Ue.unshift(r), Ue.length > 500 && Ue.pop(), P == null || P.webContents.send("kae:log-added", r), r;
 }
-async function Me(e) {
-  const t = k.join(M(), ".kae-sessions", "import-trace.log"), n = `[${(/* @__PURE__ */ new Date()).toISOString()}] ${e}
+async function mt() {
+  try {
+    await Es(O()), P == null || P.webContents.send("kae:executive-briefing-updated");
+  } catch (e) {
+    const t = e instanceof Error ? e.message : String(e);
+    j("warn", "awareness", `Executive briefing refresh failed: ${t}`);
+  }
+}
+async function Be(e) {
+  const t = k.join(O(), ".kae-sessions", "import-trace.log"), n = `[${(/* @__PURE__ */ new Date()).toISOString()}] ${e}
 `;
   try {
-    await L.mkdir(k.dirname(t), { recursive: !0 }), await L.appendFile(t, n, "utf8");
+    await x.mkdir(k.dirname(t), { recursive: !0 }), await x.appendFile(t, n, "utf8");
   } catch {
   }
 }
-function da() {
+function va() {
   return [
     { id: "validate-zip", label: "Validate ZIP", status: "pending" },
     { id: "analyze-export", label: "Analyze Export", status: "pending" },
@@ -6371,55 +6455,55 @@ function da() {
     { id: "complete", label: "Complete", status: "pending" }
   ];
 }
-function hs(e) {
+function Rs(e) {
   P == null || P.webContents.send("kae:import-timeline", e);
 }
 function Z(e, t, n, s) {
   const r = e.find((i) => i.id === t);
-  r && (r.status = n, r.detail = s), hs([...e]);
+  r && (r.status = n, r.detail = s), Rs([...e]);
 }
-function la() {
-  Yt.forEach((e) => Be.register(e)), Rr.register(Fn), z("info", "system", `Registered ${Yt.length} connector plugin(s)`);
+function wa() {
+  Qt.forEach((e) => ze.register(e)), Lr.register(Un), j("info", "system", `Registered ${Qt.length} connector plugin(s)`);
 }
-function un() {
-  P = new pn({
+function mn() {
+  P = new gn({
     width: 1280,
     height: 800,
     minWidth: 960,
     minHeight: 600,
-    title: `${yn} — ${In}`,
+    title: `${wn} — ${En}`,
     webPreferences: {
-      preload: k.join(ln, "preload.js"),
+      preload: k.join(pn, "preload.js"),
       contextIsolation: !0,
       nodeIntegration: !1
     }
-  }), process.env.VITE_DEV_SERVER_URL ? (P.loadURL(process.env.VITE_DEV_SERVER_URL), P.webContents.openDevTools({ mode: "detach" })) : P.loadFile(k.join(ln, "../dist/index.html")), P.on("closed", () => {
+  }), process.env.VITE_DEV_SERVER_URL ? (P.loadURL(process.env.VITE_DEV_SERVER_URL), P.webContents.openDevTools({ mode: "detach" })) : P.loadFile(k.join(pn, "../dist/index.html")), P.on("closed", () => {
     P = null;
   });
 }
-function gs(e) {
+function Cs(e) {
   P == null || P.webContents.send("kae:validation-progress", e);
 }
-async function ua(e) {
+async function Ea(e) {
   const t = k.basename(e), n = k.extname(t), s = { path: e, name: t, extension: n };
   de && de.abort(), de = new AbortController();
   const { signal: r } = de;
-  z("info", "import", `Validating: ${t} (read-only — no repository writes)`, {
+  j("info", "import", `Validating: ${t} (read-only — no repository writes)`, {
     filePath: e,
     fileName: t
   });
   try {
-    const i = await On(s, M(), {
+    const i = await Bn(s, O(), {
       signal: r,
-      log: (a, c, o) => z(a, "import", c, o),
-      onProgress: gs,
+      log: (a, c, o) => j(a, "import", c, o),
+      onProgress: Cs,
       onImportPackageReady: (a) => {
-        J = a, Re = e, Me(
+        J = a, Ce = e, Be(
           `Validation cached import package: ${a.documents.length} document(s) from ${t}`
         );
       }
     });
-    return se = i, i.valid ? z(
+    return se = i, i.valid ? j(
       "info",
       "import",
       `Validation complete in ${i.durationMs ?? 0}ms: ${i.conversationsFound} conversation(s) — awaiting user confirmation`,
@@ -6429,7 +6513,7 @@ async function ua(e) {
         estimatedSourcesToUpdate: i.estimatedSourcesToUpdate,
         warnings: i.warnings.length
       }
-    ) : r.aborted || z(
+    ) : r.aborted || j(
       "error",
       "import",
       `Validation failed — repository unchanged. ${i.blockingErrors.join("; ") || i.errors.join("; ") || "Unknown error"}`,
@@ -6442,76 +6526,76 @@ async function ua(e) {
     de = null;
   }
 }
-async function fa(e, t) {
+async function Sa(e, t) {
   var h, y, E;
-  const n = Date.now(), s = k.basename(e), r = k.extname(s), i = crypto.randomUUID(), a = { path: e, name: s, extension: r }, c = da();
-  hs(c), await Me(`Confirm import started: ${s} (${e})`), Z(c, "validate-zip", "running"), z("info", "import", `Pre-import validation gate: ${s}`);
+  const n = Date.now(), s = k.basename(e), r = k.extname(s), i = crypto.randomUUID(), a = { path: e, name: s, extension: r }, c = va();
+  Rs(c), await Be(`Confirm import started: ${s} (${e})`), Z(c, "validate-zip", "running"), j("info", "import", `Pre-import validation gate: ${s}`);
   let o;
   try {
-    se != null && se.valid && se.filePath === e && J && Re === e ? (o = se, await Me(
+    se != null && se.valid && se.filePath === e && J && Ce === e ? (o = se, await Be(
       `Reusing validated import package: ${J.documents.length} document(s) — no ZIP re-parse`
-    ), z(
+    ), j(
       "info",
       "import",
       `Reusing cached validation and import package (${J.documents.length} documents)`
-    )) : (o = await On(a, M(), {
-      log: (S, D, A) => z(S, "import", D, A),
+    )) : (o = await Bn(a, O(), {
+      log: (S, _, A) => j(S, "import", _, A),
       onImportPackageReady: (S) => {
-        J = S, Re = e;
+        J = S, Ce = e;
       }
     }), se = o);
   } catch (S) {
-    const D = S instanceof Error ? S.message : String(S);
-    throw Z(c, "validate-zip", "failed", D), z("error", "import", `Validation error — repository unchanged. ${D}`), new Error(
-      `Import blocked — repository unchanged. What happened: validation threw an error. Why: ${D}. Recovery: fix the export and validate again.`
+    const _ = S instanceof Error ? S.message : String(S);
+    throw Z(c, "validate-zip", "failed", _), j("error", "import", `Validation error — repository unchanged. ${_}`), new Error(
+      `Import blocked — repository unchanged. What happened: validation threw an error. Why: ${_}. Recovery: fix the export and validate again.`
     );
   }
   if (!o.valid) {
     const S = o.blockingErrors.join("; ") || "Validation failed";
-    throw Z(c, "validate-zip", "failed", S), z("error", "import", `Import blocked — repository unchanged. ${S}`), new Error(
+    throw Z(c, "validate-zip", "failed", S), j("error", "import", `Import blocked — repository unchanged. ${S}`), new Error(
       `Import blocked — repository unchanged. What happened: validation failed. Why: ${S}. Recovery: review the validation report and fix the export.`
     );
   }
   Z(c, "validate-zip", "complete", `${o.conversationsFound} conversations`);
-  const l = Ns(i, t, a);
+  const l = Os(i, t, a);
   l.status = "queued", H.enqueue(l), P == null || P.webContents.send("kae:job-updated", l), H.updateStatus(i, "running", 0), P == null || P.webContents.send("kae:job-updated", H.getById(i));
-  const u = Be.get(t);
+  const u = ze.get(t);
   if (!u) {
     const S = `No connector registered for format: ${t}`;
-    throw H.updateStatus(i, "failed", 0, S), z("error", "import", `${S} — repository unchanged.`), new Error(S);
+    throw H.updateStatus(i, "failed", 0, S), j("error", "import", `${S} — repository unchanged.`), new Error(S);
   }
-  Z(c, "create-snapshot", "running"), z("info", "repository", "Creating pre-import snapshot…");
-  const d = await Mn(M(), i), p = await Jr(M(), {
+  Z(c, "create-snapshot", "running"), j("info", "repository", "Creating pre-import snapshot…");
+  const d = await zn(O(), i), p = await oi(O(), {
     sessionId: i,
     connectorId: t,
     sourceFile: s,
     startedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    repositoryPath: M(),
+    repositoryPath: O(),
     snapshotPath: d,
     validationPassed: !0,
     plannedCreates: o.estimatedSourcesToCreate,
     plannedUpdates: o.estimatedSourcesToUpdate,
     rollbackInfo: { snapshotDirectory: d, manifestPath: "" }
   });
-  Z(c, "create-snapshot", "complete", k.basename(d)), z("info", "repository", `Snapshot saved: ${d}`), Z(c, "analyze-export", "running"), await Me(
-    `Analyze export: using cached package=${!!(J && Re === e)}, documents=${(J == null ? void 0 : J.documents.length) ?? "unknown"}`
+  Z(c, "create-snapshot", "complete", k.basename(d)), j("info", "repository", `Snapshot saved: ${d}`), Z(c, "analyze-export", "running"), await Be(
+    `Analyze export: using cached package=${!!(J && Ce === e)}, documents=${(J == null ? void 0 : J.documents.length) ?? "unknown"}`
   );
   const g = {
-    repositoryPath: M(),
+    repositoryPath: O(),
     outputDirectory: re.settings.outputDirectory,
     jobId: i,
-    importPackage: Re === e ? J ?? void 0 : void 0,
+    importPackage: Ce === e ? J ?? void 0 : void 0,
     sourceZipPath: e,
-    log: (S, D) => z(S, "import", D),
+    log: (S, _) => j(S, "import", _),
     onProgress: (S) => {
       H.updateStatus(i, "running", S), P == null || P.webContents.send("kae:job-updated", H.getById(i));
     }
   };
-  z("info", "import", `Import started: ${s}`);
+  j("info", "import", `Import started: ${s}`);
   const I = await u.import(a, g);
   if (!I.success || I.documents.length === 0) {
     const S = ((h = I.errors) == null ? void 0 : h.join("; ")) || "Import produced no documents";
-    throw Z(c, "analyze-export", "failed", S), H.updateStatus(i, "failed", 100, S), z(
+    throw Z(c, "analyze-export", "failed", S), H.updateStatus(i, "failed", 100, S), j(
       "error",
       "import",
       `Import failed after snapshot — repository may be partially updated. Rollback: ${d}. Error: ${S}`
@@ -6520,8 +6604,8 @@ async function fa(e, t) {
     );
   }
   Z(c, "analyze-export", "complete", `${I.documents.length} documents`), Z(c, "generate-sources", "running"), H.updateStatus(i, "running", 85), P == null || P.webContents.send("kae:job-updated", H.getById(i)), Z(c, "update-repository", "running");
-  const w = await Fn.export(I.documents, M(), {
-    log: (S, D) => z(S, "export", D),
+  const w = await Un.export(I.documents, O(), {
+    log: (S, _) => j(S, "export", _),
     onProgress: (S) => {
       H.updateStatus(i, "running", 85 + Math.round(S * 0.15)), P == null || P.webContents.send("kae:job-updated", H.getById(i));
     },
@@ -6529,11 +6613,11 @@ async function fa(e, t) {
     sourceZipPath: e
   });
   Z(c, "generate-sources", "complete"), Z(c, "update-repository", "complete", `${w.sourcesCreated} sources`), Z(c, "update-registries", "complete", w.reviewFile ?? "Registries updated"), Z(c, "health-check", "running");
-  const T = await le(M());
+  const T = await le(O());
   Z(c, "health-check", "complete", T.statusSubline), Z(c, "git-readiness", "running");
   const R = T.gitReadiness;
   Z(c, "git-readiness", "complete", R.status);
-  const C = Date.now() - n, _ = Be.get(t), m = {
+  const C = Date.now() - n, D = ze.get(t), m = {
     conversationsFound: ((y = I.summary) == null ? void 0 : y.conversationsFound) ?? I.documents.length,
     sourcesCreated: w.sourcesCreated,
     skippedDuplicates: w.skippedDuplicates,
@@ -6545,7 +6629,7 @@ async function fa(e, t) {
     reviewFile: w.reviewFile,
     durationMs: C,
     connectorId: t,
-    connectorName: (_ == null ? void 0 : _.name) ?? t,
+    connectorName: (D == null ? void 0 : D.name) ?? t,
     sessionsCreated: w.sessionsCreated ?? w.sourcesCreated,
     snapshotPath: d,
     gitReadiness: R,
@@ -6555,9 +6639,9 @@ async function fa(e, t) {
     generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
     durationMs: C,
     connectorId: t,
-    connectorName: (_ == null ? void 0 : _.name) ?? "ChatGPT Connector",
+    connectorName: (D == null ? void 0 : D.name) ?? "ChatGPT Connector",
     sourceFile: s,
-    repositoryPath: M(),
+    repositoryPath: O(),
     imported: w.sourcesCreated,
     updated: o.estimatedSourcesToUpdate,
     skipped: w.skippedDuplicates,
@@ -6572,44 +6656,44 @@ async function fa(e, t) {
     reportFilePath: ""
   };
   try {
-    m.importReportPath = await Li(M(), f), z("info", "import", `Import report saved: ${m.importReportPath}`);
+    m.importReportPath = await Ui(O(), f), j("info", "import", `Import report saved: ${m.importReportPath}`);
   } catch (S) {
-    const D = S instanceof Error ? S.message : String(S);
-    m.errors.push(`Import report: ${D}`), z("warn", "import", `Could not write import report: ${D}`);
+    const _ = S instanceof Error ? S.message : String(S);
+    m.errors.push(`Import report: ${_}`), j("warn", "import", `Could not write import report: ${_}`);
   }
-  Z(c, "complete", "complete", `Done in ${(C / 1e3).toFixed(1)}s`), m.timeline = [...c], ms = m;
+  Z(c, "complete", "complete", `Done in ${(C / 1e3).toFixed(1)}s`), m.timeline = [...c], Ss = m;
   const v = H.getById(i);
-  return v.summary = m, H.updateStatus(i, "completed", 100), z(
+  return v.summary = m, H.updateStatus(i, "completed", 100), j(
     "info",
     "import",
     `Import complete in ${C}ms: ${m.sourcesCreated} source(s), ${m.skippedDuplicates} skipped`,
     { summary: m, snapshotPath: d, manifestPath: p }
-  ), P == null || P.webContents.send("kae:job-updated", H.getById(i)), P == null || P.webContents.send("kae:import-complete", m), m;
+  ), P == null || P.webContents.send("kae:job-updated", H.getById(i)), mt(), P == null || P.webContents.send("kae:import-complete", m), m;
 }
-function pa() {
+function Ra() {
   F.handle(
     "kae:get-importers",
-    () => Be.getAll().map((e) => ({
+    () => ze.getAll().map((e) => ({
       id: e.id,
       name: e.name,
       description: e.description,
       supportedExtensions: e.supportedExtensions
     }))
-  ), F.handle("kae:get-repository-config", () => re.repository), F.handle("kae:set-repository-config", (e, t) => (re.repository = t, z("info", "repository", `Repository path set to ${t.path}`), re.repository)), F.handle("kae:get-settings", () => re.settings), F.handle("kae:set-settings", (e, t) => (re.settings = t, z("info", "settings", "Application settings updated"), re.settings)), F.handle("kae:get-jobs", () => H.getAll()), F.handle("kae:get-logs", () => Oe), F.handle("kae:get-default-repository-path", () => wn), F.handle("kae:get-repository-health", async () => le(M())), F.handle("kae:get-git-readiness", async () => (await le(M())).gitReadiness), F.handle("kae:get-repository-stats", async () => Qn(M())), F.handle("kae:browse-repository", async () => Ke(M())), F.handle(
+  ), F.handle("kae:get-repository-config", () => re.repository), F.handle("kae:set-repository-config", (e, t) => (re.repository = t, j("info", "repository", `Repository path set to ${t.path}`), re.repository)), F.handle("kae:get-settings", () => re.settings), F.handle("kae:set-settings", (e, t) => (re.settings = t, j("info", "settings", "Application settings updated"), re.settings)), F.handle("kae:get-jobs", () => H.getAll()), F.handle("kae:get-logs", () => Ue), F.handle("kae:get-default-repository-path", () => Rn), F.handle("kae:get-repository-health", async () => le(O())), F.handle("kae:get-git-readiness", async () => (await le(O())).gitReadiness), F.handle("kae:get-repository-stats", async () => ns(O())), F.handle("kae:browse-repository", async () => Ze(O())), F.handle(
     "kae:read-repository-file",
-    async (e, t) => De(M(), t)
+    async (e, t) => De(O(), t)
   ), F.handle("kae:parse-chatgpt-source", async (e, t) => {
-    const n = await De(M(), t), s = Rt(n);
+    const n = await De(O(), t), s = Tt(n);
     if (!s) return null;
     const r = new Set(s.fileReferences);
     for (const a of s.messages)
       for (const c of a.fileReferences) r.add(c);
-    const i = await ii(M(), [...r]);
+    const i = await pi(O(), [...r]);
     return { parsed: s, assets: i };
   }), F.handle(
     "kae:read-repository-asset",
     async (e, t, n) => {
-      const s = Ue(t), r = await L.readFile(s), i = Ct(r, n ?? k.basename(t)), a = t.replace(/\\/g, "/");
+      const s = Me(t), r = await x.readFile(s), i = _t(r, n ?? k.basename(t)), a = t.replace(/\\/g, "/");
       return {
         assetUrl: `kae-asset://resolve/${encodeURIComponent(a)}`,
         mimeType: i,
@@ -6618,61 +6702,64 @@ function pa() {
     }
   ), F.handle(
     "kae:list-chatgpt-import-entries",
-    async () => jn(M())
+    async () => Gn(O())
   ), F.handle(
     "kae:search-repository",
-    async (e, t) => ki(M(), t)
+    async (e, t) => $i(O(), t)
   ), F.handle("kae:build-evidence-index", async () => {
-    const e = await Vn(M());
-    return await lt(M()), hi(e);
+    const e = await Yn(O());
+    return await ft(O()), mt(), Si(e);
   }), F.handle("kae:search-knowledge", async (e, t) => {
-    const n = await Xn(M(), t);
-    return Yn(n);
+    const n = await es(O(), t);
+    return Qn(n);
   }), F.handle(
     "kae:resolve-evidence-drilldown",
-    async (e, t, n) => oo(M(), t, n)
+    async (e, t, n) => mo(O(), t, n)
   ), F.handle(
     "kae:answer-knowledge-question",
-    async (e, t) => Xo(M(), t)
+    async (e, t) => sa(O(), t)
   ), F.handle("kae:build-relationship-index", async () => {
-    const e = await lt(M());
-    return So(e);
+    const e = await ft(O());
+    return mt(), Do(e);
   }), F.handle("kae:search-relationships", async (e, t) => {
-    const n = await _e(M());
-    return ut(n, t);
+    const n = await xe(O());
+    return pt(n, t);
   }), F.handle("kae:get-relationships-for-evidence", async (e, t) => {
-    const n = await _e(M());
-    return ds(n, t);
+    const n = await xe(O());
+    return fs(n, t);
   }), F.handle(
     "kae:get-related-evidence",
-    async (e, t, n) => ls(M(), t, n)
-  ), F.handle("kae:get-executive-briefing", async () => aa(M())), F.handle("kae:open-repository-path", async () => {
-    await Ze.openPath(M());
+    async (e, t, n) => ps(O(), t, n)
+  ), F.handle("kae:get-executive-briefing", async () => ya(O())), F.handle(
+    "kae:refresh-executive-briefing",
+    async () => Es(O())
+  ), F.handle("kae:open-repository-path", async () => {
+    await Ve.openPath(O());
   }), F.handle("kae:open-repository-file", async (e, t) => {
-    await Ze.openPath(Ue(t));
+    await Ve.openPath(Me(t));
   }), F.handle("kae:reveal-repository-file", async (e, t) => {
-    Ze.showItemInFolder(Ue(t));
-  }), F.handle("kae:copy-text", async (e, t) => (vs.writeText(t), !0)), F.handle("kae:get-last-validation", () => se), F.handle("kae:get-last-import-summary", () => ms), F.handle("kae:get-last-repair-plan", () => at), F.handle("kae:get-last-repair-result", () => ct), F.handle("kae:select-zip-file", async () => {
-    const e = await ws.showOpenDialog({
+    Ve.showItemInFolder(Me(t));
+  }), F.handle("kae:copy-text", async (e, t) => (_s.writeText(t), !0)), F.handle("kae:get-last-validation", () => se), F.handle("kae:get-last-import-summary", () => Ss), F.handle("kae:get-last-repair-plan", () => dt), F.handle("kae:get-last-repair-result", () => lt), F.handle("kae:select-zip-file", async () => {
+    const e = await Ds.showOpenDialog({
       title: "Select ChatGPT Export ZIP",
       properties: ["openFile"],
       filters: [{ name: "ZIP Archive", extensions: ["zip"] }]
     });
     return e.canceled ? null : e.filePaths[0] ?? null;
   }), F.handle("kae:analyze-repository-repair", async () => {
-    z("info", "repair", "Repository repair analysis started (read-only)");
-    const e = await Ui(M());
-    return at = e, ct = null, z("info", "repair", `Repair analysis complete: ${e.issues.length} issue(s), ${e.autoRepairCount} auto-repair action(s)`, {
+    j("info", "repair", "Repository repair analysis started (read-only)");
+    const e = await Zi(O());
+    return dt = e, lt = null, j("info", "repair", `Repair analysis complete: ${e.issues.length} issue(s), ${e.autoRepairCount} auto-repair action(s)`, {
       issueCount: e.issues.length,
       autoRepairCount: e.autoRepairCount,
       manualReviewCount: e.manualReviewCount
     }), e;
   }), F.handle("kae:execute-repository-repair", async (e, t) => {
-    z("info", "repair", `Repository repair confirmed — ${t.autoRepairCount} safe action(s) will be applied`);
-    const n = await Vi(t, {
-      log: (s, r, i) => z(s, "repair", r, i)
+    j("info", "repair", `Repository repair confirmed — ${t.autoRepairCount} safe action(s) will be applied`);
+    const n = await eo(t, {
+      log: (s, r, i) => j(s, "repair", r, i)
     });
-    return ct = n, at = t, z("info", "repair", `Repository repair complete: ${n.filesChanged.length} file(s) changed`, {
+    return lt = n, dt = t, j("info", "repair", `Repository repair complete: ${n.filesChanged.length} file(s) changed`, {
       snapshotPath: n.snapshotPath,
       duplicatesBefore: n.healthBefore.duplicateIds,
       duplicatesAfter: n.healthAfter.duplicateIds,
@@ -6681,8 +6768,8 @@ function pa() {
   }), F.handle("kae:validate-chatgpt-zip", async (e, t) => {
     if (!t || !t.toLowerCase().endsWith(".zip"))
       throw new Error("Please select a valid .zip file. Repository unchanged.");
-    return ua(t);
-  }), F.handle("kae:cancel-validation", () => de ? (de.abort(), z("warn", "import", "Validation cancelled by user — repository unchanged"), gs({
+    return Ea(t);
+  }), F.handle("kae:cancel-validation", () => de ? (de.abort(), j("warn", "import", "Validation cancelled by user — repository unchanged"), Cs({
     status: "cancelled",
     stage: "cancelled",
     stageLabel: "Validation cancelled",
@@ -6697,15 +6784,15 @@ function pa() {
   }), !0) : !1), F.handle("kae:import-chatgpt-zip", async (e, t) => {
     if (!t || !t.toLowerCase().endsWith(".zip"))
       throw new Error("Please select a valid .zip file. Repository unchanged.");
-    return fa(t, "chatgpt-export-zip");
+    return Sa(t, "chatgpt-export-zip");
   });
 }
 je.whenReady().then(async () => {
-  fn.handle("kae-asset", async (e) => {
-    const t = ca(e.url), n = Ue(t), s = await L.readFile(n), r = Ct(s, k.basename(t));
+  hn.handle("kae-asset", async (e) => {
+    const t = Ia(e.url), n = Me(t), s = await x.readFile(n), r = _t(s, k.basename(t));
     return new Response(s, { headers: { "Content-Type": r } });
-  }), la(), pa(), z("info", "system", `${yn} started — ${In}`), un(), je.on("activate", () => {
-    pn.getAllWindows().length === 0 && un();
+  }), wa(), Ra(), j("info", "system", `${wn} started — ${En}`), mn(), je.on("activate", () => {
+    gn.getAllWindows().length === 0 && mn();
   });
 });
 je.on("window-all-closed", () => {
