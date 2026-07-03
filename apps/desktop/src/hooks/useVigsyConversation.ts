@@ -1,12 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import type { VigsyKnowledgeAnswer } from '@scooper/core';
 import { enrichFollowUpQuestion, sessionFromAnswer, type VigsySessionContext } from '../utils/vigsy-context';
-import { streamText } from '../utils/vigsy-stream';
+import { presenceDelayMs, streamTextReveal } from '../utils/vigsy-stream';
 
 export interface VigsyConversationTurn {
   id: string;
   role: 'user' | 'assistant';
   text: string;
+  summary?: string;
   answer?: VigsyKnowledgeAnswer;
   thinking?: boolean;
   streaming?: boolean;
@@ -48,17 +49,22 @@ export function useVigsyConversation() {
       if (abortRef.current) return;
 
       sessionRef.current = sessionFromAnswer(question, answer);
-      const fullText = `${answer.directAnswer}\n\n${answer.reasonedSummary}`;
+      const answerText = answer.directAnswer;
+      const summaryText = answer.reasonedSummary;
+
+      await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
+
+      if (abortRef.current) return;
 
       setTurns((prev) =>
         prev.map((turn) =>
           turn.id === assistantId
-            ? { ...turn, thinking: false, streaming: true, answer, text: '' }
+            ? { ...turn, thinking: false, streaming: true, answer, text: '', summary: summaryText }
             : turn,
         ),
       );
 
-      await streamText(fullText, (visible) => {
+      await streamTextReveal(answerText, (visible) => {
         if (abortRef.current) return;
         setTurns((prev) =>
           prev.map((turn) => (turn.id === assistantId ? { ...turn, text: visible } : turn)),
@@ -69,7 +75,9 @@ export function useVigsyConversation() {
 
       setTurns((prev) =>
         prev.map((turn) =>
-          turn.id === assistantId ? { ...turn, streaming: false, text: fullText, answer } : turn,
+          turn.id === assistantId
+            ? { ...turn, streaming: false, text: answerText, summary: summaryText, answer }
+            : turn,
         ),
       );
     } catch {

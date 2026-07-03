@@ -9,22 +9,21 @@ interface ShellProps {
 }
 
 export function Shell({ activeScreen, onNavigate, children }: ShellProps) {
+  const vigsyFocus = activeScreen === 'vigsy';
+
   return (
-    <div className="shell">
-      <aside className="shell__sidebar">
+    <div className={`shell${vigsyFocus ? ' shell--vigsy-focus' : ''}`}>
+      <aside className={`shell__sidebar${vigsyFocus ? ' shell__sidebar--compact' : ''}`}>
         <header className="shell__brand">
           <div className="shell__logo shell__logo--vigsy">✦</div>
-          <div>
+          <div className="shell__brand-text">
             <h1 className="shell__title">Vigsy</h1>
-            <p className="shell__subtitle">Executive Intelligence · KAE</p>
+            {!vigsyFocus ? <p className="shell__subtitle">Executive Intelligence</p> : null}
           </div>
         </header>
-        <Navigation activeScreen={activeScreen} onNavigate={onNavigate} />
-        <footer className="shell__footer">
-          <span className="shell__phase">Campaign 1.3 · Vigsy Experience</span>
-        </footer>
+        <Navigation activeScreen={activeScreen} onNavigate={onNavigate} compact={vigsyFocus} />
       </aside>
-      <main className="shell__content">{children}</main>
+      <main className="shell__content shell__content--vigsy">{children}</main>
     </div>
   );
 }

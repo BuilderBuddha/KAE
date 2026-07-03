@@ -3,30 +3,26 @@ import type { VigsyKnowledgeAnswer } from '@scooper/core';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { VigsyEvidencePanel } from './VigsyEvidencePanel';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
+import { ThinkingIndicator } from './CognitionPulse';
 import type { VigsyConversationTurn } from '../../hooks/useVigsyConversation';
 import { useNavigation } from '../../context/NavigationContext';
 
 function UserBubble({ text }: { text: string }) {
   return (
-    <div className="vigsy-msg vigsy-msg--user">
-      <div className="vigsy-msg__bubble">{text}</div>
+    <div className="vigsy-msg vigsy-msg--user vigsy-msg--enter">
+      <div className="vigsy-msg__bubble vigsy-msg__bubble--user">{text}</div>
     </div>
   );
 }
 
 function ThinkingBubble() {
   return (
-    <div className="vigsy-msg vigsy-msg--assistant">
-      <div className="vigsy-msg__avatar" aria-hidden>
+    <div className="vigsy-msg vigsy-msg--assistant vigsy-msg--enter vigsy-msg--thinking">
+      <div className="vigsy-msg__presence" aria-hidden>
         ✦
       </div>
       <div className="vigsy-msg__bubble vigsy-msg__bubble--thinking">
-        <span className="vigsy-thinking">
-          <span />
-          <span />
-          <span />
-        </span>
-        Vigsy is reasoning over evidence…
+        <ThinkingIndicator label="Vigsy is thinking…" />
       </div>
     </div>
   );
@@ -34,27 +30,30 @@ function ThinkingBubble() {
 
 function AssistantBubble({
   text,
+  summary,
   streaming,
   answer,
   expandedSections,
   onFollowUp,
 }: {
   text: string;
+  summary?: string;
   streaming?: boolean;
   answer?: VigsyKnowledgeAnswer;
   expandedSections?: Set<string>;
   onFollowUp: (action: FollowUpAction) => void;
 }) {
   return (
-    <div className="vigsy-msg vigsy-msg--assistant">
-      <div className="vigsy-msg__avatar" aria-hidden>
+    <div className={`vigsy-msg vigsy-msg--assistant vigsy-msg--enter${streaming ? ' vigsy-msg--alive' : ''}`}>
+      <div className="vigsy-msg__presence" aria-hidden>
         ✦
       </div>
       <div className="vigsy-msg__content">
-        <div className={`vigsy-msg__bubble${streaming ? ' vigsy-msg__bubble--streaming' : ''}`}>
-          <pre className="vigsy-msg__text">{text}</pre>
+        <div className={`vigsy-msg__bubble vigsy-msg__bubble--vigsy${streaming ? ' vigsy-msg__bubble--streaming' : ''}`}>
+          <p className="vigsy-msg__text">{text}</p>
           {streaming ? <span className="vigsy-cursor" aria-hidden /> : null}
         </div>
+        {!streaming && summary ? <p className="vigsy-msg__summary muted">{summary}</p> : null}
         {answer && !streaming ? (
           <>
             <VigsyEvidencePanel answer={answer} expandedSections={expandedSections} />
@@ -84,9 +83,8 @@ export function VigsyConversationThread({ turns, onFollowUp }: VigsyConversation
     if (action.type === 'expand') {
       setExpandedByTurn((prev) => {
         const next = new Map(prev);
-        const sections = new Set(next.get(turnId) ?? ['confidence']);
+        const sections = new Set(next.get(turnId) ?? []);
         sections.add(action.section);
-        if (action.section === 'evidence') sections.add('evidence');
         next.set(turnId, sections);
         return next;
       });
@@ -112,6 +110,7 @@ export function VigsyConversationThread({ turns, onFollowUp }: VigsyConversation
           <AssistantBubble
             key={turn.id}
             text={turn.error ?? turn.text}
+            summary={turn.error ? undefined : turn.summary}
             streaming={turn.streaming}
             answer={turn.error ? undefined : turn.answer}
             expandedSections={expandedByTurn.get(turn.id)}

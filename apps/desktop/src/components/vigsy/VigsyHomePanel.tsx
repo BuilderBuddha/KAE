@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ExecutiveBriefing, RepositoryHealthReport, RepositoryStats } from '@scooper/core';
 import type { ChatGptImportListEntry } from '../../types/kae';
-import { LoadingIndicator } from '../LoadingIndicator';
 import { ExecutiveBriefingPanel } from './ExecutiveBriefingPanel';
 
 const SUGGESTED_QUESTIONS = [
@@ -31,24 +30,18 @@ export function VigsyHomePanel({
   const [health, setHealth] = useState<RepositoryHealthReport | null>(null);
   const [recent, setRecent] = useState<ChatGptImportListEntry[]>([]);
   const [briefing, setBriefing] = useState<ExecutiveBriefing | null>(null);
-  const [loading, setLoading] = useState(true);
   const [briefingLoading, setBriefingLoading] = useState(true);
   const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
 
   const loadContext = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [s, h, entries] = await Promise.all([
-        window.kae.getRepositoryStats(),
-        window.kae.getRepositoryHealth(),
-        window.kae.listChatGptImportEntries(),
-      ]);
-      setStats(s);
-      setHealth(h);
-      setRecent(entries.slice(0, 5));
-    } finally {
-      setLoading(false);
-    }
+    const [s, h, entries] = await Promise.all([
+      window.kae.getRepositoryStats(),
+      window.kae.getRepositoryHealth(),
+      window.kae.listChatGptImportEntries(),
+    ]);
+    setStats(s);
+    setHealth(h);
+    setRecent(entries.slice(0, 5));
   }, []);
 
   const applyBriefing = useCallback((next: ExecutiveBriefing) => {
@@ -93,19 +86,14 @@ export function VigsyHomePanel({
 
   useEffect(() => {
     void loadContext();
-  }, [loadContext]);
-
-  useEffect(() => {
     void loadBriefing();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- load once on mount
+  }, [loadContext, loadBriefing]);
 
   useEffect(() => {
     const unsubscribe = window.kae.onExecutiveBriefingUpdated(() => {
       void window.kae.getExecutiveBriefing().then((result) => {
         applyBriefing(result.briefing);
-        if (result.stale) {
-          void refreshBriefingInBackground();
-        }
+        if (result.stale) void refreshBriefingInBackground();
       });
     });
     const onImportComplete = window.kae.onImportComplete(() => {
@@ -119,28 +107,77 @@ export function VigsyHomePanel({
   }, [applyBriefing, loadContext, refreshBriefingInBackground]);
 
   return (
-    <div className="vigsy-home">
-      <header className="vigsy-home__hero">
-        <p className="vigsy-home__eyebrow">Executive Intelligence</p>
-        <h1 className="vigsy-home__greeting">Hello — I&apos;m Vigsy.</h1>
-        <p className="vigsy-home__lead">
-          Ask about decisions, conversations, and evidence across your Axiom Knowledge repository.
-        </p>
+    <div className="vigsy-home vigsy-home--founder">
+      <header className="vigsy-home__hero vigsy-home__hero--center">
+        <h1 className="vigsy-home__brand">Vigsy</h1>
+        <div className="vigsy-home__luminous-line" aria-hidden="true" />
+        <p className="vigsy-home__lead">Evidence-grounded executive intelligence</p>
       </header>
 
-      <ExecutiveBriefingPanel
-        briefing={briefing}
-        loading={briefingLoading}
-        backgroundRefreshing={backgroundRefreshing}
-        onRefresh={() => void handleManualRefresh()}
-      />
+      <form
+        className="vigsy-home__composer vigsy-home__composer--hero"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
+        <label className="sr-only" htmlFor="vigsy-composer">
+          Ask Vigsy
+        </label>
+        <textarea
+          id="vigsy-composer"
+          className="vigsy-home__input vigsy-home__input--hero"
+          rows={3}
+          placeholder="Ask Vigsy anything about your knowledge…"
+          value={inputValue}
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
+          disabled={busy}
+          autoFocus
+        />
+        <div className="vigsy-home__composer-actions vigsy-home__composer-actions--center">
+          <button type="submit" className="btn btn--primary btn--large" disabled={busy || !inputValue.trim()}>
+            {busy ? 'Thinking…' : 'Ask Vigsy'}
+          </button>
+        </div>
+      </form>
 
-      {loading ? (
-        <LoadingIndicator label="Loading repository context…" />
-      ) : (
+      <section className="vigsy-home__suggestions vigsy-home__suggestions--center">
+        <div className="vigsy-chips">
+          {SUGGESTED_QUESTIONS.map((q) => (
+            <button
+              key={q}
+              type="button"
+              className="vigsy-chip"
+              disabled={busy}
+              onClick={() => onAsk(q)}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <details className="vigsy-home__drawer">
+        <summary className="vigsy-home__drawer-summary">Executive Briefing</summary>
+        <ExecutiveBriefingPanel
+          briefing={briefing}
+          loading={briefingLoading}
+          backgroundRefreshing={backgroundRefreshing}
+          onRefresh={() => void handleManualRefresh()}
+        />
+      </details>
+
+      <details className="vigsy-home__drawer">
+        <summary className="vigsy-home__drawer-summary">Repository</summary>
         <div className="vigsy-home__grid">
           <section className="card vigsy-home__card">
-            <h3>Repository Health</h3>
+            <h3>Health</h3>
             <p className={`vigsy-home__stat-value vigsy-home__stat-value--${health?.statusLevel ?? 'attention'}`}>
               {health?.statusHeadline ?? 'Checking…'}
             </p>
@@ -169,56 +206,7 @@ export function VigsyHomePanel({
             )}
           </section>
         </div>
-      )}
-
-      <section className="vigsy-home__suggestions">
-        <h3 className="vigsy-home__suggestions-title">Suggested questions</h3>
-        <div className="vigsy-chips">
-          {SUGGESTED_QUESTIONS.map((q) => (
-            <button
-              key={q}
-              type="button"
-              className="vigsy-chip"
-              disabled={busy}
-              onClick={() => onAsk(q)}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <form
-        className="vigsy-home__composer card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSubmit();
-        }}
-      >
-        <label className="form__label" htmlFor="vigsy-composer">
-          Ask Vigsy anything about your knowledge
-        </label>
-        <textarea
-          id="vigsy-composer"
-          className="form__input vigsy-home__input"
-          rows={3}
-          placeholder="What happened with ChatGPT Import?"
-          value={inputValue}
-          onChange={(e) => onInputChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              onSubmit();
-            }
-          }}
-          disabled={busy}
-        />
-        <div className="vigsy-home__composer-actions">
-          <button type="submit" className="btn btn--primary" disabled={busy || !inputValue.trim()}>
-            {busy ? 'Thinking…' : 'Ask Vigsy'}
-          </button>
-        </div>
-      </form>
+      </details>
     </div>
   );
 }

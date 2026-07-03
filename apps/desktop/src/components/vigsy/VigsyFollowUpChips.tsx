@@ -41,7 +41,7 @@ const CHIPS: Array<{
       question: `Show me the videos related to ${answer.searchQuery}`,
     }),
   },
-  { label: 'Related Decisions', resolve: () => ({ type: 'expand', section: 'decisions' }) },
+  { label: 'Related Knowledge', resolve: () => ({ type: 'expand', section: 'related' }) },
   {
     label: 'Summarize More',
     resolve: (answer) => ({ type: 'ask', question: `Summarize more about ${answer.searchQuery}` }),

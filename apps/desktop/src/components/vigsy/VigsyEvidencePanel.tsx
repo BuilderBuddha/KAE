@@ -37,7 +37,7 @@ function ExpandableCard({
 
 export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePanelProps) {
   const { openInExplorer } = useNavigation();
-  const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set(['confidence']));
+  const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set());
 
   const expanded = expandedSections ?? localExpanded;
   const toggle = (id: string) => {
@@ -50,9 +50,72 @@ export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePa
     });
   };
 
-  const decisionItems = answer.relatedSources.filter(
-    (item) => item.kind === 'executive_session' || /session|decision/i.test(item.label),
-  );
+  const relatedItems: Array<{
+    recordId: string;
+    label: string;
+    excerpt?: string;
+    explorerPath: string;
+    reason?: string;
+  }> = [
+    ...answer.relatedSources.map((item) => ({
+      recordId: item.recordId,
+      label: item.label,
+      excerpt: item.excerpt,
+      explorerPath: item.explorerPath,
+    })),
+    ...(answer.relationshipInsights?.relatedDecisions ?? []).map((item) => ({
+      recordId: item.recordId,
+      label: item.label,
+      excerpt: item.excerpt,
+      explorerPath: item.explorerPath,
+      reason: item.reason,
+    })),
+    ...(answer.relationshipInsights?.relatedConversations ?? []).map((item) => ({
+      recordId: item.recordId,
+      label: item.label,
+      excerpt: item.excerpt,
+      explorerPath: item.explorerPath,
+      reason: item.reason,
+    })),
+    ...(answer.relationshipInsights?.relatedCampaigns ?? []).map((item) => ({
+      recordId: item.recordId,
+      label: item.label,
+      excerpt: item.excerpt,
+      explorerPath: item.explorerPath,
+      reason: item.reason,
+    })),
+    ...(answer.relationshipInsights?.relatedAttachments ?? []).map((item) => ({
+      recordId: item.recordId,
+      label: item.label,
+      excerpt: item.excerpt,
+      explorerPath: item.explorerPath,
+      reason: item.reason,
+    })),
+    ...(answer.relationshipInsights?.relatedExecutiveSessions ?? []).map((item) => ({
+      recordId: item.recordId,
+      label: item.label,
+      excerpt: item.excerpt,
+      explorerPath: item.explorerPath,
+      reason: item.reason,
+    })),
+  ];
+
+  const seenRelated = new Set<string>();
+  const uniqueRelated = relatedItems.filter((item) => {
+    if (seenRelated.has(item.recordId)) return false;
+    seenRelated.add(item.recordId);
+    return true;
+  });
+
+  const conversationLinks = answer.explorerLinks.length
+    ? answer.explorerLinks
+    : answer.evidenceUsed
+        .filter((item) => item.kind === 'conversation' || item.kind === 'source')
+        .map((item) => ({
+          label: item.label,
+          path: item.explorerPath,
+          krcId: item.krcId,
+        }));
 
   return (
     <div className="vigsy-evidence-panel">
@@ -62,9 +125,7 @@ export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePa
         expanded={expanded.has('confidence')}
         onToggle={toggle}
       >
-        <div className={confidenceClass(answer.confidence.level)}>
-          {answer.confidence.rationale}
-        </div>
+        <div className={confidenceClass(answer.confidence.level)}>{answer.confidence.rationale}</div>
       </ExpandableCard>
 
       <ExpandableCard
@@ -91,6 +152,22 @@ export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePa
             </li>
           ))}
         </ul>
+        {answer.attachments.length > 0 ? (
+          <ul className="vigsy-evidence-list">
+            {answer.attachments.map((item) => (
+              <li key={item.recordId} className="vigsy-evidence-item">
+                <span className="vigsy-evidence-item__label">{item.label}</span>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--small"
+                  onClick={() => openInExplorer(item.explorerPath)}
+                >
+                  Open in Explorer
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </ExpandableCard>
 
       <ExpandableCard
@@ -121,18 +198,21 @@ export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePa
       </ExpandableCard>
 
       <ExpandableCard
-        id="attachments"
-        title={`Attachments (${answer.attachments.length})`}
-        expanded={expanded.has('attachments')}
+        id="related"
+        title={`Related Knowledge (${uniqueRelated.length})`}
+        expanded={expanded.has('related')}
         onToggle={toggle}
       >
-        {answer.attachments.length === 0 ? (
-          <p className="muted">No attachments in this answer.</p>
+        {uniqueRelated.length === 0 ? (
+          <p className="muted">No related knowledge surfaced for this answer.</p>
         ) : (
           <ul className="vigsy-evidence-list">
-            {answer.attachments.map((item) => (
+            {uniqueRelated.map((item) => (
               <li key={item.recordId} className="vigsy-evidence-item">
                 <span className="vigsy-evidence-item__label">{item.label}</span>
+                {item.reason ? (
+                  <p className="vigsy-evidence-item__excerpt">{item.reason}</p>
+                ) : null}
                 <button
                   type="button"
                   className="btn btn--secondary btn--small"
@@ -147,13 +227,13 @@ export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePa
       </ExpandableCard>
 
       <ExpandableCard
-        id="explorer"
-        title={`Explorer Links (${answer.explorerLinks.length})`}
-        expanded={expanded.has('explorer')}
+        id="conversation"
+        title={`Open Conversation (${conversationLinks.length})`}
+        expanded={expanded.has('conversation')}
         onToggle={toggle}
       >
         <div className="vigsy-explorer-links">
-          {answer.explorerLinks.map((link) => (
+          {conversationLinks.map((link) => (
             <button
               key={link.path}
               type="button"
@@ -165,67 +245,6 @@ export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePa
           ))}
         </div>
       </ExpandableCard>
-
-      <ExpandableCard
-        id="decisions"
-        title={`Related Decisions (${decisionItems.length || answer.relatedSources.length})`}
-        expanded={expanded.has('decisions')}
-        onToggle={toggle}
-      >
-        <ul className="vigsy-link-list">
-          {(decisionItems.length > 0 ? decisionItems : answer.relatedSources).map((item) => (
-            <li key={item.recordId}>
-              <button
-                type="button"
-                className="vigsy-link-list__btn"
-                onClick={() => openInExplorer(item.explorerPath)}
-              >
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </ExpandableCard>
-
-      {answer.relationshipInsights ? (
-        <ExpandableCard
-          id="relationships"
-          title="Related Evidence (Relationships)"
-          expanded={expanded.has('relationships')}
-          onToggle={toggle}
-        >
-          {(
-            [
-              ['Related Decisions', answer.relationshipInsights.relatedDecisions],
-              ['Related Conversations', answer.relationshipInsights.relatedConversations],
-              ['Related Campaigns', answer.relationshipInsights.relatedCampaigns],
-              ['Related Attachments', answer.relationshipInsights.relatedAttachments],
-              ['Related Executive Sessions', answer.relationshipInsights.relatedExecutiveSessions],
-            ] as const
-          ).map(([label, items]) =>
-            items.length > 0 ? (
-              <div key={label} className="vigsy-relationship-group">
-                <h4 className="vigsy-relationship-group__title">{label}</h4>
-                <ul className="vigsy-evidence-list">
-                  {items.map((item) => (
-                    <li key={`${label}-${item.recordId}`} className="vigsy-evidence-item">
-                      <span className="vigsy-evidence-item__label">{item.label}</span>
-                      <p className="vigsy-evidence-item__excerpt">{item.reason}</p>
-                      <button
-                        type="button"
-                        className="btn btn--secondary btn--small"
-                        onClick={() => openInExplorer(item.explorerPath)}
-                      >
-                        Open in Explorer
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null,
-          )}
-        </ExpandableCard>
-      ) : null}
     </div>
   );
 }

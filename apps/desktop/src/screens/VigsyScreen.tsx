@@ -22,7 +22,7 @@ export function VigsyScreen() {
   };
 
   return (
-    <div className="screen vigsy-experience">
+    <div className={`vigsy-experience${hasConversation ? ' vigsy-experience--conversation' : ''}`}>
       {!hasConversation ? (
         <VigsyHomePanel
           busy={busy}
@@ -33,27 +33,23 @@ export function VigsyScreen() {
         />
       ) : (
         <div className="vigsy-conversation">
-          <header className="vigsy-conversation__header">
-            <div>
-              <h2 className="screen__title">Vigsy</h2>
-              <p className="screen__description muted">Evidence-grounded executive intelligence</p>
-            </div>
-            <button type="button" className="btn btn--secondary btn--small" onClick={clearConversation}>
-              New conversation
+          <div className="vigsy-conversation__toolbar">
+            <button type="button" className="vigsy-link-btn" onClick={clearConversation}>
+              ← New conversation
             </button>
-          </header>
+          </div>
 
           <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
 
           <form
-            className="vigsy-conversation__composer card"
+            className="vigsy-conversation__composer"
             onSubmit={(e) => {
               e.preventDefault();
               void handleSubmit();
             }}
           >
             <textarea
-              className="form__input vigsy-home__input"
+              className="vigsy-home__input vigsy-home__input--followup"
               rows={2}
               placeholder="Ask a follow-up…"
               value={input}
