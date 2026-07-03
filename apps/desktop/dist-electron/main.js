@@ -5134,6 +5134,768 @@ async function writeSessionManifest(repositoryPath, manifest) {
   await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), "utf8");
   return manifestPath;
 }
+const CHATGPT_IMPORT_KRC_MIN = 53;
+const CHATGPT_IMPORT_KRC_MAX = 122;
+function parseChatGptSourceTimes(content) {
+  var _a;
+  const header = content.slice(0, 4096);
+  const titleMatch = header.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m);
+  return {
+    krcId: titleMatch == null ? void 0 : titleMatch[1],
+    title: (_a = titleMatch == null ? void 0 : titleMatch[2]) == null ? void 0 : _a.trim(),
+    createTime: extractSection$1(header, "Create Time"),
+    updateTime: extractSection$1(header, "Update Time")
+  };
+}
+async function listChatGptImportEntries(repositoryPath) {
+  const files = await browseRepository(repositoryPath);
+  const imports = files.filter((f) => f.category === "sources" && isChatGptImportSourceFileName(f.name));
+  const entries = [];
+  for (const file of imports) {
+    let header = "";
+    try {
+      const full = await readRepositoryFile(repositoryPath, file.relativePath);
+      header = full.slice(0, 4096);
+    } catch {
+    }
+    const meta = parseChatGptSourceTimes(header);
+    const sortTime = meta.updateTime ?? meta.createTime ?? file.modifiedAt ?? "";
+    entries.push({
+      name: file.name,
+      relativePath: file.relativePath,
+      krcId: meta.krcId ?? file.name,
+      title: meta.title ?? file.name.replace(/\.md$/i, ""),
+      createTime: meta.createTime,
+      updateTime: meta.updateTime,
+      sortTime,
+      sizeBytes: file.sizeBytes,
+      modifiedAt: file.modifiedAt
+    });
+  }
+  return entries.sort((a, b) => new Date(b.sortTime).getTime() - new Date(a.sortTime).getTime());
+}
+function isChatGptImportSourceFileName(fileName) {
+  const match = fileName.match(/^KRC-(\d{4})_/i);
+  if (!match)
+    return false;
+  const num = parseInt(match[1], 10);
+  return num >= CHATGPT_IMPORT_KRC_MIN && num <= CHATGPT_IMPORT_KRC_MAX;
+}
+function extractSection$1(content, heading) {
+  var _a;
+  const pattern = new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=^## |\\z)`, "m");
+  const match = content.match(pattern);
+  return (_a = match == null ? void 0 : match[1]) == null ? void 0 : _a.trim();
+}
+function parseListSection(section) {
+  if (!section)
+    return [];
+  return section.split("\n").map((line) => line.replace(/^-\s*/, "").trim()).filter(Boolean);
+}
+function parseMessageBlock(block) {
+  var _a, _b, _c, _d;
+  const lines = block.split("\n");
+  const role = (_a = lines[0]) == null ? void 0 : _a.trim();
+  if (!role)
+    return null;
+  let timestamp;
+  let bodyStart = 1;
+  if (((_b = lines[1]) == null ? void 0 : _b.startsWith("*")) && ((_c = lines[1]) == null ? void 0 : _c.endsWith("*"))) {
+    timestamp = lines[1].slice(1, -1).trim();
+    bodyStart = 2;
+  }
+  const rest = lines.slice(bodyStart).join("\n").trim();
+  const fileSplit = rest.split(/\n\*\*File references:\*\*\s*\n/i);
+  const text = ((_d = fileSplit[0]) == null ? void 0 : _d.trim()) ?? "";
+  const fileReferences = [];
+  if (fileSplit[1]) {
+    for (const line of fileSplit[1].split("\n")) {
+      const ref = line.replace(/^-\s*/, "").trim();
+      if (ref)
+        fileReferences.push(ref);
+    }
+  }
+  return { role, timestamp, text, fileReferences };
+}
+function parseChatGptSourceMarkdown(content) {
+  const titleMatch = content.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m);
+  if (!titleMatch)
+    return null;
+  const transcriptIdx = content.indexOf("## Transcript");
+  const header = transcriptIdx >= 0 ? content.slice(0, transcriptIdx) : content;
+  const transcript = transcriptIdx >= 0 ? content.slice(transcriptIdx + "## Transcript".length) : "";
+  const messages = [];
+  for (const block of transcript.split(/^### /m).slice(1)) {
+    const parsed = parseMessageBlock(block);
+    if (parsed)
+      messages.push(parsed);
+  }
+  return {
+    krcId: titleMatch[1],
+    title: titleMatch[2].trim(),
+    conversationId: extractSection$1(header, "ChatGPT Conversation ID"),
+    createTime: extractSection$1(header, "Create Time"),
+    updateTime: extractSection$1(header, "Update Time"),
+    description: extractSection$1(header, "Description"),
+    fileReferences: parseListSection(extractSection$1(header, "File References")),
+    messages
+  };
+}
+function detectMimeType(buffer, refHint) {
+  if (buffer.length >= 4 && buffer[0] === 137 && buffer[1] === 80 && buffer[2] === 78 && buffer[3] === 71) {
+    return "image/png";
+  }
+  if (buffer.length >= 3 && buffer[0] === 255 && buffer[1] === 216 && buffer[2] === 255) {
+    return "image/jpeg";
+  }
+  if (buffer.length >= 6 && buffer[0] === 71 && buffer[1] === 73 && buffer[2] === 70) {
+    return "image/gif";
+  }
+  if (buffer.length >= 12 && buffer[4] === 102 && buffer[5] === 116 && buffer[6] === 121 && buffer[7] === 112) {
+    return "video/mp4";
+  }
+  if (buffer.length >= 4 && buffer[0] === 37 && buffer[1] === 80 && buffer[2] === 68 && buffer[3] === 70) {
+    return "application/pdf";
+  }
+  const hint = (refHint == null ? void 0 : refHint.toLowerCase()) ?? "";
+  if (hint.endsWith(".png"))
+    return "image/png";
+  if (hint.endsWith(".jpg") || hint.endsWith(".jpeg"))
+    return "image/jpeg";
+  if (hint.endsWith(".gif"))
+    return "image/gif";
+  if (hint.endsWith(".webp"))
+    return "image/webp";
+  if (hint.endsWith(".mp4"))
+    return "video/mp4";
+  if (hint.endsWith(".webm"))
+    return "video/webm";
+  if (hint.endsWith(".mov"))
+    return "video/quicktime";
+  return "application/octet-stream";
+}
+function assetKindFromMime(mimeType) {
+  if (mimeType.startsWith("image/"))
+    return "image";
+  if (mimeType.startsWith("video/"))
+    return "video";
+  return "other";
+}
+async function findLatestChatGptUploadDir(repositoryPath) {
+  const uploadsRoot = path.join(repositoryPath, "Uploads");
+  let entries;
+  try {
+    entries = await fs.readdir(uploadsRoot);
+  } catch {
+    return null;
+  }
+  const importDirs = entries.filter((name) => name.startsWith("chatgpt-import-")).sort().reverse();
+  if (importDirs.length === 0)
+    return null;
+  return `Uploads/${importDirs[0]}`;
+}
+async function buildUploadAssetIndex(repositoryPath, uploadRelativeDir) {
+  const index = /* @__PURE__ */ new Map();
+  const fullDir = path.join(repositoryPath, uploadRelativeDir);
+  let files;
+  try {
+    files = await fs.readdir(fullDir);
+  } catch {
+    return index;
+  }
+  for (const fileName of files) {
+    const relativePath = `${uploadRelativeDir}/${fileName}`.replace(/\\/g, "/");
+    index.set(fileName.toLowerCase(), relativePath);
+    const base = fileName.replace(/\.dat$/i, "");
+    index.set(base.toLowerCase(), relativePath);
+    if (base.startsWith("file_")) {
+      index.set(base.slice("file_".length).toLowerCase(), relativePath);
+    }
+  }
+  return index;
+}
+function resolveUploadRef(ref, index) {
+  const trimmed = ref.trim();
+  if (!trimmed)
+    return null;
+  const candidates = [
+    trimmed,
+    trimmed.toLowerCase(),
+    `${trimmed}.dat`,
+    `${trimmed.toLowerCase()}.dat`,
+    trimmed.replace(/^file_/, ""),
+    `file_${trimmed}`,
+    `file_${trimmed}.dat`
+  ];
+  for (const candidate of candidates) {
+    const hit = index.get(candidate.toLowerCase());
+    if (hit)
+      return hit;
+  }
+  const base = path.basename(trimmed).toLowerCase();
+  for (const [key, value] of index.entries()) {
+    if (key.includes(base) || base.includes(key))
+      return value;
+  }
+  return null;
+}
+async function resolveChatGptAssets(repositoryPath, refs) {
+  const uploadDir = await findLatestChatGptUploadDir(repositoryPath);
+  if (!uploadDir)
+    return [];
+  const index = await buildUploadAssetIndex(repositoryPath, uploadDir);
+  const resolved = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const ref of refs) {
+    const relativePath = resolveUploadRef(ref, index);
+    if (!relativePath || seen.has(relativePath))
+      continue;
+    seen.add(relativePath);
+    const fullPath = path.join(repositoryPath, relativePath);
+    let buffer;
+    try {
+      buffer = await fs.readFile(fullPath);
+    } catch {
+      continue;
+    }
+    const mimeType = detectMimeType(buffer, ref);
+    resolved.push({
+      ref,
+      relativePath,
+      fileName: path.basename(relativePath),
+      mimeType,
+      kind: assetKindFromMime(mimeType)
+    });
+  }
+  return resolved;
+}
+function extractSection(content, heading) {
+  var _a;
+  const pattern = new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=^## |\\z)`, "m");
+  const match = content.match(pattern);
+  return (_a = match == null ? void 0 : match[1]) == null ? void 0 : _a.trim();
+}
+function parseExecutiveSessionMarkdown(content, fileName) {
+  var _a;
+  const titleMatch = content.match(/^#\s*Executive Session Record\s*[—–-]\s*(.+)$/m);
+  const title = ((_a = titleMatch == null ? void 0 : titleMatch[1]) == null ? void 0 : _a.trim()) ?? fileName.replace(/\.md$/i, "");
+  const linkedKrcId = extractSection(content, "Source ID");
+  const sessionDate = extractSection(content, "Session Date");
+  const summaryText = extractSection(content, "Session Summary") ?? "";
+  const transcriptReference = extractSection(content, "Transcript Reference");
+  const summaryReferences = [];
+  if (transcriptReference)
+    summaryReferences.push(transcriptReference);
+  for (const heading of ["Key Topics", "Recurring Terms", "Classification", "Rationale"]) {
+    const section = extractSection(content, heading);
+    if (!section)
+      continue;
+    for (const line of section.split("\n")) {
+      const trimmed = line.replace(/^-\s*/, "").trim();
+      if (trimmed)
+        summaryReferences.push(trimmed);
+    }
+  }
+  const sessionId = fileName.replace(/\.md$/i, "");
+  return {
+    sessionId,
+    title,
+    linkedKrcId,
+    sessionDate,
+    summaryText,
+    summaryReferences: [...new Set(summaryReferences)],
+    transcriptReference
+  };
+}
+const EVIDENCE_INDEX_DIR = ".kae-index";
+const EVIDENCE_INDEX_FILE = "evidence-index.json";
+const EVIDENCE_INDEX_VERSION = 1;
+function evidenceIndexPath(repositoryPath) {
+  return path.join(repositoryPath, EVIDENCE_INDEX_DIR, EVIDENCE_INDEX_FILE);
+}
+async function loadEvidenceIndex(repositoryPath) {
+  const indexPath = evidenceIndexPath(repositoryPath);
+  try {
+    const raw = await fs.readFile(indexPath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (parsed.version !== EVIDENCE_INDEX_VERSION || !Array.isArray(parsed.records)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+async function saveEvidenceIndex(repositoryPath, index) {
+  const dir = path.join(repositoryPath, EVIDENCE_INDEX_DIR);
+  await fs.mkdir(dir, { recursive: true });
+  const indexPath = evidenceIndexPath(repositoryPath);
+  await fs.writeFile(indexPath, JSON.stringify(index, null, 2), "utf8");
+  return indexPath;
+}
+const STOP_WORDS = /* @__PURE__ */ new Set([
+  "the",
+  "and",
+  "for",
+  "are",
+  "but",
+  "not",
+  "you",
+  "all",
+  "can",
+  "had",
+  "her",
+  "was",
+  "one",
+  "our",
+  "out",
+  "has",
+  "have",
+  "been",
+  "from",
+  "with",
+  "this",
+  "that",
+  "they",
+  "will",
+  "your",
+  "what",
+  "when",
+  "how",
+  "who",
+  "why",
+  "which"
+]);
+function tokenizeSearchTerms(text) {
+  const tokens = text.toLowerCase().replace(/[^\w\s-]/g, " ").split(/\s+/).filter((token) => token.length > 1 && !STOP_WORDS.has(token));
+  return [...new Set(tokens)];
+}
+function tokenizeQuery(query) {
+  const trimmed = query.trim();
+  if (!trimmed)
+    return [];
+  if (/^krc-\d{4}$/i.test(trimmed)) {
+    return [trimmed.toLowerCase()];
+  }
+  const phrase = trimmed.toLowerCase();
+  const tokens = tokenizeSearchTerms(trimmed);
+  if (tokens.length === 0 && phrase.length > 0) {
+    return [phrase];
+  }
+  return tokens;
+}
+function excerpt(text, max = 160) {
+  return text.replace(/\s+/g, " ").trim().slice(0, max);
+}
+function inferSourceType(fileName) {
+  if (isChatGptImportSourceFileName(fileName))
+    return "chatgpt-import";
+  if (fileName.startsWith("KRC-"))
+    return "krc-source";
+  return "markdown";
+}
+function countByKind(records) {
+  const stats = {
+    builtAt: (/* @__PURE__ */ new Date()).toISOString(),
+    recordCount: records.length,
+    sources: 0,
+    conversations: 0,
+    messages: 0,
+    attachments: 0,
+    executiveSessions: 0
+  };
+  for (const record of records) {
+    switch (record.kind) {
+      case "source":
+        stats.sources += 1;
+        break;
+      case "conversation":
+        stats.conversations += 1;
+        break;
+      case "message":
+        stats.messages += 1;
+        break;
+      case "attachment":
+        stats.attachments += 1;
+        break;
+      case "executive_session":
+        stats.executiveSessions += 1;
+        break;
+    }
+  }
+  return stats;
+}
+function indexChatGptSource(relativePath, content, uploadIndex, records) {
+  const parsed = parseChatGptSourceMarkdown(content);
+  if (!parsed)
+    return;
+  const sourceType = inferSourceType(path.basename(relativePath));
+  const repository = {
+    krcId: parsed.krcId,
+    repositoryPath: relativePath,
+    category: "sources",
+    sourceType
+  };
+  const conversation = {
+    conversationId: parsed.conversationId,
+    title: parsed.title,
+    created: parsed.createTime,
+    updated: parsed.updateTime
+  };
+  records.push({
+    id: `${parsed.krcId}:source`,
+    kind: "source",
+    repository,
+    conversation,
+    excerpt: excerpt(parsed.description ?? parsed.title)
+  });
+  records.push({
+    id: `${parsed.krcId}:conversation`,
+    kind: "conversation",
+    repository,
+    conversation,
+    excerpt: excerpt(parsed.title)
+  });
+  const attachmentRefs = new Set(parsed.fileReferences);
+  const messageAttachmentLinks = /* @__PURE__ */ new Map();
+  parsed.messages.forEach((message, index) => {
+    const messageId = `${parsed.krcId}:msg:${index}`;
+    const searchTerms = tokenizeSearchTerms(message.text);
+    messageAttachmentLinks.set(messageId, message.fileReferences);
+    records.push({
+      id: messageId,
+      kind: "message",
+      repository,
+      conversation,
+      message: {
+        messageId,
+        role: message.role,
+        timestamp: message.timestamp,
+        text: message.text,
+        searchTerms
+      },
+      excerpt: excerpt(message.text)
+    });
+    for (const ref of message.fileReferences) {
+      attachmentRefs.add(ref);
+    }
+  });
+  for (const ref of attachmentRefs) {
+    const attachmentId = `${parsed.krcId}:att:${ref}`;
+    const assetPath = uploadIndex ? resolveUploadRef(ref, uploadIndex) : null;
+    const filename = path.basename(ref);
+    let linkedMessageId;
+    for (const [messageId, refs] of messageAttachmentLinks.entries()) {
+      if (refs.includes(ref)) {
+        linkedMessageId = messageId;
+        break;
+      }
+    }
+    records.push({
+      id: attachmentId,
+      kind: "attachment",
+      repository,
+      conversation,
+      attachment: {
+        attachmentId,
+        filename,
+        assetPath: assetPath ?? void 0,
+        linkedMessageId,
+        resolved: Boolean(assetPath)
+      },
+      excerpt: filename
+    });
+  }
+}
+function indexGenericSource(relativePath, content, records) {
+  var _a;
+  const fileName = path.basename(relativePath);
+  const titleMatch = content.match(/^#\s*(KRC-\d{4})?\s*[—–-]?\s*(.+)$/m);
+  const krcId = titleMatch == null ? void 0 : titleMatch[1];
+  const title = ((_a = titleMatch == null ? void 0 : titleMatch[2]) == null ? void 0 : _a.trim()) ?? fileName.replace(/\.md$/i, "");
+  records.push({
+    id: `${relativePath}:source`,
+    kind: "source",
+    repository: {
+      krcId,
+      repositoryPath: relativePath,
+      category: "sources",
+      sourceType: inferSourceType(fileName)
+    },
+    conversation: { title },
+    excerpt: excerpt(content)
+  });
+}
+function indexExecutiveSession(relativePath, content, records) {
+  const parsed = parseExecutiveSessionMarkdown(content, path.basename(relativePath));
+  if (!parsed)
+    return;
+  const summaryText = [parsed.summaryText, ...parsed.summaryReferences].join("\n");
+  records.push({
+    id: `${relativePath}:session`,
+    kind: "executive_session",
+    repository: {
+      krcId: parsed.linkedKrcId,
+      repositoryPath: relativePath,
+      category: "sessions",
+      sourceType: "executive-session"
+    },
+    conversation: {
+      title: parsed.title,
+      created: parsed.sessionDate
+    },
+    session: {
+      sessionId: parsed.sessionId,
+      linkedKrcId: parsed.linkedKrcId,
+      summaryReferences: parsed.summaryReferences,
+      transcriptReference: parsed.transcriptReference
+    },
+    excerpt: excerpt(summaryText || parsed.title)
+  });
+}
+async function buildEvidenceIndex(repositoryPath) {
+  const files = await browseRepository(repositoryPath);
+  const records = [];
+  const uploadDir = await findLatestChatGptUploadDir(repositoryPath);
+  const uploadIndex = uploadDir ? await buildUploadAssetIndex(repositoryPath, uploadDir) : null;
+  for (const file of files) {
+    if (!file.relativePath.endsWith(".md"))
+      continue;
+    if (file.category !== "sources" && file.category !== "sessions")
+      continue;
+    let content;
+    try {
+      content = await readRepositoryFile(repositoryPath, file.relativePath);
+    } catch {
+      continue;
+    }
+    if (file.category === "sessions") {
+      indexExecutiveSession(file.relativePath, content, records);
+      continue;
+    }
+    if (isChatGptImportSourceFileName(file.name) && parseChatGptSourceMarkdown(content)) {
+      indexChatGptSource(file.relativePath, content, uploadIndex, records);
+    } else {
+      indexGenericSource(file.relativePath, content, records);
+    }
+  }
+  const builtAt = (/* @__PURE__ */ new Date()).toISOString();
+  const index = {
+    version: EVIDENCE_INDEX_VERSION,
+    repositoryPath,
+    builtAt,
+    recordCount: records.length,
+    records
+  };
+  await saveEvidenceIndex(repositoryPath, index);
+  return index;
+}
+function summarizeEvidenceIndex(index) {
+  const stats = countByKind(index.records);
+  stats.builtAt = index.builtAt;
+  return stats;
+}
+function normalizeRole(role) {
+  return role.trim().toLowerCase();
+}
+function isUserRole(role) {
+  const normalized = normalizeRole(role);
+  return normalized === "user" || normalized.startsWith("user ");
+}
+function isAssistantRole(role) {
+  const normalized = normalizeRole(role);
+  return normalized === "assistant" || normalized.startsWith("assistant ");
+}
+function recordCategory(record) {
+  if (record.kind === "executive_session")
+    return "session";
+  if (record.kind === "attachment")
+    return "attachment";
+  if (record.repository.category === "sessions")
+    return "session";
+  return "source";
+}
+function resultTitle(record) {
+  var _a, _b, _c, _d;
+  if (record.kind === "attachment" && record.attachment) {
+    return record.attachment.filename;
+  }
+  if (record.kind === "executive_session") {
+    return ((_a = record.conversation) == null ? void 0 : _a.title) ?? ((_b = record.session) == null ? void 0 : _b.sessionId) ?? "Executive Session";
+  }
+  if (record.kind === "message" && record.message) {
+    const title = ((_c = record.conversation) == null ? void 0 : _c.title) ?? record.repository.krcId ?? "Message";
+    return `${title} — ${record.message.role}`;
+  }
+  return ((_d = record.conversation) == null ? void 0 : _d.title) ?? record.repository.krcId ?? record.repository.repositoryPath;
+}
+function drilldownPath(record) {
+  var _a, _b, _c;
+  if (record.kind === "executive_session") {
+    if ((_a = record.session) == null ? void 0 : _a.transcriptReference) {
+      return record.session.transcriptReference;
+    }
+    const sourceRef = (_b = record.session) == null ? void 0 : _b.summaryReferences.find((ref) => ref.startsWith("Sources/"));
+    if (sourceRef)
+      return sourceRef;
+    return record.repository.repositoryPath;
+  }
+  if (record.kind === "attachment" && ((_c = record.attachment) == null ? void 0 : _c.assetPath)) {
+    return record.repository.repositoryPath;
+  }
+  return record.repository.repositoryPath;
+}
+function haystackForRecord(record) {
+  var _a, _b;
+  const parts = [
+    record.repository.krcId ?? "",
+    record.repository.repositoryPath,
+    ((_a = record.conversation) == null ? void 0 : _a.title) ?? "",
+    ((_b = record.conversation) == null ? void 0 : _b.conversationId) ?? "",
+    record.excerpt
+  ];
+  if (record.message) {
+    parts.push(record.message.text, record.message.role, ...record.message.searchTerms);
+  }
+  if (record.attachment) {
+    parts.push(record.attachment.filename, record.attachment.assetPath ?? "");
+  }
+  if (record.session) {
+    parts.push(record.session.sessionId, record.session.linkedKrcId ?? "", ...record.session.summaryReferences);
+  }
+  return parts.join("\n").toLowerCase();
+}
+function scoreRecord(record, query, queryTokens) {
+  var _a, _b, _c;
+  const matchFields = /* @__PURE__ */ new Set();
+  let score = 0;
+  const qLower = query.toLowerCase();
+  const krcId = (_a = record.repository.krcId) == null ? void 0 : _a.toLowerCase();
+  if (krcId && (krcId === qLower || krcId.includes(qLower))) {
+    score += 100;
+    matchFields.add("krcId");
+  }
+  const title = ((_c = (_b = record.conversation) == null ? void 0 : _b.title) == null ? void 0 : _c.toLowerCase()) ?? "";
+  if (title && title.includes(qLower)) {
+    score += 40;
+    matchFields.add("title");
+  }
+  if (record.kind === "attachment" && record.attachment) {
+    const filename = record.attachment.filename.toLowerCase();
+    if (filename.includes(qLower) || queryTokens.some((token) => filename.includes(token))) {
+      score += 50;
+      matchFields.add("filename");
+      matchFields.add("attachment");
+    }
+  }
+  if (record.kind === "message" && record.message) {
+    const textLower = record.message.text.toLowerCase();
+    const phraseHit = textLower.includes(qLower);
+    const tokenHits = queryTokens.filter((token) => textLower.includes(token)).length;
+    if (phraseHit || tokenHits > 0) {
+      score += phraseHit ? 30 : tokenHits * 8;
+      matchFields.add("message");
+      matchFields.add("keyword");
+      if (isUserRole(record.message.role)) {
+        matchFields.add("prompt");
+        if (phraseHit)
+          score += 10;
+      }
+      if (isAssistantRole(record.message.role)) {
+        matchFields.add("response");
+        if (phraseHit)
+          score += 10;
+      }
+    }
+  }
+  if (record.kind === "executive_session") {
+    const haystack = haystackForRecord(record);
+    if (haystack.includes(qLower) || queryTokens.some((token) => haystack.includes(token))) {
+      score += 25;
+      matchFields.add("session");
+      matchFields.add("keyword");
+    }
+  }
+  if (record.kind === "source" || record.kind === "conversation") {
+    const haystack = haystackForRecord(record);
+    if (haystack.includes(qLower) || queryTokens.some((token) => haystack.includes(token))) {
+      score += 15;
+      matchFields.add("keyword");
+    }
+  }
+  if (score === 0) {
+    const haystack = haystackForRecord(record);
+    if (haystack.includes(qLower)) {
+      score += 5;
+      matchFields.add("keyword");
+    } else {
+      const tokenHits = queryTokens.filter((token) => haystack.includes(token)).length;
+      if (tokenHits > 0) {
+        score += tokenHits * 3;
+        matchFields.add("keyword");
+      }
+    }
+  }
+  return { score, matchFields: [...matchFields] };
+}
+function toSearchResult(record, score, matchFields) {
+  var _a, _b, _c;
+  return {
+    recordId: record.id,
+    kind: record.kind,
+    score,
+    matchFields,
+    title: resultTitle(record),
+    snippet: record.excerpt,
+    drilldownPath: drilldownPath(record),
+    krcId: record.repository.krcId,
+    conversationTitle: (_a = record.conversation) == null ? void 0 : _a.title,
+    messageRole: (_b = record.message) == null ? void 0 : _b.role,
+    attachmentFilename: (_c = record.attachment) == null ? void 0 : _c.filename,
+    category: recordCategory(record)
+  };
+}
+function searchEvidenceIndex(index, query, limit = 50) {
+  const trimmed = query.trim();
+  if (!trimmed)
+    return [];
+  const queryTokens = tokenizeQuery(trimmed);
+  const hits = [];
+  for (const record of index.records) {
+    const { score, matchFields } = scoreRecord(record, trimmed, queryTokens);
+    if (score <= 0 || matchFields.length === 0)
+      continue;
+    hits.push(toSearchResult(record, score, matchFields));
+  }
+  return hits.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+function evidenceResultsToRepositoryResults(hits) {
+  return hits.map((hit) => ({
+    path: hit.drilldownPath,
+    title: hit.title,
+    snippet: hit.snippet,
+    category: hit.category,
+    score: hit.score,
+    evidenceKind: hit.kind,
+    recordId: hit.recordId,
+    matchFields: hit.matchFields,
+    krcId: hit.krcId,
+    conversationTitle: hit.conversationTitle,
+    messageRole: hit.messageRole,
+    attachmentFilename: hit.attachmentFilename
+  }));
+}
+async function ensureEvidenceIndex(repositoryPath) {
+  const existing = await loadEvidenceIndex(repositoryPath);
+  if (existing && existing.repositoryPath === repositoryPath) {
+    return existing;
+  }
+  return buildEvidenceIndex(repositoryPath);
+}
+async function searchEvidence(repositoryPath, query, limit = 50) {
+  const index = await ensureEvidenceIndex(repositoryPath);
+  return searchEvidenceIndex(index, query, limit);
+}
 function categorizeRelativePath(relativePath) {
   const normalized = relativePath.replace(/\\/g, "/");
   if (normalized.startsWith("Sources/"))
@@ -5201,9 +5963,20 @@ function snippetAroundMatch(content, index, radius = 80) {
   return content.slice(start, end).replace(/\s+/g, " ").trim();
 }
 async function searchRepository(repositoryPath, query, limit = 50) {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q)
     return [];
+  try {
+    const hits = await searchEvidence(repositoryPath, q, limit);
+    if (hits.length > 0) {
+      return evidenceResultsToRepositoryResults(hits);
+    }
+  } catch {
+  }
+  return searchRepositoryLegacy(repositoryPath, q, limit);
+}
+async function searchRepositoryLegacy(repositoryPath, query, limit = 50) {
+  const q = query.toLowerCase();
   const files = await browseRepository(repositoryPath);
   const results = [];
   for (const file of files) {
@@ -5347,241 +6120,6 @@ async function writeImportReport(repositoryPath, report) {
   const markdown = buildReportMarkdown({ ...report });
   await fs.writeFile(reportFilePath, markdown, "utf8");
   return reportFilePath;
-}
-const CHATGPT_IMPORT_KRC_MIN = 53;
-const CHATGPT_IMPORT_KRC_MAX = 122;
-function parseChatGptSourceTimes(content) {
-  var _a;
-  const header = content.slice(0, 4096);
-  const titleMatch = header.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m);
-  return {
-    krcId: titleMatch == null ? void 0 : titleMatch[1],
-    title: (_a = titleMatch == null ? void 0 : titleMatch[2]) == null ? void 0 : _a.trim(),
-    createTime: extractSection(header, "Create Time"),
-    updateTime: extractSection(header, "Update Time")
-  };
-}
-async function listChatGptImportEntries(repositoryPath) {
-  const files = await browseRepository(repositoryPath);
-  const imports = files.filter((f) => f.category === "sources" && isChatGptImportSourceFileName(f.name));
-  const entries = [];
-  for (const file of imports) {
-    let header = "";
-    try {
-      const full = await readRepositoryFile(repositoryPath, file.relativePath);
-      header = full.slice(0, 4096);
-    } catch {
-    }
-    const meta = parseChatGptSourceTimes(header);
-    const sortTime = meta.updateTime ?? meta.createTime ?? file.modifiedAt ?? "";
-    entries.push({
-      name: file.name,
-      relativePath: file.relativePath,
-      krcId: meta.krcId ?? file.name,
-      title: meta.title ?? file.name.replace(/\.md$/i, ""),
-      createTime: meta.createTime,
-      updateTime: meta.updateTime,
-      sortTime,
-      sizeBytes: file.sizeBytes,
-      modifiedAt: file.modifiedAt
-    });
-  }
-  return entries.sort((a, b) => new Date(b.sortTime).getTime() - new Date(a.sortTime).getTime());
-}
-function isChatGptImportSourceFileName(fileName) {
-  const match = fileName.match(/^KRC-(\d{4})_/i);
-  if (!match)
-    return false;
-  const num = parseInt(match[1], 10);
-  return num >= CHATGPT_IMPORT_KRC_MIN && num <= CHATGPT_IMPORT_KRC_MAX;
-}
-function extractSection(content, heading) {
-  var _a;
-  const pattern = new RegExp(`^## ${heading}\\s*\\n([\\s\\S]*?)(?=^## |\\z)`, "m");
-  const match = content.match(pattern);
-  return (_a = match == null ? void 0 : match[1]) == null ? void 0 : _a.trim();
-}
-function parseListSection(section) {
-  if (!section)
-    return [];
-  return section.split("\n").map((line) => line.replace(/^-\s*/, "").trim()).filter(Boolean);
-}
-function parseMessageBlock(block) {
-  var _a, _b, _c, _d;
-  const lines = block.split("\n");
-  const role = (_a = lines[0]) == null ? void 0 : _a.trim();
-  if (!role)
-    return null;
-  let timestamp;
-  let bodyStart = 1;
-  if (((_b = lines[1]) == null ? void 0 : _b.startsWith("*")) && ((_c = lines[1]) == null ? void 0 : _c.endsWith("*"))) {
-    timestamp = lines[1].slice(1, -1).trim();
-    bodyStart = 2;
-  }
-  const rest = lines.slice(bodyStart).join("\n").trim();
-  const fileSplit = rest.split(/\n\*\*File references:\*\*\s*\n/i);
-  const text = ((_d = fileSplit[0]) == null ? void 0 : _d.trim()) ?? "";
-  const fileReferences = [];
-  if (fileSplit[1]) {
-    for (const line of fileSplit[1].split("\n")) {
-      const ref = line.replace(/^-\s*/, "").trim();
-      if (ref)
-        fileReferences.push(ref);
-    }
-  }
-  return { role, timestamp, text, fileReferences };
-}
-function parseChatGptSourceMarkdown(content) {
-  const titleMatch = content.match(/^#\s*(KRC-\d{4})\s*[—–-]\s*(.+)$/m);
-  if (!titleMatch)
-    return null;
-  const transcriptIdx = content.indexOf("## Transcript");
-  const header = transcriptIdx >= 0 ? content.slice(0, transcriptIdx) : content;
-  const transcript = transcriptIdx >= 0 ? content.slice(transcriptIdx + "## Transcript".length) : "";
-  const messages = [];
-  for (const block of transcript.split(/^### /m).slice(1)) {
-    const parsed = parseMessageBlock(block);
-    if (parsed)
-      messages.push(parsed);
-  }
-  return {
-    krcId: titleMatch[1],
-    title: titleMatch[2].trim(),
-    conversationId: extractSection(header, "ChatGPT Conversation ID"),
-    createTime: extractSection(header, "Create Time"),
-    updateTime: extractSection(header, "Update Time"),
-    description: extractSection(header, "Description"),
-    fileReferences: parseListSection(extractSection(header, "File References")),
-    messages
-  };
-}
-function detectMimeType(buffer, refHint) {
-  if (buffer.length >= 4 && buffer[0] === 137 && buffer[1] === 80 && buffer[2] === 78 && buffer[3] === 71) {
-    return "image/png";
-  }
-  if (buffer.length >= 3 && buffer[0] === 255 && buffer[1] === 216 && buffer[2] === 255) {
-    return "image/jpeg";
-  }
-  if (buffer.length >= 6 && buffer[0] === 71 && buffer[1] === 73 && buffer[2] === 70) {
-    return "image/gif";
-  }
-  if (buffer.length >= 12 && buffer[4] === 102 && buffer[5] === 116 && buffer[6] === 121 && buffer[7] === 112) {
-    return "video/mp4";
-  }
-  if (buffer.length >= 4 && buffer[0] === 37 && buffer[1] === 80 && buffer[2] === 68 && buffer[3] === 70) {
-    return "application/pdf";
-  }
-  const hint = (refHint == null ? void 0 : refHint.toLowerCase()) ?? "";
-  if (hint.endsWith(".png"))
-    return "image/png";
-  if (hint.endsWith(".jpg") || hint.endsWith(".jpeg"))
-    return "image/jpeg";
-  if (hint.endsWith(".gif"))
-    return "image/gif";
-  if (hint.endsWith(".webp"))
-    return "image/webp";
-  if (hint.endsWith(".mp4"))
-    return "video/mp4";
-  if (hint.endsWith(".webm"))
-    return "video/webm";
-  if (hint.endsWith(".mov"))
-    return "video/quicktime";
-  return "application/octet-stream";
-}
-function assetKindFromMime(mimeType) {
-  if (mimeType.startsWith("image/"))
-    return "image";
-  if (mimeType.startsWith("video/"))
-    return "video";
-  return "other";
-}
-async function findLatestChatGptUploadDir(repositoryPath) {
-  const uploadsRoot = path.join(repositoryPath, "Uploads");
-  let entries;
-  try {
-    entries = await fs.readdir(uploadsRoot);
-  } catch {
-    return null;
-  }
-  const importDirs = entries.filter((name) => name.startsWith("chatgpt-import-")).sort().reverse();
-  if (importDirs.length === 0)
-    return null;
-  return `Uploads/${importDirs[0]}`;
-}
-async function buildUploadAssetIndex(repositoryPath, uploadRelativeDir) {
-  const index = /* @__PURE__ */ new Map();
-  const fullDir = path.join(repositoryPath, uploadRelativeDir);
-  let files;
-  try {
-    files = await fs.readdir(fullDir);
-  } catch {
-    return index;
-  }
-  for (const fileName of files) {
-    const relativePath = `${uploadRelativeDir}/${fileName}`.replace(/\\/g, "/");
-    index.set(fileName.toLowerCase(), relativePath);
-    const base = fileName.replace(/\.dat$/i, "");
-    index.set(base.toLowerCase(), relativePath);
-    if (base.startsWith("file_")) {
-      index.set(base.slice("file_".length).toLowerCase(), relativePath);
-    }
-  }
-  return index;
-}
-function resolveUploadRef(ref, index) {
-  const trimmed = ref.trim();
-  if (!trimmed)
-    return null;
-  const candidates = [
-    trimmed,
-    trimmed.toLowerCase(),
-    `${trimmed}.dat`,
-    `${trimmed.toLowerCase()}.dat`,
-    trimmed.replace(/^file_/, ""),
-    `file_${trimmed}`,
-    `file_${trimmed}.dat`
-  ];
-  for (const candidate of candidates) {
-    const hit = index.get(candidate.toLowerCase());
-    if (hit)
-      return hit;
-  }
-  const base = path.basename(trimmed).toLowerCase();
-  for (const [key, value] of index.entries()) {
-    if (key.includes(base) || base.includes(key))
-      return value;
-  }
-  return null;
-}
-async function resolveChatGptAssets(repositoryPath, refs) {
-  const uploadDir = await findLatestChatGptUploadDir(repositoryPath);
-  if (!uploadDir)
-    return [];
-  const index = await buildUploadAssetIndex(repositoryPath, uploadDir);
-  const resolved = [];
-  const seen = /* @__PURE__ */ new Set();
-  for (const ref of refs) {
-    const relativePath = resolveUploadRef(ref, index);
-    if (!relativePath || seen.has(relativePath))
-      continue;
-    seen.add(relativePath);
-    const fullPath = path.join(repositoryPath, relativePath);
-    let buffer;
-    try {
-      buffer = await fs.readFile(fullPath);
-    } catch {
-      continue;
-    }
-    const mimeType = detectMimeType(buffer, ref);
-    resolved.push({
-      ref,
-      relativePath,
-      fileName: path.basename(relativePath),
-      mimeType,
-      kind: assetKindFromMime(mimeType)
-    });
-  }
-  return resolved;
 }
 const KRC_PATTERN = /KRC-(\d{4})/i;
 async function pathExists(p) {
@@ -6641,6 +7179,14 @@ function setupIpc() {
     "kae:search-repository",
     async (_event, query) => searchRepository(repoPath(), query)
   );
+  ipcMain.handle("kae:build-evidence-index", async () => {
+    const index = await buildEvidenceIndex(repoPath());
+    return summarizeEvidenceIndex(index);
+  });
+  ipcMain.handle("kae:search-knowledge", async (_event, query) => {
+    const hits = await searchEvidence(repoPath(), query);
+    return evidenceResultsToRepositoryResults(hits);
+  });
   ipcMain.handle("kae:open-repository-path", async () => {
     await shell.openPath(repoPath());
   });

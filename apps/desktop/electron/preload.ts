@@ -15,6 +15,7 @@ import type {
   RepositoryHealthReport,
   RepositorySearchResult,
   RepositoryStats,
+  EvidenceIndexStats,
 } from '@scooper/core';
 
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData, RepositoryAssetData } from '../src/types/kae.js';
@@ -44,6 +45,8 @@ export interface KaeAPI {
   parseChatGptSource: (relativePath: string) => Promise<ChatGptSourcePreviewData | null>;
   readRepositoryAsset: (relativePath: string, refHint?: string) => Promise<RepositoryAssetData>;
   searchRepository: (query: string) => Promise<RepositorySearchResult[]>;
+  buildEvidenceIndex: () => Promise<EvidenceIndexStats>;
+  searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -84,6 +87,8 @@ const kaeAPI: KaeAPI = {
   readRepositoryAsset: (relativePath, refHint) =>
     ipcRenderer.invoke('kae:read-repository-asset', relativePath, refHint),
   searchRepository: (query) => ipcRenderer.invoke('kae:search-repository', query),
+  buildEvidenceIndex: () => ipcRenderer.invoke('kae:build-evidence-index'),
+  searchKnowledge: (query) => ipcRenderer.invoke('kae:search-knowledge', query),
   openRepositoryPath: () => ipcRenderer.invoke('kae:open-repository-path'),
   openRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:open-repository-file', relativePath),
   revealRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:reveal-repository-file', relativePath),

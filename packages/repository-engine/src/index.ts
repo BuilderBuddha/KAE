@@ -6,3 +6,4 @@ export * from './git-readiness.js';
 export * from './import-report.js';
 export * from './chatgpt-source.js';
 export * from './repair/index.js';
+export * from './evidence/index.js';

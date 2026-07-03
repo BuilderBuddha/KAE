@@ -14,6 +14,7 @@ import type {
   RepositoryHealthReport,
   RepositorySearchResult,
   RepositoryStats,
+  EvidenceIndexStats,
 } from '@scooper/core';
 
 export interface ImporterInfo {
@@ -84,6 +85,8 @@ export interface KaeAPI {
   parseChatGptSource: (relativePath: string) => Promise<ChatGptSourcePreviewData | null>;
   readRepositoryAsset: (relativePath: string, refHint?: string) => Promise<RepositoryAssetData>;
   searchRepository: (query: string) => Promise<RepositorySearchResult[]>;
+  buildEvidenceIndex: () => Promise<EvidenceIndexStats>;
+  searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;

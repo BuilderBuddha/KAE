@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { RepositoryFileEntry, RepositorySearchResult } from '@scooper/core';
+import { evidenceResultsToRepositoryResults, searchEvidence } from './evidence/search.js';
 
 function categorizeRelativePath(relativePath: string): RepositoryFileEntry['category'] {
   const normalized = relativePath.replace(/\\/g, '/');
@@ -78,15 +79,34 @@ function snippetAroundMatch(content: string, index: number, radius = 80): string
   return content.slice(start, end).replace(/\s+/g, ' ').trim();
 }
 
-/** Searches markdown knowledge across the repository. */
+/** Searches repository knowledge via the canonical evidence index. */
 export async function searchRepository(
   repositoryPath: string,
   query: string,
   limit = 50,
 ): Promise<RepositorySearchResult[]> {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) return [];
 
+  try {
+    const hits = await searchEvidence(repositoryPath, q, limit);
+    if (hits.length > 0) {
+      return evidenceResultsToRepositoryResults(hits);
+    }
+  } catch {
+    // fall through to legacy scan
+  }
+
+  return searchRepositoryLegacy(repositoryPath, q, limit);
+}
+
+/** Legacy linear scan fallback when the evidence index is unavailable. */
+async function searchRepositoryLegacy(
+  repositoryPath: string,
+  query: string,
+  limit = 50,
+): Promise<RepositorySearchResult[]> {
+  const q = query.toLowerCase();
   const files = await browseRepository(repositoryPath);
   const results: RepositorySearchResult[] = [];
 

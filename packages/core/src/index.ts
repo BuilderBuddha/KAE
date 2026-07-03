@@ -1,6 +1,7 @@
 export * from './types/index.js';
 export * from './types/classification.js';
 export * from './types/repository.js';
+export * from './types/evidence-index.js';
 export * from './types/repair.js';
 export * from './types/import-rc.js';
 export * from './connector/pipeline.js';

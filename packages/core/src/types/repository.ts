@@ -68,8 +68,15 @@ export interface RepositorySearchResult {
   path: string;
   title: string;
   snippet: string;
-  category: 'source' | 'session' | 'registry' | 'report';
+  category: 'source' | 'session' | 'registry' | 'report' | 'attachment';
   score: number;
+  evidenceKind?: import('./evidence-index.js').EvidenceRecordKind;
+  recordId?: string;
+  matchFields?: import('./evidence-index.js').EvidenceSearchMatchField[];
+  krcId?: string;
+  conversationTitle?: string;
+  messageRole?: string;
+  attachmentFilename?: string;
 }
 
 /** Browsable repository file entry. */

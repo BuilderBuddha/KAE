@@ -36,6 +36,10 @@ import {
   readRepositoryFile,
   resolveChatGptAssets,
   searchRepository,
+  buildEvidenceIndex,
+  summarizeEvidenceIndex,
+  searchEvidence,
+  evidenceResultsToRepositoryResults,
   writeSessionManifest,
   writeImportReport,
 } from '@scooper/repository-engine';
@@ -545,6 +549,14 @@ function setupIpc(): void {
   ipcMain.handle('kae:search-repository', async (_event, query: string) =>
     searchRepository(repoPath(), query),
   );
+  ipcMain.handle('kae:build-evidence-index', async () => {
+    const index = await buildEvidenceIndex(repoPath());
+    return summarizeEvidenceIndex(index);
+  });
+  ipcMain.handle('kae:search-knowledge', async (_event, query: string) => {
+    const hits = await searchEvidence(repoPath(), query);
+    return evidenceResultsToRepositoryResults(hits);
+  });
   ipcMain.handle('kae:open-repository-path', async () => {
     await shell.openPath(repoPath());
   });
