@@ -784,6 +784,275 @@ select {
   max-height: 520px;
 }
 
+.evidence-drilldown-panel {
+  padding: 16px;
+}
+
+.evidence-drilldown__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.evidence-drilldown__title {
+  margin: 0;
+  font-size: 15px;
+}
+
+.evidence-drilldown__section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.evidence-drilldown__section-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.evidence-drilldown__items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evidence-drilldown__link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.evidence-drilldown__link:hover,
+.evidence-drilldown__link--highlight {
+  border-color: var(--color-accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.evidence-drilldown__link-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.evidence-drilldown__link-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.evidence-drilldown__empty {
+  font-size: 12px;
+  margin: 0;
+}
+
+.evidence-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.evidence-timeline__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.evidence-timeline__arrow {
+  color: var(--color-text-muted);
+  font-size: 16px;
+  line-height: 1;
+  margin: 2px 0;
+}
+
+.evidence-timeline__card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.evidence-timeline__card:hover {
+  border-color: var(--color-accent);
+}
+
+.evidence-timeline__kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
+
+.evidence-timeline__label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.evidence-timeline__sub,
+.evidence-timeline__time {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Vigsy reasoning */
+.vigsy-screen .vigsy-ask {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.vigsy-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.vigsy-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vigsy-card {
+  padding: 16px;
+}
+
+.vigsy-card__title {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.vigsy-card__body {
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.vigsy-card__pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.vigsy-confidence {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vigsy-confidence--high {
+  border-left: 3px solid var(--color-success, #4ade80);
+}
+
+.vigsy-confidence--medium {
+  border-left: 3px solid var(--color-warning, #fbbf24);
+}
+
+.vigsy-confidence--low,
+.vigsy-confidence--insufficient {
+  border-left: 3px solid var(--color-danger, #f87171);
+}
+
+.vigsy-confidence__rationale {
+  color: var(--color-text-muted);
+}
+
+.vigsy-evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vigsy-evidence-item {
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.vigsy-evidence-item__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.vigsy-evidence-item__label {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.vigsy-evidence-item__krc {
+  font-size: 11px;
+  color: var(--color-accent);
+}
+
+.vigsy-evidence-item__excerpt {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.vigsy-link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vigsy-link-list__btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.vigsy-link-list__btn:hover {
+  border-color: var(--color-accent);
+}
+
+.vigsy-explorer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vigsy-empty,
+.vigsy-error {
+  padding: 16px;
+}
+
+.vigsy-error {
+  color: var(--color-danger, #f87171);
+}
+
 .explorer-preview__content {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -1134,3 +1403,83 @@ select {
 .btn--sm { padding: 4px 10px; font-size: 12px; }
 .btn--link { background: none; border: none; color: var(--color-accent); cursor: pointer; text-align: left; }
 .btn--link:hover { color: var(--color-accent-hover); }
+
+.shell__logo--vigsy {
+  font-size: 20px;
+  background: linear-gradient(135deg, var(--color-accent), #8b5cf6);
+}
+
+/* Vigsy Experience (Campaign 1.3) */
+.vigsy-experience { max-width: 920px; margin: 0 auto; }
+.vigsy-home__hero { margin-bottom: 24px; }
+.vigsy-home__eyebrow { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-accent); }
+.vigsy-home__greeting { margin: 0 0 8px; font-size: 28px; font-weight: 600; }
+.vigsy-home__lead { margin: 0; color: var(--color-text-muted); line-height: 1.5; }
+.vigsy-home__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+.vigsy-home__card { padding: 14px 16px; }
+.vigsy-home__card h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); }
+.vigsy-home__card--wide { grid-column: 1 / -1; }
+.vigsy-home__stat-value { margin: 0; font-size: 18px; font-weight: 600; }
+.vigsy-home__stat-value--healthy { color: var(--color-success, #4ade80); }
+.vigsy-home__stat-value--attention { color: var(--color-warning, #fbbf24); }
+.vigsy-home__stat-value--critical { color: var(--color-danger, #f87171); }
+.vigsy-home__activity { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.vigsy-home__activity li { display: flex; gap: 10px; font-size: 13px; }
+.vigsy-home__activity-krc { color: var(--color-accent); font-weight: 500; min-width: 72px; }
+.vigsy-home__suggestions { margin-bottom: 20px; }
+.vigsy-home__suggestions-title { margin: 0 0 10px; font-size: 13px; color: var(--color-text-muted); }
+.vigsy-home__composer { padding: 16px; }
+.vigsy-home__input { width: 100%; resize: vertical; min-height: 72px; margin-bottom: 12px; font-size: 15px; }
+.vigsy-home__composer-actions { display: flex; justify-content: flex-end; }
+.vigsy-briefing { margin-bottom: 20px; padding: 16px 18px; }
+.vigsy-briefing__header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.vigsy-briefing__title { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+.vigsy-briefing__subtitle { margin: 0; font-size: 13px; }
+.vigsy-briefing__meta { margin: 0 0 14px; font-size: 12px; }
+.vigsy-briefing__loading { margin: 0 0 12px; }
+.vigsy-briefing__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.vigsy-briefing-card { border: 1px solid var(--color-border); border-radius: 8px; padding: 12px 14px; background: rgba(255, 255, 255, 0.02); }
+.vigsy-briefing-card__head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.vigsy-briefing-card__category { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-accent); }
+.vigsy-briefing-card__confidence { font-size: 11px; color: var(--color-text-muted); }
+.vigsy-briefing-card__title { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+.vigsy-briefing-card__summary { margin: 0 0 8px; font-size: 13px; line-height: 1.45; }
+.vigsy-briefing-card__why { margin: 0 0 10px; font-size: 12px; line-height: 1.4; }
+.vigsy-briefing-card__links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.vigsy-briefing-card__links li { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; }
+.vigsy-briefing-card__link-label { flex: 1; min-width: 0; }
+.vigsy-briefing-card__empty { margin: 0; font-size: 12px; }
+@media (max-width: 900px) { .vigsy-briefing__grid { grid-template-columns: 1fr; } }
+.vigsy-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.vigsy-chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--color-border); background: rgba(255, 255, 255, 0.03); color: var(--color-text); font-size: 12px; cursor: pointer; }
+.vigsy-chip:hover:not(:disabled) { border-color: var(--color-accent); color: var(--color-accent); }
+.vigsy-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.vigsy-conversation { display: flex; flex-direction: column; height: calc(100vh - 48px); min-height: 480px; }
+.vigsy-conversation__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.vigsy-thread { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 4px; margin-bottom: 12px; }
+.vigsy-conversation__composer { display: flex; gap: 10px; align-items: flex-end; padding: 12px; }
+.vigsy-conversation__composer .vigsy-home__input { margin-bottom: 0; flex: 1; }
+.vigsy-msg { display: flex; max-width: 100%; }
+.vigsy-msg--user { justify-content: flex-end; }
+.vigsy-msg--assistant { gap: 10px; align-items: flex-start; }
+.vigsy-msg__avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--color-accent), #8b5cf6); color: #fff; font-size: 14px; flex-shrink: 0; }
+.vigsy-msg__content { flex: 1; min-width: 0; }
+.vigsy-msg__bubble { padding: 12px 14px; border-radius: 14px; max-width: 85%; }
+.vigsy-msg--user .vigsy-msg__bubble { background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.35); border-bottom-right-radius: 4px; }
+.vigsy-msg--assistant .vigsy-msg__bubble { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--color-border); border-bottom-left-radius: 4px; max-width: 100%; }
+.vigsy-msg__bubble--thinking { display: flex; align-items: center; gap: 10px; color: var(--color-text-muted); font-size: 13px; }
+.vigsy-msg__bubble--streaming { border-color: var(--color-accent); }
+.vigsy-msg__text { margin: 0; white-space: pre-wrap; font-family: inherit; font-size: 14px; line-height: 1.55; }
+.vigsy-cursor { display: inline-block; width: 8px; height: 1em; margin-left: 2px; background: var(--color-accent); animation: vigsy-blink 0.9s step-end infinite; vertical-align: text-bottom; }
+@keyframes vigsy-blink { 50% { opacity: 0; } }
+.vigsy-thinking span { display: inline-block; width: 6px; height: 6px; margin-right: 4px; border-radius: 50%; background: var(--color-accent); animation: vigsy-dot 1.2s infinite ease-in-out; }
+.vigsy-thinking span:nth-child(2) { animation-delay: 0.15s; }
+.vigsy-thinking span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes vigsy-dot { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+.vigsy-evidence-panel { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.vigsy-evidence-card { border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; }
+.vigsy-evidence-card__toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: none; color: var(--color-text); font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; }
+.vigsy-evidence-card__toggle:hover { background: rgba(99, 102, 241, 0.08); }
+.vigsy-evidence-card__body { padding: 10px 12px 12px; border-top: 1px solid var(--color-border); }
+.vigsy-relationship-group { margin-bottom: 12px; }
+.vigsy-relationship-group__title { margin: 0 0 8px; font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }

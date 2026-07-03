@@ -5,6 +5,7 @@ import { DashboardScreen } from './screens/DashboardScreen';
 import { ImportScreen } from './screens/ImportScreen';
 import { ExplorerScreen } from './screens/ExplorerScreen';
 import { SearchScreen } from './screens/SearchScreen';
+import { VigsyScreen } from './screens/VigsyScreen';
 import { RepositorySettingsScreen } from './screens/RepositorySettingsScreen';
 import { JobQueueScreen } from './screens/JobQueueScreen';
 import { LogsScreen } from './screens/LogsScreen';
@@ -21,6 +22,8 @@ function renderScreen(screen: ScreenId) {
       return <ExplorerScreen />;
     case 'search':
       return <SearchScreen />;
+    case 'vigsy':
+      return <VigsyScreen />;
     case 'repository':
       return <RepositorySettingsScreen />;
     case 'jobs':
@@ -33,7 +36,7 @@ function renderScreen(screen: ScreenId) {
 }
 
 export default function App() {
-  const [activeScreen, setActiveScreen] = useState<ScreenId>('dashboard');
+  const [activeScreen, setActiveScreen] = useState<ScreenId>('vigsy');
 
   return (
     <NavigationProvider onNavigate={setActiveScreen}>

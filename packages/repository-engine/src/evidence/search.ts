@@ -165,6 +165,14 @@ function scoreRecord(
     }
   }
 
+  if (queryTokens.length > 1) {
+    const haystack = haystackForRecord(record);
+    if (queryTokens.every((token) => haystack.includes(token))) {
+      score += 25;
+      matchFields.add('keyword');
+    }
+  }
+
   return { score, matchFields: [...matchFields] };
 }
 

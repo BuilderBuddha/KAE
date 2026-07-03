@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { RepositorySearchResult } from '@scooper/core';
-import { useNavigation } from '../context/NavigationContext';
+import type { EvidenceDrilldown, RepositorySearchResult } from '@scooper/core';
+import { EvidenceDrilldownPanel } from '../components/EvidenceDrilldownPanel';
 
 function kindLabel(result: RepositorySearchResult): string {
   if (result.evidenceKind) {
@@ -15,14 +15,14 @@ function matchLabel(result: RepositorySearchResult): string {
 }
 
 export function SearchScreen() {
-  const { openInExplorer } = useNavigation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RepositorySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [indexing, setIndexing] = useState(false);
   const [indexStats, setIndexStats] = useState<string | null>(null);
   const [selected, setSelected] = useState<RepositorySearchResult | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [drilldown, setDrilldown] = useState<EvidenceDrilldown | null>(null);
+  const [drilldownLoading, setDrilldownLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +54,7 @@ export function SearchScreen() {
       const hits = await window.kae.searchKnowledge(query.trim());
       setResults(hits);
       setSelected(null);
-      setPreview(null);
+      setDrilldown(null);
     } finally {
       setSearching(false);
     }
@@ -62,12 +62,20 @@ export function SearchScreen() {
 
   const openResult = async (result: RepositorySearchResult) => {
     setSelected(result);
-    const content = await window.kae.readRepositoryFile(result.path);
-    setPreview(content);
-  };
+    if (!result.recordId) {
+      setDrilldown(null);
+      return;
+    }
 
-  const drillIntoExplorer = (result: RepositorySearchResult) => {
-    openInExplorer(result.path);
+    setDrilldownLoading(true);
+    try {
+      const chain = await window.kae.resolveEvidenceDrilldown(result.recordId, query.trim() || undefined);
+      setDrilldown(chain);
+    } catch {
+      setDrilldown(null);
+    } finally {
+      setDrilldownLoading(false);
+    }
   };
 
   return (
@@ -75,8 +83,8 @@ export function SearchScreen() {
       <header className="screen__header">
         <h2 className="screen__title">Knowledge Search</h2>
         <p className="screen__description">
-          Evidence-indexed search across sources, conversations, messages, attachments, and executive
-          sessions.
+          Evidence-indexed search with deterministic drilldown across sources, conversations, messages,
+          attachments, and executive sessions.
         </p>
         {indexStats ? (
           <p className="screen__description muted">
@@ -110,7 +118,7 @@ export function SearchScreen() {
               <li key={`${result.recordId ?? result.path}-${result.title}`}>
                 <button
                   type="button"
-                  className={`explorer-list__item${selected?.path === result.path && selected?.recordId === result.recordId ? ' explorer-list__item--active' : ''}`}
+                  className={`explorer-list__item${selected?.recordId === result.recordId ? ' explorer-list__item--active' : ''}`}
                   onClick={() => openResult(result)}
                 >
                   <span className="explorer-list__name">{result.title}</span>
@@ -130,29 +138,15 @@ export function SearchScreen() {
             ))
           )}
         </ul>
-        <div className="card explorer-preview">
-          {selected ? (
-            <>
-              <div className="explorer-preview__actions" style={{ marginBottom: '0.75rem' }}>
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={() => drillIntoExplorer(selected)}
-                >
-                  Open in Explorer
-                </button>
-              </div>
-              {preview ? (
-                <pre className="explorer-preview__content">
-                  {preview.slice(0, 12000)}
-                  {preview.length > 12000 ? '\n\n… (truncated)' : ''}
-                </pre>
-              ) : (
-                <p className="muted">Loading preview…</p>
-              )}
-            </>
+        <div className="card explorer-preview evidence-drilldown-panel">
+          {!selected ? (
+            <p className="muted">Select a result to explore the evidence chain.</p>
+          ) : drilldownLoading ? (
+            <p className="muted">Resolving evidence chain…</p>
+          ) : drilldown ? (
+            <EvidenceDrilldownPanel drilldown={drilldown} />
           ) : (
-            <p className="muted">Select a result to preview or open in Explorer.</p>
+            <p className="muted">Unable to resolve evidence drilldown for this result.</p>
           )}
         </div>
       </div>

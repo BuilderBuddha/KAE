@@ -40,6 +40,15 @@ import {
   summarizeEvidenceIndex,
   searchEvidence,
   evidenceResultsToRepositoryResults,
+  getEvidenceDrilldown,
+  answerKnowledgeQuestion,
+  buildRelationshipIndex,
+  summarizeRelationshipIndex,
+  searchRelationships,
+  getRelationshipsForEvidence,
+  getRelatedEvidence,
+  ensureRelationshipIndex,
+  buildExecutiveBriefing,
   writeSessionManifest,
   writeImportReport,
 } from '@scooper/repository-engine';
@@ -551,12 +560,37 @@ function setupIpc(): void {
   );
   ipcMain.handle('kae:build-evidence-index', async () => {
     const index = await buildEvidenceIndex(repoPath());
+    await buildRelationshipIndex(repoPath());
     return summarizeEvidenceIndex(index);
   });
   ipcMain.handle('kae:search-knowledge', async (_event, query: string) => {
     const hits = await searchEvidence(repoPath(), query);
     return evidenceResultsToRepositoryResults(hits);
   });
+  ipcMain.handle(
+    'kae:resolve-evidence-drilldown',
+    async (_event, recordId: string, query?: string) => getEvidenceDrilldown(repoPath(), recordId, query),
+  );
+  ipcMain.handle('kae:answer-knowledge-question', async (_event, question: string) =>
+    answerKnowledgeQuestion(repoPath(), question),
+  );
+  ipcMain.handle('kae:build-relationship-index', async () => {
+    const index = await buildRelationshipIndex(repoPath());
+    return summarizeRelationshipIndex(index);
+  });
+  ipcMain.handle('kae:search-relationships', async (_event, query: string) => {
+    const index = await ensureRelationshipIndex(repoPath());
+    return searchRelationships(index, query);
+  });
+  ipcMain.handle('kae:get-relationships-for-evidence', async (_event, evidenceId: string) => {
+    const index = await ensureRelationshipIndex(repoPath());
+    return getRelationshipsForEvidence(index, evidenceId);
+  });
+  ipcMain.handle(
+    'kae:get-related-evidence',
+    async (_event, anchor: string, query?: string) => getRelatedEvidence(repoPath(), anchor, query),
+  );
+  ipcMain.handle('kae:get-executive-briefing', async () => buildExecutiveBriefing(repoPath()));
   ipcMain.handle('kae:open-repository-path', async () => {
     await shell.openPath(repoPath());
   });

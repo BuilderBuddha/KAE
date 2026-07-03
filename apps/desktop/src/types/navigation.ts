@@ -3,6 +3,7 @@ export type ScreenId =
   | 'import'
   | 'explorer'
   | 'search'
+  | 'vigsy'
   | 'repository'
   | 'jobs'
   | 'logs'
@@ -16,6 +17,12 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
+  {
+    id: 'vigsy',
+    label: 'Vigsy',
+    icon: '✦',
+    description: 'Executive intelligence — ask anything',
+  },
   {
     id: 'dashboard',
     label: 'Dashboard',

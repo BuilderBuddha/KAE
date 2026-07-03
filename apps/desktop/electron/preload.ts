@@ -16,6 +16,12 @@ import type {
   RepositorySearchResult,
   RepositoryStats,
   EvidenceIndexStats,
+  EvidenceDrilldown,
+  VigsyKnowledgeAnswer,
+  KnowledgeRelationship,
+  KnowledgeRelationshipStats,
+  RelatedEvidenceHit,
+  ExecutiveBriefing,
 } from '@scooper/core';
 
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData, RepositoryAssetData } from '../src/types/kae.js';
@@ -47,6 +53,13 @@ export interface KaeAPI {
   searchRepository: (query: string) => Promise<RepositorySearchResult[]>;
   buildEvidenceIndex: () => Promise<EvidenceIndexStats>;
   searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
+  resolveEvidenceDrilldown: (recordId: string, query?: string) => Promise<EvidenceDrilldown | null>;
+  answerKnowledgeQuestion: (question: string) => Promise<VigsyKnowledgeAnswer>;
+  buildRelationshipIndex: () => Promise<KnowledgeRelationshipStats>;
+  searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
+  getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
+  getRelatedEvidence: (anchor: string, query?: string) => Promise<RelatedEvidenceHit[]>;
+  getExecutiveBriefing: () => Promise<ExecutiveBriefing>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -89,6 +102,15 @@ const kaeAPI: KaeAPI = {
   searchRepository: (query) => ipcRenderer.invoke('kae:search-repository', query),
   buildEvidenceIndex: () => ipcRenderer.invoke('kae:build-evidence-index'),
   searchKnowledge: (query) => ipcRenderer.invoke('kae:search-knowledge', query),
+  resolveEvidenceDrilldown: (recordId, query) =>
+    ipcRenderer.invoke('kae:resolve-evidence-drilldown', recordId, query),
+  answerKnowledgeQuestion: (question) => ipcRenderer.invoke('kae:answer-knowledge-question', question),
+  buildRelationshipIndex: () => ipcRenderer.invoke('kae:build-relationship-index'),
+  searchRelationships: (query) => ipcRenderer.invoke('kae:search-relationships', query),
+  getRelationshipsForEvidence: (evidenceId) =>
+    ipcRenderer.invoke('kae:get-relationships-for-evidence', evidenceId),
+  getRelatedEvidence: (anchor, query) => ipcRenderer.invoke('kae:get-related-evidence', anchor, query),
+  getExecutiveBriefing: () => ipcRenderer.invoke('kae:get-executive-briefing'),
   openRepositoryPath: () => ipcRenderer.invoke('kae:open-repository-path'),
   openRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:open-repository-file', relativePath),
   revealRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:reveal-repository-file', relativePath),

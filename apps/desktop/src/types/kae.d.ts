@@ -15,6 +15,12 @@ import type {
   RepositorySearchResult,
   RepositoryStats,
   EvidenceIndexStats,
+  EvidenceDrilldown,
+  VigsyKnowledgeAnswer,
+  KnowledgeRelationship,
+  KnowledgeRelationshipStats,
+  RelatedEvidenceHit,
+  ExecutiveBriefing,
 } from '@scooper/core';
 
 export interface ImporterInfo {
@@ -87,6 +93,13 @@ export interface KaeAPI {
   searchRepository: (query: string) => Promise<RepositorySearchResult[]>;
   buildEvidenceIndex: () => Promise<EvidenceIndexStats>;
   searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
+  resolveEvidenceDrilldown: (recordId: string, query?: string) => Promise<EvidenceDrilldown | null>;
+  answerKnowledgeQuestion: (question: string) => Promise<VigsyKnowledgeAnswer>;
+  buildRelationshipIndex: () => Promise<KnowledgeRelationshipStats>;
+  searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
+  getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
+  getRelatedEvidence: (anchor: string, query?: string) => Promise<RelatedEvidenceHit[]>;
+  getExecutiveBriefing: () => Promise<ExecutiveBriefing>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;

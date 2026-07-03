@@ -13,15 +13,15 @@ export function Shell({ activeScreen, onNavigate, children }: ShellProps) {
     <div className="shell">
       <aside className="shell__sidebar">
         <header className="shell__brand">
-          <div className="shell__logo">K</div>
+          <div className="shell__logo shell__logo--vigsy">✦</div>
           <div>
-            <h1 className="shell__title">KAE</h1>
-            <p className="shell__subtitle">Knowledge Acquisition Engine</p>
+            <h1 className="shell__title">Vigsy</h1>
+            <p className="shell__subtitle">Executive Intelligence · KAE</p>
           </div>
         </header>
         <Navigation activeScreen={activeScreen} onNavigate={onNavigate} />
         <footer className="shell__footer">
-          <span className="shell__phase">Campaign 1.1 · Release Candidate</span>
+          <span className="shell__phase">Campaign 1.3 · Vigsy Experience</span>
         </footer>
       </aside>
       <main className="shell__content">{children}</main>

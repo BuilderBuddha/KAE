@@ -1,3 +1,4 @@
+export * from './drilldown.js';
 export * from './build.js';
 export * from './parse-session.js';
 export * from './persist.js';
