@@ -1,0 +1,96 @@
+[
+  {
+    "title": "Test Product Strategy Chat",
+    "create_time": 1706123456.789,
+    "update_time": 1706124012.3,
+    "conversation_id": "test-conv-001",
+    "current_node": "msg-002",
+    "mapping": {
+      "root": {
+        "id": "root",
+        "message": {
+          "id": "root",
+          "author": { "role": "system" },
+          "content": { "content_type": "text", "parts": [""] }
+        },
+        "parent": null,
+        "children": ["msg-001"]
+      },
+      "msg-001": {
+        "id": "msg-001",
+        "message": {
+          "id": "msg-001",
+          "author": { "role": "user" },
+          "create_time": 1706123456.789,
+          "content": {
+            "content_type": "text",
+            "parts": ["What are the key principles of SaaS product strategy?"]
+          }
+        },
+        "parent": "root",
+        "children": ["msg-002"]
+      },
+      "msg-002": {
+        "id": "msg-002",
+        "message": {
+          "id": "msg-002",
+          "author": { "role": "assistant" },
+          "create_time": 1706123460.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["Key principles include customer discovery, iterative development, and measuring product-market fit through retention metrics."]
+          }
+        },
+        "parent": "msg-001",
+        "children": []
+      }
+    }
+  },
+  {
+    "title": "Pasted Transcript Example",
+    "create_time": 1706200000.0,
+    "update_time": 1706200100.0,
+    "conversation_id": "test-conv-002",
+    "current_node": "msg-b2",
+    "mapping": {
+      "root-b": {
+        "id": "root-b",
+        "message": {
+          "id": "root-b",
+          "author": { "role": "system" },
+          "content": { "content_type": "text", "parts": [""] }
+        },
+        "parent": null,
+        "children": ["msg-b1"]
+      },
+      "msg-b1": {
+        "id": "msg-b1",
+        "message": {
+          "id": "msg-b1",
+          "author": { "role": "user" },
+          "create_time": 1706200000.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["Here is a pasted transcript from a workshop:\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nKey takeaway: decision frameworks require clear criteria and stakeholder alignment."]
+          }
+        },
+        "parent": "root-b",
+        "children": ["msg-b2"]
+      },
+      "msg-b2": {
+        "id": "msg-b2",
+        "message": {
+          "id": "msg-b2",
+          "author": { "role": "assistant" },
+          "create_time": 1706200050.0,
+          "content": {
+            "content_type": "text",
+            "parts": ["I've captured the key themes from your pasted transcript."]
+          }
+        },
+        "parent": "msg-b1",
+        "children": []
+      }
+    }
+  }
+]

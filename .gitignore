@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+output/*
+!output/.gitkeep
+*.log
+.DS_Store
+Thumbs.db
+*.local
+.env
+.env.*
+!.env.example
