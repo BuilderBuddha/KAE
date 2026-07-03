@@ -21,7 +21,13 @@ function BriefingThinkingBubble() {
  * Reveals briefing lines one at a time with Founder Beta pacing:
  * thinking pause → character stream → pause → next line.
  */
-export function KaydProgressiveBriefing({ messages }: { messages: string[] }) {
+export function KaydProgressiveBriefing({
+  messages,
+  onComplete,
+}: {
+  messages: string[];
+  onComplete?: () => void;
+}) {
   const [lineIndex, setLineIndex] = useState(0);
   const [phase, setPhase] = useState<'thinking' | 'streaming'>('thinking');
   const [completed, setCompleted] = useState<string[]>([]);
@@ -55,6 +61,12 @@ export function KaydProgressiveBriefing({ messages }: { messages: string[] }) {
     }, presenceDelayMs());
     return () => window.clearTimeout(timer);
   }, [phase, done, lineIndex, messages.length, activeLine]);
+
+  useEffect(() => {
+    if (lineIndex >= messages.length && messages.length > 0) {
+      onComplete?.();
+    }
+  }, [lineIndex, messages.length, onComplete]);
 
   return (
     <>

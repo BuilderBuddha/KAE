@@ -15,6 +15,7 @@ interface ExecutiveBriefingPanelProps {
   loading: boolean;
   backgroundRefreshing?: boolean;
   onRefresh: () => void;
+  variant?: 'panel' | 'inline';
 }
 
 export function ExecutiveBriefingPanel({
@@ -22,21 +23,25 @@ export function ExecutiveBriefingPanel({
   loading,
   backgroundRefreshing = false,
   onRefresh,
+  variant = 'panel',
 }: ExecutiveBriefingPanelProps) {
   const { openInExplorer } = useNavigation();
+  const inline = variant === 'inline';
 
   return (
-    <section className="vigsy-briefing card">
+    <section className={`vigsy-briefing${inline ? ' vigsy-briefing--inline' : ' card'}`}>
       <header className="vigsy-briefing__header">
         <div>
-          <h2 className="vigsy-briefing__title">Executive Briefing</h2>
-          <p className="vigsy-briefing__subtitle muted">
-            Deterministic awareness from evidence, relationships, imports, and repository health.
-          </p>
+          <h2 className="vigsy-briefing__title">{inline ? 'Today\'s awareness' : 'Executive Briefing'}</h2>
+          {!inline ? (
+            <p className="vigsy-briefing__subtitle muted">
+              Deterministic awareness from evidence, relationships, imports, and repository health.
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
-          className="btn btn--secondary btn--small"
+          className="btn btn--secondary btn--small vigsy-briefing__refresh"
           onClick={onRefresh}
           disabled={loading}
         >

@@ -2154,6 +2154,80 @@ select {
   min-height: 56px;
   font-size: 15px;
 }
+
+.vigsy-unified--home {
+  max-width: 900px;
+}
+
+.vigsy-unified__thread {
+  max-width: 700px;
+  margin: 0 auto;
+  gap: 14px;
+}
+
+.kayd-lead__composer--solo {
+  max-width: 620px;
+  margin: 0 auto;
+  border-top: none;
+  background: transparent;
+  padding-top: 8px;
+}
+
+.kayd-lead__composer--solo .kayd-lead__input {
+  margin-bottom: 0;
+}
+
+.kayd-guided-chips {
+  max-width: 700px;
+  margin: 8px auto 4px;
+}
+
+.kayd-guided-chips__label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.kayd-briefing-inline {
+  max-width: 700px;
+  margin: 4px auto 12px;
+}
+
+.vigsy-briefing--inline {
+  border: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.vigsy-briefing--inline .vigsy-briefing__header {
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.vigsy-briefing--inline .vigsy-briefing__title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cf-text-soft, var(--color-text-muted));
+}
+
+.vigsy-briefing--inline .vigsy-briefing__refresh {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.vigsy-briefing--inline .vigsy-briefing__meta {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.vigsy-briefing--inline .vigsy-briefing-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
 .vigsy-empty {
   display: flex;
   flex-direction: column;

@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FollowUpAction } from '../components/vigsy/VigsyFollowUpChips';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBriefingInline';
+import { KaydGuidedChips } from '../components/vigsy/KaydGuidedChips';
+import { KaydProgressiveBriefing } from '../components/vigsy/KaydProgressiveBriefing';
 import { VigsyConversationThread } from '../components/vigsy/VigsyConversationThread';
-import { VigsyEmptyState } from '../components/vigsy/VigsyEmptyState';
+import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
+import { useKaydHomeBriefingData } from '../hooks/useKaydHomeBriefingData';
 import { useVigsyConversation } from '../hooks/useVigsyConversation';
+import { buildKaydDashboardBriefing } from '../utils/kayd-briefings';
 
 const STARTER_CHIPS = [
   'What happened with ChatGPT Import?',
@@ -13,6 +18,8 @@ const STARTER_CHIPS = [
 ];
 
 export function VigsyScreen() {
+  const continuity = useExecutiveContinuity();
+  const { stats, health, gitReadiness, connectors, loading: briefingLoading } = useKaydHomeBriefingData();
   const {
     turns,
     busy,
@@ -21,10 +28,22 @@ export function VigsyScreen() {
     submitQuestion,
     startNewConversation,
     clearConversation,
-    continuity,
+    continuity: sessionContinuity,
   } = useVigsyConversation();
   const [input, setInput] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
+  const [briefingComplete, setBriefingComplete] = useState(false);
+
+  const briefing = useMemo(
+    () => buildKaydDashboardBriefing(continuity, health, stats, gitReadiness, connectors),
+    [continuity, health, stats, gitReadiness, connectors],
+  );
+
+  useEffect(() => {
+    if (!hasConversation) {
+      setBriefingComplete(false);
+    }
+  }, [briefing, hasConversation]);
 
   const handleSubmit = async (text?: string) => {
     const q = (text ?? input).trim();
@@ -45,22 +64,28 @@ export function VigsyScreen() {
       return;
     }
     setConfirmClear(false);
+    setBriefingComplete(false);
     await clearConversation();
   };
 
-  if (!ready) {
+  const handleNewConversation = async () => {
+    setBriefingComplete(false);
+    await startNewConversation();
+  };
+
+  if (!ready || briefingLoading) {
     return <LoadingIndicator label="Loading KayD…" />;
   }
 
   return (
-    <div className={`vigsy-unified${hasConversation ? ' vigsy-unified--active' : ''}`}>
+    <div className={`vigsy-unified vigsy-unified--home screen--conversation-first${hasConversation ? ' vigsy-unified--active' : ''}`}>
       <header className="vigsy-unified__header">
         <div className="vigsy-unified__brand-block">
           <h1 className="vigsy-unified__brand">KayD</h1>
           <div className="vigsy-home__luminous-line" aria-hidden="true" />
         </div>
         <div className="vigsy-unified__actions">
-          <button type="button" className="vigsy-link-btn" onClick={() => void startNewConversation()}>
+          <button type="button" className="vigsy-link-btn" onClick={() => void handleNewConversation()}>
             New Conversation
           </button>
           <button
@@ -74,25 +99,29 @@ export function VigsyScreen() {
       </header>
 
       <div className="vigsy-unified__body">
-        {continuity?.welcomeMessage ? (
-          <p className="vigsy-continuity" role="status">
-            {continuity.welcomeMessage}
-          </p>
-        ) : null}
-        {!hasConversation ? (
-          <VigsyEmptyState
-            chips={STARTER_CHIPS}
-            busy={busy}
-            continuity={continuity}
-            onAsk={(q) => void handleSubmit(q)}
-          />
-        ) : (
-          <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
-        )}
+        <div className="kayd-lead__thread vigsy-thread vigsy-unified__thread">
+          {!hasConversation ? (
+            <>
+              <KaydProgressiveBriefing
+                messages={briefing}
+                onComplete={() => setBriefingComplete(true)}
+              />
+              {briefingComplete ? <KaydExecutiveBriefingInline /> : null}
+              <KaydGuidedChips
+                chips={STARTER_CHIPS}
+                busy={busy}
+                continuity={sessionContinuity ?? continuity}
+                onAsk={(q) => void handleSubmit(q)}
+              />
+            </>
+          ) : (
+            <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
+          )}
+        </div>
       </div>
 
       <form
-        className="vigsy-unified__composer"
+        className="vigsy-unified__composer kayd-lead__composer kayd-lead__composer--solo"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSubmit();
@@ -103,9 +132,15 @@ export function VigsyScreen() {
         </label>
         <textarea
           id="vigsy-unified-composer"
-          className="vigsy-home__input vigsy-home__input--hero"
+          className="vigsy-home__input vigsy-home__input--hero kayd-lead__input"
           rows={hasConversation ? 2 : 3}
-          placeholder={hasConversation ? 'Ask a follow-up…' : 'What would you like to work on today?'}
+          placeholder={
+            busy
+              ? 'KayD is thinking…'
+              : hasConversation
+                ? 'Ask a follow-up…'
+                : 'What would you like to work on today?'
+          }
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -116,11 +151,6 @@ export function VigsyScreen() {
           }}
           disabled={busy}
         />
-        <div className="vigsy-home__composer-actions vigsy-home__composer-actions--center">
-          <button type="submit" className="btn btn--primary btn--large" disabled={busy || !input.trim()}>
-            {busy ? 'Thinking…' : hasConversation ? 'Send' : 'Ask KayD'}
-          </button>
-        </div>
       </form>
     </div>
   );
