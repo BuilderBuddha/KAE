@@ -723,9 +723,113 @@ select {
   padding-bottom: 40px;
 }
 
-.kayd-lead {
-  margin-bottom: 28px;
+.kayd-chat {
+  max-width: 700px;
+  margin: 0 auto 20px;
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
 }
+
+.kayd-chat__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cf-border-soft, rgba(255, 255, 255, 0.04));
+}
+
+.kayd-chat__presence {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(120, 130, 145, 0.9), rgba(90, 98, 110, 0.85));
+  color: #fff;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.kayd-chat__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.kayd-chat__messages {
+  min-height: 72px;
+  max-height: 160px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.kayd-chat__messages .vigsy-thread {
+  width: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.kayd-chat__line {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #d8dbe0;
+  font-weight: 450;
+  transition: opacity 0.28s ease;
+}
+
+.kayd-chat__line--fade {
+  opacity: 0;
+}
+
+.kayd-chat__line--idle {
+  font-size: 0.95rem;
+}
+
+.kayd-chat__line--thinking {
+  width: 100%;
+}
+
+.kayd-chat__composer {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--cf-border-soft, rgba(255, 255, 255, 0.04));
+}
+
+.kayd-chat__input {
+  width: 100%;
+  resize: none;
+  min-height: 52px;
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--color-text);
+  background: rgba(20, 21, 25, 0.6);
+  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+}
+
+.kayd-chat__input:focus {
+  outline: none;
+  border-color: rgba(160, 174, 192, 0.28);
+  box-shadow: 0 0 0 3px rgba(160, 174, 192, 0.08);
+}
+
+.kayd-lead {
+  margin-bottom: 16px;
+}
+
+.kayd-lead .kayd-chat {
+  margin-bottom: 0;
+}
+
 
 .kayd-lead__thread {
   max-width: 700px;

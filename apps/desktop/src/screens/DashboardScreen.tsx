@@ -12,7 +12,6 @@ import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { CategorizedHealthPanel } from '../components/HealthIssuesPanel';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { RepositoryRepairPanel } from '../components/RepositoryRepairPanel';
-import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { buildKaydDashboardBriefing } from '../utils/kayd-briefings';
 
 function statusClass(level?: RepositoryHealthReport['statusLevel']): string {
@@ -29,7 +28,6 @@ function statusClass(level?: RepositoryHealthReport['statusLevel']): string {
 }
 
 export function DashboardScreen() {
-  const continuity = useExecutiveContinuity();
   const [stats, setStats] = useState<RepositoryStats | null>(null);
   const [health, setHealth] = useState<RepositoryHealthReport | null>(null);
   const [gitReadiness, setGitReadiness] = useState<GitReadinessReport | null>(null);
@@ -103,7 +101,7 @@ export function DashboardScreen() {
     setRepairError(null);
   };
 
-  const briefing = buildKaydDashboardBriefing(continuity, health, stats, gitReadiness, connectors);
+  const briefing = buildKaydDashboardBriefing(health, stats, gitReadiness, connectors);
 
   if (loading) {
     return (

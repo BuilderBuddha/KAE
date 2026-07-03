@@ -5,7 +5,6 @@ import { ChatGptSourcePreview } from '../components/ChatGptSourcePreview';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useNavigation } from '../context/NavigationContext';
-import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { buildKaydExplorerBriefing } from '../utils/kayd-briefings';
 import { parentFolder, pathBreadcrumbs } from '../utils/repository-path';
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData } from '../types/kae';
@@ -41,7 +40,6 @@ function formatListDate(entry: ChatGptImportListEntry): string {
 }
 
 export function ExplorerScreen() {
-  const continuity = useExecutiveContinuity();
   const { explorerTargetPath, clearExplorerTarget } = useNavigation();
   const [files, setFiles] = useState<RepositoryFileEntry[]>([]);
   const [chatGptEntries, setChatGptEntries] = useState<ChatGptImportListEntry[]>([]);
@@ -173,7 +171,7 @@ export function ExplorerScreen() {
 
   const selectedBreadcrumbs = selected ? pathBreadcrumbs(selected) : [];
 
-  const explorerBriefing = buildKaydExplorerBriefing(continuity, files.length, chatGptImportCount);
+  const explorerBriefing = buildKaydExplorerBriefing(files.length, chatGptImportCount);
 
   return (
     <KaydWorkspaceLayout

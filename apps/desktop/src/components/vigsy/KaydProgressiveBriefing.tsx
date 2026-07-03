@@ -1,25 +1,13 @@
 import { useEffect, useState } from 'react';
 import { ThinkingIndicator } from './CognitionPulse';
-import { KaydBriefingBubble } from './KaydBriefingBubble';
 import { useStreamReveal } from '../../hooks/useStreamReveal';
 import { presenceDelayMs } from '../../utils/vigsy-stream';
 
-function BriefingThinkingBubble() {
-  return (
-    <div className="vigsy-msg vigsy-msg--assistant vigsy-msg--enter vigsy-msg--thinking kayd-lead__briefing">
-      <div className="vigsy-msg__presence kayd-lead__presence" aria-hidden>
-        ✦
-      </div>
-      <div className="vigsy-msg__bubble vigsy-msg__bubble--thinking">
-        <ThinkingIndicator label="KayD is thinking…" />
-      </div>
-    </div>
-  );
-}
+type Phase = 'thinking' | 'streaming' | 'fading';
 
 /**
- * Reveals briefing lines one at a time with Founder Beta pacing:
- * thinking pause → character stream → pause → next line.
+ * Single-slot briefing: one line visible at a time inside the chat panel.
+ * Each line streams in, pauses, fades out, then the next line begins.
  */
 export function KaydProgressiveBriefing({
   messages,
@@ -29,17 +17,16 @@ export function KaydProgressiveBriefing({
   onComplete?: () => void;
 }) {
   const [lineIndex, setLineIndex] = useState(0);
-  const [phase, setPhase] = useState<'thinking' | 'streaming'>('thinking');
-  const [completed, setCompleted] = useState<string[]>([]);
+  const [phase, setPhase] = useState<Phase>('thinking');
 
   const activeLine = messages[lineIndex] ?? '';
   const streaming = phase === 'streaming' && lineIndex < messages.length;
   const { revealed, done } = useStreamReveal(activeLine, streaming);
+  const finished = lineIndex >= messages.length;
 
   useEffect(() => {
     setLineIndex(0);
     setPhase(messages.length > 0 ? 'thinking' : 'streaming');
-    setCompleted([]);
   }, [messages]);
 
   useEffect(() => {
@@ -50,33 +37,53 @@ export function KaydProgressiveBriefing({
 
   useEffect(() => {
     if (lineIndex >= messages.length || phase !== 'streaming' || !done) return undefined;
+    const timer = window.setTimeout(() => setPhase('fading'), presenceDelayMs());
+    return () => window.clearTimeout(timer);
+  }, [phase, done, lineIndex, messages.length]);
+
+  useEffect(() => {
+    if (phase !== 'fading') return undefined;
     const timer = window.setTimeout(() => {
-      setCompleted((prev) => [...prev, activeLine]);
       if (lineIndex + 1 < messages.length) {
         setLineIndex((prev) => prev + 1);
         setPhase('thinking');
       } else {
         setLineIndex(messages.length);
+        setPhase('streaming');
       }
-    }, presenceDelayMs());
+    }, 280);
     return () => window.clearTimeout(timer);
-  }, [phase, done, lineIndex, messages.length, activeLine]);
+  }, [phase, lineIndex, messages.length]);
 
   useEffect(() => {
-    if (lineIndex >= messages.length && messages.length > 0) {
+    if (finished && messages.length > 0) {
       onComplete?.();
     }
-  }, [lineIndex, messages.length, onComplete]);
+  }, [finished, messages.length, onComplete]);
+
+  if (finished) {
+    return (
+      <p className="kayd-chat__line kayd-chat__line--idle muted">
+        What would you like to work on today?
+      </p>
+    );
+  }
+
+  if (phase === 'thinking') {
+    return (
+      <div className="kayd-chat__line kayd-chat__line--thinking" aria-live="polite">
+        <ThinkingIndicator label="KayD is thinking…" />
+      </div>
+    );
+  }
 
   return (
-    <>
-      {completed.map((text, i) => (
-        <KaydBriefingBubble key={`done-${i}`} text={text} />
-      ))}
-      {lineIndex < messages.length && phase === 'thinking' ? <BriefingThinkingBubble /> : null}
-      {streaming && lineIndex < messages.length ? (
-        <KaydBriefingBubble text={revealed} streaming={!done} />
-      ) : null}
-    </>
+    <p
+      className={`kayd-chat__line${phase === 'fading' ? ' kayd-chat__line--fade' : ''}${streaming && !done ? ' kayd-chat__line--streaming' : ''}`}
+      aria-live="polite"
+    >
+      {revealed}
+      {streaming && !done ? <span className="vigsy-cursor" aria-hidden /> : null}
+    </p>
   );
 }

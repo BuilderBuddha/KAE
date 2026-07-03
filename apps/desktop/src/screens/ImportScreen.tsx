@@ -15,7 +15,6 @@ import { LoadingIndicator } from '../components/LoadingIndicator';
 import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
-import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { buildKaydImportBriefing } from '../utils/kayd-briefings';
 import {
   ADVANCED_IMPORTER_IDS,
@@ -44,7 +43,6 @@ const INITIAL_VALIDATION_PROGRESS = (): ValidationProgress => ({
 });
 
 export function ImportScreen() {
-  const continuity = useExecutiveContinuity();
   const [importers, setImporters] = useState<ImporterInfo[]>([]);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
   const [syncHistory, setSyncHistory] = useState<SyncHistoryEntry[]>([]);
@@ -238,7 +236,7 @@ export function ImportScreen() {
   );
 
   const advancedImporters = importers.filter((importer) => ADVANCED_IMPORTER_IDS.has(importer.id));
-  const importBriefing = buildKaydImportBriefing(continuity);
+  const importBriefing = buildKaydImportBriefing();
   const selectedSource = PRIMARY_KNOWLEDGE_SOURCES.find((s) => s.id === selectedSourceId);
 
   return (

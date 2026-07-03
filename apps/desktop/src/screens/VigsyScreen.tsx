@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { FollowUpAction } from '../components/vigsy/VigsyFollowUpChips';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+import { KaydChatPanel } from '../components/vigsy/KaydChatPanel';
 import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBriefingInline';
 import { KaydGuidedChips } from '../components/vigsy/KaydGuidedChips';
-import { KaydProgressiveBriefing } from '../components/vigsy/KaydProgressiveBriefing';
-import { VigsyConversationThread } from '../components/vigsy/VigsyConversationThread';
 import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { useKaydHomeBriefingData } from '../hooks/useKaydHomeBriefingData';
 import { useVigsyConversation } from '../hooks/useVigsyConversation';
-import { buildKaydDashboardBriefing } from '../utils/kayd-briefings';
+import { buildKaydHomeBriefing } from '../utils/kayd-briefings';
 
 const STARTER_CHIPS = [
   'What happened with ChatGPT Import?',
@@ -21,7 +19,6 @@ export function VigsyScreen() {
   const continuity = useExecutiveContinuity();
   const { stats, health, gitReadiness, connectors, loading: briefingLoading } = useKaydHomeBriefingData();
   const {
-    turns,
     busy,
     ready,
     hasConversation,
@@ -30,12 +27,11 @@ export function VigsyScreen() {
     clearConversation,
     continuity: sessionContinuity,
   } = useVigsyConversation();
-  const [input, setInput] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [briefingComplete, setBriefingComplete] = useState(false);
 
   const briefing = useMemo(
-    () => buildKaydDashboardBriefing(continuity, health, stats, gitReadiness, connectors),
+    () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors),
     [continuity, health, stats, gitReadiness, connectors],
   );
 
@@ -45,17 +41,10 @@ export function VigsyScreen() {
     }
   }, [briefing, hasConversation]);
 
-  const handleSubmit = async (text?: string) => {
-    const q = (text ?? input).trim();
+  const handleAsk = async (question: string) => {
+    const q = question.trim();
     if (!q) return;
-    setInput('');
     await submitQuestion(q);
-  };
-
-  const handleFollowUp = (action: FollowUpAction) => {
-    if (action.type === 'ask') {
-      void handleSubmit(action.question);
-    }
   };
 
   const handleClear = async () => {
@@ -99,59 +88,22 @@ export function VigsyScreen() {
       </header>
 
       <div className="vigsy-unified__body">
-        <div className="kayd-lead__thread vigsy-thread vigsy-unified__thread">
-          {!hasConversation ? (
-            <>
-              <KaydProgressiveBriefing
-                messages={briefing}
-                onComplete={() => setBriefingComplete(true)}
-              />
-              {briefingComplete ? <KaydExecutiveBriefingInline /> : null}
-              <KaydGuidedChips
-                chips={STARTER_CHIPS}
-                busy={busy}
-                continuity={sessionContinuity ?? continuity}
-                onAsk={(q) => void handleSubmit(q)}
-              />
-            </>
-          ) : (
-            <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
-          )}
-        </div>
-      </div>
-
-      <form
-        className="vigsy-unified__composer kayd-lead__composer kayd-lead__composer--solo"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void handleSubmit();
-        }}
-      >
-        <label className="sr-only" htmlFor="vigsy-unified-composer">
-          Ask KayD
-        </label>
-        <textarea
-          id="vigsy-unified-composer"
-          className="vigsy-home__input vigsy-home__input--hero kayd-lead__input"
-          rows={hasConversation ? 2 : 3}
-          placeholder={
-            busy
-              ? 'KayD is thinking…'
-              : hasConversation
-                ? 'Ask a follow-up…'
-                : 'What would you like to work on today?'
-          }
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              void handleSubmit();
-            }
-          }}
-          disabled={busy}
+        <KaydChatPanel
+          briefing={briefing}
+          composerId="vigsy-unified-composer"
+          onBriefingComplete={() => setBriefingComplete(true)}
+          showBriefing={!hasConversation}
         />
-      </form>
+        {!hasConversation && briefingComplete ? <KaydExecutiveBriefingInline /> : null}
+        {!hasConversation ? (
+          <KaydGuidedChips
+            chips={STARTER_CHIPS}
+            busy={busy}
+            continuity={sessionContinuity ?? continuity}
+            onAsk={(q) => void handleAsk(q)}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

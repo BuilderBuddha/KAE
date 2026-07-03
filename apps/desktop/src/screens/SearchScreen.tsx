@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EvidenceDrilldown, RepositorySearchResult } from '@scooper/core';
 import { EvidenceDrilldownPanel } from '../components/EvidenceDrilldownPanel';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
-import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { buildKaydSearchBriefing } from '../utils/kayd-briefings';
 
 function kindLabel(result: RepositorySearchResult): string {
@@ -18,7 +17,6 @@ function matchLabel(result: RepositorySearchResult): string {
 }
 
 export function SearchScreen() {
-  const continuity = useExecutiveContinuity();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RepositorySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -88,7 +86,7 @@ export function SearchScreen() {
     return indexStats.replace(/^Evidence index:\s*/, '');
   }, [indexStats]);
 
-  const searchBriefing = buildKaydSearchBriefing(continuity, indexSummary);
+  const searchBriefing = buildKaydSearchBriefing(indexSummary);
 
   return (
     <KaydWorkspaceLayout
