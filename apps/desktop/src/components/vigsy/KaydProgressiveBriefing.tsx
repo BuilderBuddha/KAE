@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ThinkingIndicator } from './CognitionPulse';
+import { KaydBriefingBubble } from './KaydBriefingBubble';
 import { useStreamReveal } from '../../hooks/useStreamReveal';
 import { presenceDelayMs } from '../../utils/vigsy-stream';
 
-type Phase = 'thinking' | 'streaming' | 'fading';
+type Phase = 'thinking' | 'streaming' | 'hold' | 'fade';
 
 /**
- * Single-slot briefing: one line visible at a time inside the chat panel.
- * Each line streams in, pauses, fades out, then the next line begins.
+ * One briefing line at a time — streams in place, fades out, then the next line begins.
  */
 export function KaydProgressiveBriefing({
   messages,
@@ -17,73 +17,74 @@ export function KaydProgressiveBriefing({
   onComplete?: () => void;
 }) {
   const [lineIndex, setLineIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>('thinking');
+  const [phase, setPhase] = useState<Phase>(messages.length > 0 ? 'thinking' : 'hold');
+  const completedRef = useRef(false);
 
   const activeLine = messages[lineIndex] ?? '';
-  const streaming = phase === 'streaming' && lineIndex < messages.length;
+  const streaming = phase === 'streaming';
   const { revealed, done } = useStreamReveal(activeLine, streaming);
   const finished = lineIndex >= messages.length;
 
   useEffect(() => {
     setLineIndex(0);
-    setPhase(messages.length > 0 ? 'thinking' : 'streaming');
+    setPhase(messages.length > 0 ? 'thinking' : 'hold');
+    completedRef.current = false;
   }, [messages]);
 
   useEffect(() => {
-    if (lineIndex >= messages.length || phase !== 'thinking') return undefined;
+    if (finished || phase !== 'thinking') return undefined;
     const timer = window.setTimeout(() => setPhase('streaming'), presenceDelayMs(lineIndex === 0));
     return () => window.clearTimeout(timer);
-  }, [phase, lineIndex, messages.length]);
+  }, [finished, phase, lineIndex]);
 
   useEffect(() => {
-    if (lineIndex >= messages.length || phase !== 'streaming' || !done) return undefined;
-    const timer = window.setTimeout(() => setPhase('fading'), presenceDelayMs());
+    if (phase !== 'streaming' || !done) return undefined;
+    const timer = window.setTimeout(() => setPhase('hold'), 120);
     return () => window.clearTimeout(timer);
-  }, [phase, done, lineIndex, messages.length]);
+  }, [phase, done]);
 
   useEffect(() => {
-    if (phase !== 'fading') return undefined;
+    if (phase !== 'hold') return undefined;
+    const timer = window.setTimeout(() => setPhase('fade'), 650);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'fade') return undefined;
     const timer = window.setTimeout(() => {
-      if (lineIndex + 1 < messages.length) {
-        setLineIndex((prev) => prev + 1);
+      const next = lineIndex + 1;
+      if (next < messages.length) {
+        setLineIndex(next);
         setPhase('thinking');
       } else {
         setLineIndex(messages.length);
-        setPhase('streaming');
+        if (!completedRef.current) {
+          completedRef.current = true;
+          onComplete?.();
+        }
       }
-    }, 280);
+    }, 300);
     return () => window.clearTimeout(timer);
-  }, [phase, lineIndex, messages.length]);
+  }, [phase, lineIndex, messages.length, onComplete]);
 
-  useEffect(() => {
-    if (finished && messages.length > 0) {
-      onComplete?.();
-    }
-  }, [finished, messages.length, onComplete]);
-
-  if (finished) {
-    return (
-      <p className="kayd-chat__line kayd-chat__line--idle muted">
-        What would you like to work on today?
-      </p>
-    );
-  }
-
-  if (phase === 'thinking') {
-    return (
-      <div className="kayd-chat__line kayd-chat__line--thinking" aria-live="polite">
-        <ThinkingIndicator label="KayD is thinking…" />
-      </div>
-    );
-  }
+  if (finished) return <div className="kayd-seq-briefing kayd-seq-briefing--done" aria-live="polite" />;
 
   return (
-    <p
-      className={`kayd-chat__line${phase === 'fading' ? ' kayd-chat__line--fade' : ''}${streaming && !done ? ' kayd-chat__line--streaming' : ''}`}
+    <div
+      className={`kayd-seq-briefing${phase === 'fade' ? ' kayd-seq-briefing--fading' : ''}`}
       aria-live="polite"
     >
-      {revealed}
-      {streaming && !done ? <span className="vigsy-cursor" aria-hidden /> : null}
-    </p>
+      {phase === 'thinking' ? (
+        <div className="kayd-seq-briefing__thinking">
+          <ThinkingIndicator label="KayD is thinking…" />
+        </div>
+      ) : null}
+      {phase === 'streaming' ? (
+        <KaydBriefingBubble text={revealed} streaming={!done} compact />
+      ) : null}
+      {phase === 'hold' || phase === 'fade' ? (
+        <KaydBriefingBubble text={activeLine} compact />
+      ) : null}
+    </div>
   );
 }

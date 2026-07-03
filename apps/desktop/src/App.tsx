@@ -11,6 +11,7 @@ import { JobQueueScreen } from './screens/JobQueueScreen';
 import { LogsScreen } from './screens/LogsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { ConnectorManagerScreen } from './screens/ConnectorManagerScreen';
+import { VigsyConversationProvider } from './context/VigsyConversationContext';
 import type { ScreenId } from './types/navigation';
 
 function renderScreen(screen: ScreenId) {
@@ -43,9 +44,11 @@ export default function App() {
 
   return (
     <NavigationProvider onNavigate={setActiveScreen}>
-      <Shell activeScreen={activeScreen} onNavigate={setActiveScreen}>
-        {renderScreen(activeScreen)}
-      </Shell>
+      <VigsyConversationProvider>
+        <Shell activeScreen={activeScreen} onNavigate={setActiveScreen}>
+          {renderScreen(activeScreen)}
+        </Shell>
+      </VigsyConversationProvider>
     </NavigationProvider>
   );
 }

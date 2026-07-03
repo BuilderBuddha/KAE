@@ -65,7 +65,7 @@ function toPersistedTurns(turns: VigsyConversationTurn[], session: VigsySessionC
   return records;
 }
 
-export function useVigsyConversation() {
+export function useVigsyConversationState() {
   const [turns, setTurns] = useState<VigsyConversationTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);

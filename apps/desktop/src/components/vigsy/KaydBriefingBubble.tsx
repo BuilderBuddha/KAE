@@ -1,14 +1,16 @@
-/** Assistant briefing bubble — reuses Founder Beta message styling. */
+/** Assistant briefing line — compact for single-slot chatbot display. */
 export function KaydBriefingBubble({
   text,
   streaming = false,
+  compact = false,
 }: {
   text: string;
   streaming?: boolean;
+  compact?: boolean;
 }) {
   return (
     <div
-      className={`vigsy-msg vigsy-msg--assistant vigsy-msg--enter kayd-lead__briefing${streaming ? ' vigsy-msg--alive' : ''}`}
+      className={`vigsy-msg vigsy-msg--assistant vigsy-msg--enter kayd-seq-briefing__line${streaming ? ' vigsy-msg--alive' : ''}${compact ? ' kayd-briefing-bubble--compact' : ''}`}
     >
       <div className="vigsy-msg__presence kayd-lead__presence" aria-hidden>
         ✦

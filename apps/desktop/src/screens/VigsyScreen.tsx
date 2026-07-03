@@ -5,7 +5,7 @@ import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBr
 import { KaydGuidedChips } from '../components/vigsy/KaydGuidedChips';
 import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { useKaydHomeBriefingData } from '../hooks/useKaydHomeBriefingData';
-import { useVigsyConversation } from '../hooks/useVigsyConversation';
+import { useVigsyConversation } from '../context/VigsyConversationContext';
 import { buildKaydHomeBriefing } from '../utils/kayd-briefings';
 
 const STARTER_CHIPS = [
@@ -41,10 +41,8 @@ export function VigsyScreen() {
     }
   }, [briefing, hasConversation]);
 
-  const handleAsk = async (question: string) => {
-    const q = question.trim();
-    if (!q) return;
-    await submitQuestion(q);
+  const handleAsk = async (text: string) => {
+    await submitQuestion(text);
   };
 
   const handleClear = async () => {
@@ -87,22 +85,24 @@ export function VigsyScreen() {
         </div>
       </header>
 
-      <div className="vigsy-unified__body">
+      <div className="vigsy-unified__body vigsy-unified__body--chat">
         <KaydChatPanel
           briefing={briefing}
           composerId="vigsy-unified-composer"
           onBriefingComplete={() => setBriefingComplete(true)}
-          showBriefing={!hasConversation}
-        />
-        {!hasConversation && briefingComplete ? <KaydExecutiveBriefingInline /> : null}
-        {!hasConversation ? (
-          <KaydGuidedChips
-            chips={STARTER_CHIPS}
-            busy={busy}
-            continuity={sessionContinuity ?? continuity}
-            onAsk={(q) => void handleAsk(q)}
-          />
-        ) : null}
+        >
+          {!hasConversation && briefingComplete ? (
+            <>
+              <KaydExecutiveBriefingInline />
+              <KaydGuidedChips
+                chips={STARTER_CHIPS}
+                busy={busy}
+                continuity={sessionContinuity ?? continuity}
+                onAsk={(q) => void handleAsk(q)}
+              />
+            </>
+          ) : null}
+        </KaydChatPanel>
       </div>
     </div>
   );

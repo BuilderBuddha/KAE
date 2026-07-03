@@ -1,27 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
 import { VigsyConversationThread } from './VigsyConversationThread';
-import { useVigsyConversation } from '../../hooks/useVigsyConversation';
+import { useVigsyConversation } from '../../context/VigsyConversationContext';
 
 interface KaydChatPanelProps {
   briefing: string[];
   composerId: string;
   onBriefingComplete?: () => void;
-  showBriefing?: boolean;
+  children?: ReactNode;
 }
 
 /**
- * Founder Beta–style chatbot shell: single-line KayD briefing + integrated composer.
+ * Unified chatbot shell — single-line briefing slot and composer inside one panel.
  */
 export function KaydChatPanel({
   briefing,
   composerId,
   onBriefingComplete,
-  showBriefing = true,
+  children,
 }: KaydChatPanelProps) {
   const { turns, busy, ready, hasConversation, submitQuestion } = useVigsyConversation();
   const [input, setInput] = useState('');
+  const [briefingDone, setBriefingDone] = useState(false);
+
+  useEffect(() => {
+    setBriefingDone(false);
+  }, [briefing]);
 
   const handleSubmit = async (text?: string) => {
     const question = (text ?? input).trim();
@@ -36,25 +41,33 @@ export function KaydChatPanel({
     }
   };
 
+  const handleBriefingComplete = () => {
+    setBriefingDone(true);
+    onBriefingComplete?.();
+  };
+
+  const placeholder = busy
+    ? 'KayD is thinking…'
+    : hasConversation
+      ? 'Ask a follow-up…'
+      : briefingDone
+        ? 'What would you like to work on today?'
+        : 'Listening…';
+
   return (
-    <section className="kayd-chat">
-      <div className="kayd-chat__header">
-        <div className="kayd-chat__presence" aria-hidden>
-          ✦
-        </div>
-        <span className="kayd-chat__label">KayD</span>
+    <section className="kayd-chat-panel">
+      <div className="kayd-chat-panel__display">
+        {!hasConversation ? (
+          <KaydProgressiveBriefing messages={briefing} onComplete={handleBriefingComplete} />
+        ) : (
+          <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
+        )}
       </div>
 
-      <div className="kayd-chat__messages">
-        {hasConversation ? (
-          <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
-        ) : showBriefing ? (
-          <KaydProgressiveBriefing messages={briefing} onComplete={onBriefingComplete} />
-        ) : null}
-      </div>
+      {children}
 
       <form
-        className="kayd-chat__composer"
+        className="kayd-chat-panel__composer"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSubmit();
@@ -65,15 +78,9 @@ export function KaydChatPanel({
         </label>
         <textarea
           id={composerId}
-          className="kayd-chat__input"
-          rows={2}
-          placeholder={
-            ready
-              ? hasConversation
-                ? 'Ask a follow-up…'
-                : 'What would you like to work on today?'
-              : 'Loading conversation…'
-          }
+          className="kayd-chat-panel__input"
+          rows={hasConversation ? 2 : 2}
+          placeholder={ready ? placeholder : 'Loading conversation…'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

@@ -5,6 +5,23 @@ import type {
   RepositoryHealthReport,
   RepositoryStats,
 } from '@scooper/core';
+import { PRIMARY_KNOWLEDGE_SOURCES } from './import-source-display';
+
+function formatNameList(items: string[]): string {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+function connectedSourceLabels(connectors: ConnectorStatus[]): string[] {
+  const byId = new Map(connectors.map((status) => [status.connectorId, status]));
+  return PRIMARY_KNOWLEDGE_SOURCES.filter((source) => {
+    if (source.uiOnly) return false;
+    const status = byId.get(source.id);
+    return status?.config.connected && status.implementationStatus === 'full';
+  }).map((source) => source.label);
+}
 
 function welcomeLine(continuity: ExecutiveContinuity | null | undefined): string | null {
   if (!continuity?.welcomeMessage) return null;
@@ -114,11 +131,29 @@ export function buildKaydDashboardBriefing(
 }
 
 /** Knowledge Sources workspace briefing. */
-export function buildKaydImportBriefing(): string[] {
+export function buildKaydImportBriefing(connectors?: ConnectorStatus[]): string[] {
+  const connected = connectedSourceLabels(connectors ?? []);
+
+  if (connected.length === 0) {
+    return [
+      'I connect knowledge sources to your repository.',
+      'Choose a source below, or tell me what you would like to bring in.',
+      'What would you like to connect first?',
+    ];
+  }
+
+  if (connected.length === 1) {
+    return [
+      `You're connected to ${connected[0]}.`,
+      'You can manage it below, or tell me if you want to add another source.',
+      'What would you like to do next?',
+    ];
+  }
+
   return [
-    'I connect knowledge sources to your repository.',
-    'Choose a source below, or tell me what you would like to bring in.',
-    'What would you like to connect first?',
+    `You have ${connected.length} sources connected: ${formatNameList(connected)}.`,
+    'I can help you sync, configure, or add another source.',
+    'Which source should we work on?',
   ];
 }
 

@@ -723,113 +723,9 @@ select {
   padding-bottom: 40px;
 }
 
-.kayd-chat {
-  max-width: 700px;
-  margin: 0 auto 20px;
-  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  overflow: hidden;
-}
-
-.kayd-chat__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--cf-border-soft, rgba(255, 255, 255, 0.04));
-}
-
-.kayd-chat__presence {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(120, 130, 145, 0.9), rgba(90, 98, 110, 0.85));
-  color: #fff;
-  font-size: 11px;
-  flex-shrink: 0;
-}
-
-.kayd-chat__label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.kayd-chat__messages {
-  min-height: 72px;
-  max-height: 160px;
-  padding: 16px 18px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-.kayd-chat__messages .vigsy-thread {
-  width: 100%;
-  max-height: none;
-  margin: 0;
-  padding: 0;
-  gap: 12px;
-  overflow-y: auto;
-}
-
-.kayd-chat__line {
-  margin: 0;
-  font-size: 1rem;
-  line-height: 1.55;
-  color: #d8dbe0;
-  font-weight: 450;
-  transition: opacity 0.28s ease;
-}
-
-.kayd-chat__line--fade {
-  opacity: 0;
-}
-
-.kayd-chat__line--idle {
-  font-size: 0.95rem;
-}
-
-.kayd-chat__line--thinking {
-  width: 100%;
-}
-
-.kayd-chat__composer {
-  padding: 0 14px 14px;
-  border-top: 1px solid var(--cf-border-soft, rgba(255, 255, 255, 0.04));
-}
-
-.kayd-chat__input {
-  width: 100%;
-  resize: none;
-  min-height: 52px;
-  padding: 12px 14px;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--color-text);
-  background: rgba(20, 21, 25, 0.6);
-  border: 1px solid var(--cf-border, rgba(255, 255, 255, 0.08));
-  border-radius: 10px;
-}
-
-.kayd-chat__input:focus {
-  outline: none;
-  border-color: rgba(160, 174, 192, 0.28);
-  box-shadow: 0 0 0 3px rgba(160, 174, 192, 0.08);
-}
-
 .kayd-lead {
-  margin-bottom: 16px;
+  margin-bottom: 28px;
 }
-
-.kayd-lead .kayd-chat {
-  margin-bottom: 0;
-}
-
 
 .kayd-lead__thread {
   max-width: 700px;
@@ -888,6 +784,113 @@ select {
   color: #b8c4d4;
   background: rgba(255, 255, 255, 0.04);
   border-color: var(--cf-border);
+}
+
+/* Unified chatbot panel — briefing + composer in one card */
+.kayd-chat-panel {
+  max-width: 700px;
+  margin: 0 auto 28px;
+  background: var(--cf-surface);
+  border: 1px solid var(--cf-border);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+}
+
+.kayd-chat-panel__display {
+  min-height: 88px;
+  max-height: min(42vh, 360px);
+  padding: 18px 20px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.kayd-chat-panel__display .vigsy-thread {
+  gap: 12px;
+}
+
+.kayd-seq-briefing {
+  min-height: 44px;
+  display: flex;
+  align-items: flex-end;
+  transition: opacity 0.28s ease;
+}
+
+.kayd-seq-briefing--fading {
+  opacity: 0;
+}
+
+.kayd-seq-briefing--done {
+  min-height: 0;
+}
+
+.kayd-seq-briefing__thinking {
+  width: 100%;
+}
+
+.kayd-briefing-bubble--compact {
+  margin: 0;
+}
+
+.kayd-briefing-bubble--compact .vigsy-msg__bubble {
+  padding: 10px 14px;
+}
+
+.kayd-briefing-bubble--compact .vigsy-msg__text {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.kayd-chat-panel__composer {
+  padding: 10px 14px 14px;
+  border-top: 1px solid var(--cf-border-soft);
+  background: rgba(12, 14, 18, 0.55);
+}
+
+.kayd-chat-panel__input {
+  width: 100%;
+  resize: none;
+  border: 1px solid var(--cf-border);
+  border-radius: 12px;
+  background: rgba(20, 21, 25, 0.92);
+  color: var(--cf-text);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 10px 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
+}
+
+.kayd-chat-panel__input:focus {
+  outline: none;
+  border-color: rgba(160, 174, 192, 0.28);
+  box-shadow: 0 0 0 3px rgba(160, 174, 192, 0.08);
+}
+
+.kayd-chat-panel__input:disabled {
+  opacity: 0.65;
+}
+
+.vigsy-unified__body--chat {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vigsy-unified__body--chat .kayd-chat-panel {
+  flex: 1;
+  max-width: none;
+  margin: 0;
+  min-height: 0;
+}
+
+.vigsy-unified__body--chat .kayd-chat-panel__display {
+  flex: 1;
+  max-height: none;
 }
 
 .screen-evidence {
