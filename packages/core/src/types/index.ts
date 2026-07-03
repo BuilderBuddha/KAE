@@ -97,6 +97,10 @@ export interface AppSettings {
   logLevel: LogLevel;
   maxConcurrentJobs: number;
   outputDirectory: string;
+  aiProvider: import('./ai-orchestration.js').AIProviderId;
+  aiModel?: string;
+  aiApiKey?: string;
+  aiBaseUrl?: string;
 }
 
 /** Result of an import operation. */

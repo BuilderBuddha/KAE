@@ -9,6 +9,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   logLevel: 'info',
   maxConcurrentJobs: 2,
   outputDirectory: './output',
+  aiProvider: 'mock',
 };
 
 /** Default repository configuration. */

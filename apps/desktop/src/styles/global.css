@@ -1722,3 +1722,70 @@ select {
 .vigsy-evidence-card__body { padding: 10px 12px 12px; border-top: 1px solid var(--color-border); }
 .vigsy-relationship-group { margin-bottom: 12px; }
 .vigsy-relationship-group__title { margin: 0 0 8px; font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Campaign 1.6a — unified conversation */
+.vigsy-unified {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);
+  min-height: 520px;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+.vigsy-unified__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 12px;
+  flex-shrink: 0;
+}
+.vigsy-unified__brand { margin: 0; font-size: 1.5rem; font-weight: 600; }
+.vigsy-unified__brand-block { text-align: left; }
+.vigsy-unified__brand-block .vigsy-home__luminous-line { margin: 8px 0 0; width: 120px; }
+.vigsy-unified__actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.vigsy-link-btn--danger { color: var(--color-error); }
+.vigsy-unified__body {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+}
+.vigsy-unified__composer {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  background: linear-gradient(180deg, transparent, rgba(15, 17, 23, 0.92) 24%);
+}
+.vigsy-unified--active .vigsy-unified__composer .vigsy-home__input--hero {
+  min-height: 56px;
+  font-size: 15px;
+}
+.vigsy-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 24px 0 12px;
+}
+.vigsy-empty__lead { margin: 0 0 16px; max-width: 420px; line-height: 1.5; }
+.vigsy-empty__chips { justify-content: center; margin-bottom: 20px; }
+.vigsy-empty .vigsy-home__drawer { width: 100%; }
+
+.vigsy-continuity {
+  margin: 0 auto 20px;
+  max-width: 640px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-primary, #f2f2f2);
+  line-height: 1.55;
+  font-size: 0.98rem;
+}
+
+.vigsy-chip--recommended {
+  border-color: rgba(120, 180, 255, 0.45);
+  background: rgba(80, 140, 220, 0.12);
+}

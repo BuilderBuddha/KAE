@@ -23,6 +23,10 @@ import type {
   RelatedEvidenceHit,
   ExecutiveBriefing,
   ExecutiveBriefingLoadResult,
+  ExecutiveContinuity,
+  VigsyConversationRecord,
+  AnswerKnowledgeOptions,
+  ProviderCapabilities,
 } from '@scooper/core';
 
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData, RepositoryAssetData } from '../src/types/kae.js';
@@ -55,13 +59,19 @@ export interface KaeAPI {
   buildEvidenceIndex: () => Promise<EvidenceIndexStats>;
   searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
   resolveEvidenceDrilldown: (recordId: string, query?: string) => Promise<EvidenceDrilldown | null>;
-  answerKnowledgeQuestion: (question: string) => Promise<VigsyKnowledgeAnswer>;
+  answerKnowledgeQuestion: (question: string, options?: AnswerKnowledgeOptions) => Promise<VigsyKnowledgeAnswer>;
   buildRelationshipIndex: () => Promise<KnowledgeRelationshipStats>;
   searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
   getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
   getRelatedEvidence: (anchor: string, query?: string) => Promise<RelatedEvidenceHit[]>;
   getExecutiveBriefing: () => Promise<ExecutiveBriefingLoadResult>;
   refreshExecutiveBriefing: () => Promise<ExecutiveBriefing>;
+  loadActiveVigsyConversation: () => Promise<VigsyConversationRecord | null>;
+  saveVigsyConversation: (record: VigsyConversationRecord) => Promise<string>;
+  createVigsyConversation: () => Promise<VigsyConversationRecord>;
+  deleteVigsyConversation: (conversationId: string) => Promise<void>;
+  getExecutiveContinuity: () => Promise<ExecutiveContinuity>;
+  listAiProviders: () => Promise<ProviderCapabilities[]>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -82,6 +92,8 @@ export interface KaeAPI {
   onImportTimeline: (callback: (steps: ImportTimelineStep[]) => void) => () => void;
   onValidationProgress: (callback: (progress: ValidationProgress) => void) => () => void;
   onExecutiveBriefingUpdated: (callback: () => void) => () => void;
+  onExecutiveMemoryUpdated: (callback: () => void) => () => void;
+  onVigsyRefreshed: (callback: () => void) => () => void;
 }
 
 const kaeAPI: KaeAPI = {
@@ -107,7 +119,8 @@ const kaeAPI: KaeAPI = {
   searchKnowledge: (query) => ipcRenderer.invoke('kae:search-knowledge', query),
   resolveEvidenceDrilldown: (recordId, query) =>
     ipcRenderer.invoke('kae:resolve-evidence-drilldown', recordId, query),
-  answerKnowledgeQuestion: (question) => ipcRenderer.invoke('kae:answer-knowledge-question', question),
+  answerKnowledgeQuestion: (question, options) =>
+    ipcRenderer.invoke('kae:answer-knowledge-question', question, options),
   buildRelationshipIndex: () => ipcRenderer.invoke('kae:build-relationship-index'),
   searchRelationships: (query) => ipcRenderer.invoke('kae:search-relationships', query),
   getRelationshipsForEvidence: (evidenceId) =>
@@ -115,6 +128,13 @@ const kaeAPI: KaeAPI = {
   getRelatedEvidence: (anchor, query) => ipcRenderer.invoke('kae:get-related-evidence', anchor, query),
   getExecutiveBriefing: () => ipcRenderer.invoke('kae:get-executive-briefing'),
   refreshExecutiveBriefing: () => ipcRenderer.invoke('kae:refresh-executive-briefing'),
+  loadActiveVigsyConversation: () => ipcRenderer.invoke('kae:load-active-vigsy-conversation'),
+  saveVigsyConversation: (record) => ipcRenderer.invoke('kae:save-vigsy-conversation', record),
+  createVigsyConversation: () => ipcRenderer.invoke('kae:create-vigsy-conversation'),
+  deleteVigsyConversation: (conversationId) =>
+    ipcRenderer.invoke('kae:delete-vigsy-conversation', conversationId),
+  getExecutiveContinuity: () => ipcRenderer.invoke('kae:get-executive-continuity'),
+  listAiProviders: () => ipcRenderer.invoke('kae:list-ai-providers'),
   openRepositoryPath: () => ipcRenderer.invoke('kae:open-repository-path'),
   openRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:open-repository-file', relativePath),
   revealRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:reveal-repository-file', relativePath),
@@ -159,6 +179,16 @@ const kaeAPI: KaeAPI = {
     const handler = () => callback();
     ipcRenderer.on('kae:executive-briefing-updated', handler);
     return () => ipcRenderer.removeListener('kae:executive-briefing-updated', handler);
+  },
+  onExecutiveMemoryUpdated: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('kae:executive-memory-updated', handler);
+    return () => ipcRenderer.removeListener('kae:executive-memory-updated', handler);
+  },
+  onVigsyRefreshed: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('kae:vigsy-refreshed', handler);
+    return () => ipcRenderer.removeListener('kae:vigsy-refreshed', handler);
   },
 };
 

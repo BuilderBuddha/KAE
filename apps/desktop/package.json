@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@scooper/ai-orchestration": "*",
     "@scooper/capability-engine": "*",
     "@scooper/connector-engine": "*",
     "@scooper/core": "*",

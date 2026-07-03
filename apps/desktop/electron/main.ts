@@ -8,6 +8,7 @@ import {
   createDefaultConfig,
   createImportJob,
   DEFAULT_REPOSITORY_PATH,
+  DEFAULT_APP_SETTINGS,
   type AppSettings,
   type RepositoryConfig,
   type LogEntry,
@@ -19,8 +20,11 @@ import {
   type ValidationProgress,
   type RepairPlan,
   type RepairResult,
+  type VigsyConversationRecord,
+  type AnswerKnowledgeOptions,
   InMemoryJobQueue,
 } from '@scooper/core';
+import { getSharedAIProviderManager } from '@scooper/ai-orchestration';
 import { importerRegistry, stubImporters, validateChatGptZipImport } from '@scooper/importers';
 import { exporterRegistry, axiomExporter } from '@scooper/exporters';
 import {
@@ -50,6 +54,15 @@ import {
   ensureRelationshipIndex,
   getExecutiveBriefing,
   refreshExecutiveBriefing,
+  loadActiveVigsyConversation,
+  saveVigsyConversation,
+  createNewVigsyConversation,
+  deleteVigsyConversation,
+  syncExecutiveMemoryFromConversation,
+  getExecutiveContinuity,
+  ensureExecutiveSessionForConversation,
+  pauseActiveExecutiveSession,
+  archiveExecutiveSessionForConversation,
   writeSessionManifest,
   writeImportReport,
 } from '@scooper/repository-engine';
@@ -92,6 +105,21 @@ const logs: LogEntry[] = [];
 
 function repoPath(): string {
   return config.repository.path;
+}
+
+function mergedSettings(): AppSettings {
+  return { ...DEFAULT_APP_SETTINGS, ...config.settings };
+}
+
+function answerOptionsFromConfig(options?: AnswerKnowledgeOptions): AnswerKnowledgeOptions {
+  const settings = mergedSettings();
+  return {
+    providerId: options?.providerId ?? settings.aiProvider,
+    apiKey: options?.apiKey ?? settings.aiApiKey,
+    model: options?.model ?? settings.aiModel,
+    baseUrl: options?.baseUrl ?? settings.aiBaseUrl,
+    conversationContext: options?.conversationContext,
+  };
 }
 
 function resolveRepoFile(relativePath: string): string {
@@ -516,11 +544,11 @@ function setupIpc(): void {
     return config.repository;
   });
 
-  ipcMain.handle('kae:get-settings', () => config.settings);
+  ipcMain.handle('kae:get-settings', () => mergedSettings());
   ipcMain.handle('kae:set-settings', (_event, settings: AppSettings) => {
-    config.settings = settings;
+    config.settings = { ...DEFAULT_APP_SETTINGS, ...settings };
     addLog('info', 'settings', 'Application settings updated');
-    return config.settings;
+    return mergedSettings();
   });
 
   ipcMain.handle('kae:get-jobs', () => jobQueue.getAll());
@@ -584,9 +612,12 @@ function setupIpc(): void {
     'kae:resolve-evidence-drilldown',
     async (_event, recordId: string, query?: string) => getEvidenceDrilldown(repoPath(), recordId, query),
   );
-  ipcMain.handle('kae:answer-knowledge-question', async (_event, question: string) =>
-    answerKnowledgeQuestion(repoPath(), question),
+  ipcMain.handle(
+    'kae:answer-knowledge-question',
+    async (_event, question: string, options?: AnswerKnowledgeOptions) =>
+      answerKnowledgeQuestion(repoPath(), question, answerOptionsFromConfig(options)),
   );
+  ipcMain.handle('kae:list-ai-providers', () => getSharedAIProviderManager().listCapabilities());
   ipcMain.handle('kae:build-relationship-index', async () => {
     const index = await buildRelationshipIndex(repoPath());
     void rebuildExecutiveBriefingCache();
@@ -608,6 +639,34 @@ function setupIpc(): void {
   ipcMain.handle('kae:refresh-executive-briefing', async () =>
     refreshExecutiveBriefing(repoPath()),
   );
+  ipcMain.handle('kae:load-active-vigsy-conversation', async () => {
+    const record = await loadActiveVigsyConversation(repoPath());
+    if (record) {
+      await ensureExecutiveSessionForConversation(repoPath(), record);
+    }
+    return record;
+  });
+  ipcMain.handle('kae:save-vigsy-conversation', async (_event, record: VigsyConversationRecord) => {
+    const filePath = await saveVigsyConversation(repoPath(), record);
+    if (record.turns.length > 0) {
+      await syncExecutiveMemoryFromConversation(repoPath(), record);
+      mainWindow?.webContents.send('kae:executive-memory-updated');
+      mainWindow?.webContents.send('kae:executive-briefing-updated');
+      mainWindow?.webContents.send('kae:vigsy-refreshed');
+    }
+    return filePath;
+  });
+  ipcMain.handle('kae:create-vigsy-conversation', async () => {
+    await pauseActiveExecutiveSession(repoPath());
+    const record = await createNewVigsyConversation(repoPath());
+    await ensureExecutiveSessionForConversation(repoPath(), record);
+    return record;
+  });
+  ipcMain.handle('kae:delete-vigsy-conversation', async (_event, conversationId: string) => {
+    await archiveExecutiveSessionForConversation(repoPath(), conversationId);
+    await deleteVigsyConversation(repoPath(), conversationId);
+  });
+  ipcMain.handle('kae:get-executive-continuity', async () => getExecutiveContinuity(repoPath()));
   ipcMain.handle('kae:open-repository-path', async () => {
     await shell.openPath(repoPath());
   });

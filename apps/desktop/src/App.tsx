@@ -36,7 +36,7 @@ function renderScreen(screen: ScreenId) {
 }
 
 export default function App() {
-  const [activeScreen, setActiveScreen] = useState<ScreenId>('dashboard');
+  const [activeScreen, setActiveScreen] = useState<ScreenId>('vigsy');
 
   return (
     <NavigationProvider onNavigate={setActiveScreen}>

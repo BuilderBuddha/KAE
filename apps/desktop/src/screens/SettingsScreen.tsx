@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
-import type { AppSettings, LogLevel } from '@scooper/core';
+import type { AIProviderId, AppSettings, LogLevel, ProviderCapabilities } from '@scooper/core';
 
 export function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [providers, setProviders] = useState<ProviderCapabilities[]>([]);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    window.kae.getSettings().then(setSettings);
+    void Promise.all([window.kae.getSettings(), window.kae.listAiProviders()]).then(
+      ([nextSettings, nextProviders]) => {
+        setSettings(nextSettings);
+        setProviders(nextProviders);
+      },
+    );
   }, []);
 
   const handleSave = async () => {
@@ -75,6 +81,34 @@ export function SettingsScreen() {
             onChange={(e) =>
               setSettings({ ...settings, maxConcurrentJobs: Number(e.target.value) })
             }
+          />
+        </div>
+
+        <div className="form__group">
+          <label htmlFor="ai-provider">AI Provider</label>
+          <select
+            id="ai-provider"
+            value={settings.aiProvider}
+            onChange={(e) =>
+              setSettings({ ...settings, aiProvider: e.target.value as AIProviderId })
+            }
+          >
+            {providers.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.displayName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form__group">
+          <label htmlFor="ai-model">AI Model (optional)</label>
+          <input
+            id="ai-model"
+            type="text"
+            value={settings.aiModel ?? ''}
+            onChange={(e) => setSettings({ ...settings, aiModel: e.target.value || undefined })}
+            spellCheck={false}
           />
         </div>
 

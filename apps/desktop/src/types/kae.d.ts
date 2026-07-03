@@ -22,6 +22,10 @@ import type {
   RelatedEvidenceHit,
   ExecutiveBriefing,
   ExecutiveBriefingLoadResult,
+  ExecutiveContinuity,
+  VigsyConversationRecord,
+  AnswerKnowledgeOptions,
+  ProviderCapabilities,
 } from '@scooper/core';
 
 export interface ImporterInfo {
@@ -95,13 +99,19 @@ export interface KaeAPI {
   buildEvidenceIndex: () => Promise<EvidenceIndexStats>;
   searchKnowledge: (query: string) => Promise<RepositorySearchResult[]>;
   resolveEvidenceDrilldown: (recordId: string, query?: string) => Promise<EvidenceDrilldown | null>;
-  answerKnowledgeQuestion: (question: string) => Promise<VigsyKnowledgeAnswer>;
+  answerKnowledgeQuestion: (question: string, options?: AnswerKnowledgeOptions) => Promise<VigsyKnowledgeAnswer>;
   buildRelationshipIndex: () => Promise<KnowledgeRelationshipStats>;
   searchRelationships: (query: string) => Promise<KnowledgeRelationship[]>;
   getRelationshipsForEvidence: (evidenceId: string) => Promise<KnowledgeRelationship[]>;
   getRelatedEvidence: (anchor: string, query?: string) => Promise<RelatedEvidenceHit[]>;
   getExecutiveBriefing: () => Promise<ExecutiveBriefingLoadResult>;
   refreshExecutiveBriefing: () => Promise<ExecutiveBriefing>;
+  loadActiveVigsyConversation: () => Promise<VigsyConversationRecord | null>;
+  saveVigsyConversation: (record: VigsyConversationRecord) => Promise<string>;
+  createVigsyConversation: () => Promise<VigsyConversationRecord>;
+  deleteVigsyConversation: (conversationId: string) => Promise<void>;
+  getExecutiveContinuity: () => Promise<ExecutiveContinuity>;
+  listAiProviders: () => Promise<ProviderCapabilities[]>;
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
@@ -122,6 +132,8 @@ export interface KaeAPI {
   onImportTimeline: (callback: (steps: ImportTimelineStep[]) => void) => () => void;
   onValidationProgress: (callback: (progress: ValidationProgress) => void) => () => void;
   onExecutiveBriefingUpdated: (callback: () => void) => () => void;
+  onExecutiveMemoryUpdated: (callback: () => void) => () => void;
+  onVigsyRefreshed: (callback: () => void) => () => void;
 }
 
 declare global {

@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build:packages": "npm run build -w @scooper/core && npm run build -w @scooper/parser && npm run build -w @scooper/capability-engine && npm run build -w @scooper/exporters && npm run build -w @scooper/connector-engine && npm run build -w @scooper/importers && npm run build -w @scooper/repository-engine && npm run build -w @scooper/source-engine && npm run build -w @scooper/graph",
+    "build:packages": "npm run build -w @scooper/core && npm run build -w @scooper/ai-orchestration && npm run build -w @scooper/parser && npm run build -w @scooper/capability-engine && npm run build -w @scooper/exporters && npm run build -w @scooper/connector-engine && npm run build -w @scooper/importers && npm run build -w @scooper/repository-engine && npm run build -w @scooper/source-engine && npm run build -w @scooper/graph",
     "dev": "npm run build:packages && npm run dev -w @scooper/desktop",
     "build": "npm run build:packages && npm run build -w @scooper/desktop",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
