@@ -20,27 +20,21 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     id: 'vigsy',
-    label: 'Vigsy',
+    label: 'KayD',
     icon: '✦',
-    description: 'Executive intelligence — ask anything',
+    description: 'Talk to KayD — executive intelligence',
   },
   {
     id: 'dashboard',
     label: 'Dashboard',
     icon: '◉',
-    description: 'Import status and repository overview',
+    description: 'KayD briefing and repository overview',
   },
   {
     id: 'import',
-    label: 'Import',
+    label: 'Knowledge Sources',
     icon: '↓',
-    description: 'Acquire knowledge from external sources',
-  },
-  {
-    id: 'connectors',
-    label: 'Connectors',
-    icon: '⎈',
-    description: 'Manage connected knowledge sources',
+    description: 'Connect knowledge sources to your repository',
   },
   {
     id: 'explorer',

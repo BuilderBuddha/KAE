@@ -1,10 +1,10 @@
 :root {
-  --color-bg: #0f1117;
-  --color-bg-elevated: #171a22;
-  --color-bg-hover: #1e222d;
-  --color-border: #2a2f3d;
-  --color-text: #e8eaed;
-  --color-text-muted: #9aa0ad;
+  --color-bg: #0c0d10;
+  --color-bg-elevated: #13151a;
+  --color-bg-hover: #1a1d24;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-text: #eceef2;
+  --color-text-muted: #a8aeb8;
   --color-accent: #4f8cff;
   --color-accent-hover: #6ba0ff;
   --color-success: #3dd68c;
@@ -704,6 +704,398 @@ select {
 .dashboard-status--ready { color: var(--color-success); }
 .dashboard-status--attention { color: var(--color-warning); }
 .dashboard-status--issues { color: var(--color-error); }
+
+/* Conversation-first surfaces (Campaign: Conversation-First UI) */
+.screen--conversation-first {
+  --cf-bg: #0c0d10;
+  --cf-surface: #141519;
+  --cf-border: rgba(255, 255, 255, 0.06);
+  --cf-border-soft: rgba(255, 255, 255, 0.04);
+  --cf-text-soft: #8b909a;
+  max-width: 900px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+
+.shell__content:has(.screen--conversation-first) {
+  background: var(--cf-bg);
+  padding-top: 28px;
+  padding-bottom: 40px;
+}
+
+.kayd-lead {
+  margin-bottom: 28px;
+}
+
+.kayd-lead__thread {
+  max-width: 700px;
+  margin: 0 auto 20px;
+  min-height: 0;
+  flex: none;
+  gap: 14px;
+}
+
+.kayd-lead__presence {
+  background: linear-gradient(135deg, rgba(120, 130, 145, 0.9), rgba(90, 98, 110, 0.85)) !important;
+  box-shadow: none;
+  font-size: 11px;
+}
+
+.kayd-lead__bubble {
+  background: rgba(255, 255, 255, 0.028) !important;
+  border-color: var(--cf-border) !important;
+}
+
+.kayd-lead__briefing .vigsy-msg__text {
+  color: #d8dbe0;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  font-weight: 450;
+}
+
+.kayd-lead__composer {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.kayd-lead__input {
+  border-color: var(--cf-border) !important;
+  background: rgba(20, 21, 25, 0.92) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+.kayd-lead__input:focus {
+  border-color: rgba(160, 174, 192, 0.28) !important;
+  box-shadow: 0 0 0 3px rgba(160, 174, 192, 0.08) !important;
+}
+
+.kayd-lead__submit {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--cf-border);
+  color: #e4e6ea;
+}
+
+.kayd-lead__submit:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.kayd-lead .vigsy-msg__bubble--user {
+  color: #b8c4d4;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--cf-border);
+}
+
+.screen-evidence {
+  padding-top: 6px;
+  border-top: 1px solid var(--cf-border-soft);
+}
+
+.screen-evidence__header {
+  margin-bottom: 16px;
+}
+
+.screen-evidence__title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--cf-text-soft);
+}
+
+.screen-evidence__lead,
+.screen-evidence__meta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.screen-evidence__subsection {
+  margin-top: 18px;
+}
+
+.screen--conversation-first .card {
+  background: var(--cf-surface);
+  border-color: var(--cf-border);
+  box-shadow: none;
+}
+
+.screen--conversation-first .screen__section-title {
+  color: var(--cf-text-soft);
+  font-size: 11px;
+  margin-bottom: 10px;
+}
+
+.screen--conversation-first .btn--secondary {
+  background: transparent;
+  border-color: var(--cf-border);
+  color: var(--cf-text-soft);
+}
+
+.screen--conversation-first .btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #d8dbe0;
+}
+
+.screen--conversation-first .dashboard-status {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.screen--conversation-first .dashboard-status--ready { color: #6eb88a; }
+.screen--conversation-first .dashboard-status--attention { color: #c9a86a; }
+.screen--conversation-first .dashboard-status--issues { color: #c97a7a; }
+
+.screen--conversation-first .dashboard-grid {
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.screen--conversation-first .git-check {
+  border-color: var(--cf-border-soft);
+}
+
+.import-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.import-source-card {
+  padding: 14px 16px;
+}
+
+.import-source-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.import-source-card__name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.import-source-card__description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--cf-text-soft);
+}
+
+.import-advanced {
+  margin-top: 20px;
+  border: 1px solid var(--cf-border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.import-advanced__summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--cf-text-soft);
+  list-style: none;
+}
+
+.import-advanced__summary::-webkit-details-marker {
+  display: none;
+}
+
+.import-advanced__lead {
+  padding: 0 16px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.import-advanced .importer-grid {
+  padding: 0 16px 16px;
+}
+
+.importer-card--advanced {
+  opacity: 0.92;
+}
+
+.workspace__body {
+  margin-top: 4px;
+}
+
+.workspace-transition {
+  animation: workspace-enter 0.22s ease-out;
+}
+
+@keyframes workspace-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.kayd-briefing-drawer {
+  max-width: 700px;
+  margin: 0 auto 16px;
+  border: 1px solid var(--cf-border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.kayd-briefing-drawer__summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cf-text-soft);
+  list-style: none;
+}
+
+.kayd-briefing-drawer__summary::-webkit-details-marker {
+  display: none;
+}
+
+.kayd-briefing-drawer .vigsy-briefing {
+  border: none;
+  background: transparent;
+  padding-top: 0;
+}
+
+.kayd-briefing-drawer .vigsy-briefing__title {
+  font-size: 13px;
+}
+
+.import-source-card--selectable {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid var(--cf-border);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.import-source-card--selectable:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.import-source-card--active {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.knowledge-source-detail {
+  margin: 14px 0 18px;
+}
+
+.knowledge-source-detail__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.knowledge-source-detail__title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.knowledge-source-detail__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.knowledge-source-detail__stats dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cf-text-soft);
+}
+
+.knowledge-source-detail__stats dd {
+  margin: 2px 0 0;
+  font-weight: 500;
+}
+
+.knowledge-source-detail__history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.knowledge-source-detail__history-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--cf-text-soft);
+}
+
+.explorer-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--cf-text-soft);
+}
+
+.explorer-breadcrumbs__sep {
+  margin: 0 4px;
+  opacity: 0.5;
+}
+
+.explorer-folder-group {
+  margin-bottom: 12px;
+}
+
+.explorer-folder-group__label {
+  margin: 0 0 6px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cf-text-soft);
+}
+
+.explorer-folder-group__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.explorer-list__name {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.nav__label {
+  font-weight: 500;
+}
+
+.nav__description {
+  color: var(--color-text-muted);
+}
+
+.kayd-lead__input,
+.form__input,
+.vigsy-home__input--hero {
+  color: var(--color-text);
+  font-weight: 450;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
 
 .health-issues {
   list-style: none;

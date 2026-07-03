@@ -4,7 +4,7 @@ export function CognitionPulse({ compact = false }: { compact?: boolean }) {
     <div
       className={`vigsy-cognition${compact ? ' vigsy-cognition--compact' : ''}`}
       aria-live="polite"
-      aria-label="Vigsy is thinking"
+      aria-label="KayD is thinking"
     >
       <span className="vigsy-cognition__ring vigsy-cognition__ring--outer" aria-hidden="true" />
       <span className="vigsy-cognition__ring vigsy-cognition__ring--inner" aria-hidden="true" />
@@ -15,7 +15,7 @@ export function CognitionPulse({ compact = false }: { compact?: boolean }) {
 
 export function ThinkingIndicator({ label = 'Thinking' }: { label?: string }) {
   return (
-    <div className="vigsy-thinking-row" aria-live="polite" aria-label="Vigsy is thinking">
+    <div className="vigsy-thinking-row" aria-live="polite" aria-label="KayD is thinking">
       <CognitionPulse compact />
       <span className="vigsy-thinking-row__label">{label}</span>
     </div>

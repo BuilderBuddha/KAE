@@ -1,16 +1,28 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  ConnectorStatus,
   ImportSummary,
   ImportTimelineStep,
   ImportValidationReport,
+  SyncHistoryEntry,
   ValidationProgress,
 } from '@scooper/core';
 import { ImportDiffPanel } from '../components/ImportDiffPanel';
 import { ImportTimeline } from '../components/ImportTimeline';
+import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
+import { KnowledgeSourceDetail } from '../components/knowledge/KnowledgeSourceDetail';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
+import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
+import { buildKaydImportBriefing } from '../utils/kayd-briefings';
+import {
+  ADVANCED_IMPORTER_IDS,
+  badgeLabel,
+  PRIMARY_KNOWLEDGE_SOURCES,
+  sourceBadge,
+} from '../utils/import-source-display';
 
 interface ImporterInfo {
   id: string;
@@ -32,7 +44,12 @@ const INITIAL_VALIDATION_PROGRESS = (): ValidationProgress => ({
 });
 
 export function ImportScreen() {
+  const continuity = useExecutiveContinuity();
   const [importers, setImporters] = useState<ImporterInfo[]>([]);
+  const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
+  const [syncHistory, setSyncHistory] = useState<SyncHistoryEntry[]>([]);
+  const [selectedSourceId, setSelectedSourceId] = useState<string>('chatgpt-export-zip');
+  const [connectorBusy, setConnectorBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [validating, setValidating] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -47,12 +64,20 @@ export function ImportScreen() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    window.kae
-      .getImporters()
-      .then(setImporters)
-      .finally(() => setLoading(false));
+  const refreshSources = useCallback(async () => {
+    const [nextImporters, nextConnectors, nextHistory] = await Promise.all([
+      window.kae.getImporters(),
+      window.kae.getConnectorStatuses(),
+      window.kae.getConnectorSyncHistory(),
+    ]);
+    setImporters(nextImporters);
+    setConnectors(nextConnectors);
+    setSyncHistory(nextHistory);
   }, []);
+
+  useEffect(() => {
+    refreshSources().finally(() => setLoading(false));
+  }, [refreshSources]);
 
   useEffect(() => {
     const unsubComplete = window.kae.onImportComplete((result) => {
@@ -203,63 +228,130 @@ export function ImportScreen() {
   };
 
   const busy = validating || importing;
-  const chatGptImporter = importers.find((i) => i.id === 'chatgpt-export-zip');
   const validationFailed = validation && !validation.valid;
   const showValidationProgress =
     validationProgress && (validating || validationProgress.status !== 'complete' || validationFailed);
 
+  const connectorById = useMemo(
+    () => new Map(connectors.map((status) => [status.connectorId, status])),
+    [connectors],
+  );
+
+  const advancedImporters = importers.filter((importer) => ADVANCED_IMPORTER_IDS.has(importer.id));
+  const importBriefing = buildKaydImportBriefing(continuity);
+  const selectedSource = PRIMARY_KNOWLEDGE_SOURCES.find((s) => s.id === selectedSourceId);
+
   return (
-    <div className="screen">
-      <header className="screen__header">
-        <h2 className="screen__title">Import</h2>
-        <p className="screen__description">
-          Acquire knowledge from external sources into the Axiom Knowledge Repository.
-        </p>
-      </header>
+    <KaydWorkspaceLayout
+      workspaceClassName="screen--import"
+      briefing={importBriefing}
+      composerId="kayd-import-composer"
+    >
+      <section className="screen-evidence" aria-label="Knowledge sources">
+        <header className="screen-evidence__header">
+          <h3 className="screen-evidence__title">Knowledge sources</h3>
+          <p className="screen-evidence__lead muted">Connect sources to bring knowledge into your repository.</p>
+        </header>
 
-      <SafeImportGuarantee
-        variant={validationFailed || (error && !validation?.valid) ? 'failed' : 'default'}
-        reason={validationFailed ? error ?? undefined : undefined}
-      />
+        {loading ? (
+          <LoadingIndicator label="Loading sources…" />
+        ) : (
+          <ul className="import-source-grid">
+            {PRIMARY_KNOWLEDGE_SOURCES.map((source) => {
+              const connector = connectorById.get(source.id);
+              const badge = sourceBadge(source, connector);
+              return (
+                <li key={source.id}>
+                  <button
+                    type="button"
+                    className={`card import-source-card import-source-card--selectable${
+                      selectedSourceId === source.id ? ' import-source-card--active' : ''
+                    }`}
+                    onClick={() => setSelectedSourceId(source.id)}
+                  >
+                    <div className="import-source-card__header">
+                      <h4 className="import-source-card__name">{source.label}</h4>
+                      <span className={`badge badge--${badge === 'stub' ? 'stub' : 'ready'}`}>
+                        {badgeLabel(badge)}
+                      </span>
+                    </div>
+                    <p className="import-source-card__description">{source.description}</p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
 
-      <section
-        className={`card card--dashed import-dropzone${dragOver ? ' import-dropzone--active' : ''}${busy ? ' import-dropzone--busy' : ''}`}
-        aria-label="Import drop zone"
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".zip"
-          className="import-dropzone__input"
-          onChange={handleFileInput}
-          disabled={busy}
-        />
-        <div className="import-dropzone__icon">{busy ? '⏳' : '↓'}</div>
-        <p className="import-dropzone__title">
-          {validating ? 'Validating…' : importing ? 'Importing…' : 'Drop ChatGPT export ZIP here'}
-        </p>
-        <p className="import-dropzone__hint">
-          {pendingFile
-            ? `Selected: ${pendingFile.split(/[/\\]/).pop()}`
-            : 'Or browse to select a .zip file'}
-        </p>
-        <button
-          type="button"
-          className="btn btn--primary import-dropzone__browse"
-          onClick={handleBrowse}
-          disabled={busy}
-        >
-          Browse…
-        </button>
-      </section>
+        {selectedSource ? (
+          <KnowledgeSourceDetail
+            source={selectedSource}
+            status={connectorById.get(selectedSource.id)}
+            history={syncHistory}
+            busy={connectorBusy}
+            onRefresh={async () => {
+              setConnectorBusy(true);
+              try {
+                await refreshSources();
+              } finally {
+                setConnectorBusy(false);
+              }
+            }}
+          />
+        ) : null}
 
-      {showValidationProgress && validationProgress && (
+        {selectedSourceId === 'chatgpt-export-zip' ? (
+          <>
+            <SafeImportGuarantee
+              variant={validationFailed || (error && !validation?.valid) ? 'failed' : 'default'}
+              reason={validationFailed ? error ?? undefined : undefined}
+            />
+            <section className="screen-evidence__subsection">
+              <h3 className="screen__section-title">ChatGPT export</h3>
+              <p className="muted import-hint">
+                Drop an export ZIP to connect ChatGPT conversations. Export from ChatGPT Settings → Data Controls → Export.
+              </p>
+              <div
+                className={`card card--dashed import-dropzone${dragOver ? ' import-dropzone--active' : ''}${busy ? ' import-dropzone--busy' : ''}`}
+                aria-label="Import drop zone"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".zip"
+                  className="import-dropzone__input"
+                  onChange={handleFileInput}
+                  disabled={busy}
+                />
+                <div className="import-dropzone__icon">{busy ? '⏳' : '↓'}</div>
+                <p className="import-dropzone__title">
+                  {validating ? 'Validating…' : importing ? 'Importing…' : 'Drop ChatGPT export ZIP here'}
+                </p>
+                <p className="import-dropzone__hint">
+                  {pendingFile
+                    ? `Selected: ${pendingFile.split(/[/\\]/).pop()}`
+                    : 'Or browse to select a .zip file'}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn--primary import-dropzone__browse"
+                  onClick={handleBrowse}
+                  disabled={busy}
+                >
+                  Browse…
+                </button>
+              </div>
+            </section>
+          </>
+        ) : null}
+
+        {showValidationProgress && validationProgress && (
         <ValidationProgressPanel
           progress={validationProgress}
           onCancel={handleCancelValidation}
@@ -387,21 +479,18 @@ export function ImportScreen() {
         </section>
       )}
 
-      <section className="screen__section">
-        <h3 className="screen__section-title">Connectors</h3>
-        {loading ? (
-          <LoadingIndicator label="Loading connectors…" />
-        ) : (
+      <details className="import-advanced">
+        <summary className="import-advanced__summary">More import options</summary>
+        <p className="muted import-advanced__lead">
+          File-format imports for HTML, Markdown, JSON, TXT, CSV, and other document types.
+        </p>
+        {advancedImporters.length > 0 ? (
           <ul className="importer-grid">
-            {importers.map((importer) => (
-              <li key={importer.id} className="card importer-card">
+            {advancedImporters.map((importer) => (
+              <li key={importer.id} className="card importer-card importer-card--advanced">
                 <div className="importer-card__header">
                   <h4 className="importer-card__name">{importer.name}</h4>
-                  {importer.id === 'chatgpt-export-zip' ? (
-                    <span className="badge badge--ready">Ready</span>
-                  ) : (
-                    <span className="badge badge--stub">Stub</span>
-                  )}
+                  <span className="badge badge--stub">Coming soon</span>
                 </div>
                 <p className="importer-card__description">{importer.description}</p>
                 <div className="importer-card__extensions">
@@ -414,13 +503,11 @@ export function ImportScreen() {
               </li>
             ))}
           </ul>
+        ) : (
+          <p className="muted">No advanced import options are configured.</p>
         )}
-        {chatGptImporter && (
-          <p className="muted import-hint">
-            ChatGPT Export ZIP is active. Export your data from ChatGPT Settings → Data Controls → Export.
-          </p>
-        )}
+      </details>
       </section>
-    </div>
+    </KaydWorkspaceLayout>
   );
 }

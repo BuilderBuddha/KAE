@@ -22,7 +22,7 @@ function ThinkingBubble() {
         ✦
       </div>
       <div className="vigsy-msg__bubble vigsy-msg__bubble--thinking">
-        <ThinkingIndicator label="Vigsy is thinking…" />
+        <ThinkingIndicator label="KayD is thinking…" />
       </div>
     </div>
   );

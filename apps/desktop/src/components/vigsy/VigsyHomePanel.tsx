@@ -109,7 +109,7 @@ export function VigsyHomePanel({
   return (
     <div className="vigsy-home vigsy-home--founder">
       <header className="vigsy-home__hero vigsy-home__hero--center">
-        <h1 className="vigsy-home__brand">Vigsy</h1>
+        <h1 className="vigsy-home__brand">KayD</h1>
         <div className="vigsy-home__luminous-line" aria-hidden="true" />
         <p className="vigsy-home__lead">Evidence-grounded executive intelligence</p>
       </header>
@@ -122,13 +122,13 @@ export function VigsyHomePanel({
         }}
       >
         <label className="sr-only" htmlFor="vigsy-composer">
-          Ask Vigsy
+          Ask KayD
         </label>
         <textarea
           id="vigsy-composer"
           className="vigsy-home__input vigsy-home__input--hero"
           rows={3}
-          placeholder="Ask Vigsy anything about your knowledge…"
+          placeholder="What would you like to work on today?"
           value={inputValue}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => {
@@ -142,7 +142,7 @@ export function VigsyHomePanel({
         />
         <div className="vigsy-home__composer-actions vigsy-home__composer-actions--center">
           <button type="submit" className="btn btn--primary btn--large" disabled={busy || !inputValue.trim()}>
-            {busy ? 'Thinking…' : 'Ask Vigsy'}
+            {busy ? 'Thinking…' : 'Ask KayD'}
           </button>
         </div>
       </form>

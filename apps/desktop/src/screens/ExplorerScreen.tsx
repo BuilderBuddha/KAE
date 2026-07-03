@@ -2,8 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { RepositoryFileEntry } from '@scooper/core';
 import { isChatGptImportSourceFileName } from '../utils/chatgpt-import';
 import { ChatGptSourcePreview } from '../components/ChatGptSourcePreview';
+import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useNavigation } from '../context/NavigationContext';
+import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
+import { buildKaydExplorerBriefing } from '../utils/kayd-briefings';
+import { parentFolder, pathBreadcrumbs } from '../utils/repository-path';
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData } from '../types/kae';
 
 const CATEGORY_LABELS: Record<RepositoryFileEntry['category'], string> = {
@@ -37,6 +41,7 @@ function formatListDate(entry: ChatGptImportListEntry): string {
 }
 
 export function ExplorerScreen() {
+  const continuity = useExecutiveContinuity();
   const { explorerTargetPath, clearExplorerTarget } = useNavigation();
   const [files, setFiles] = useState<RepositoryFileEntry[]>([]);
   const [chatGptEntries, setChatGptEntries] = useState<ChatGptImportListEntry[]>([]);
@@ -153,13 +158,36 @@ export function ExplorerScreen() {
     setActionMsg('Path copied to clipboard.');
   };
 
+  const groupedFiles = useMemo(() => {
+    if (showChatGptImport) return null;
+    const list = filtered as RepositoryFileEntry[];
+    const groups = new Map<string, RepositoryFileEntry[]>();
+    for (const file of list) {
+      const folder = parentFolder(file.relativePath);
+      const bucket = groups.get(folder) ?? [];
+      bucket.push(file);
+      groups.set(folder, bucket);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [filtered, showChatGptImport]);
+
+  const selectedBreadcrumbs = selected ? pathBreadcrumbs(selected) : [];
+
+  const explorerBriefing = buildKaydExplorerBriefing(continuity, files.length, chatGptImportCount);
+
   return (
-    <div className="screen">
-      <header className="screen__header">
-        <h2 className="screen__title">Repository Explorer</h2>
-        <p className="screen__description">
-          Browse knowledge, sources, executive sessions, registries, and import reports.
-        </p>
+    <KaydWorkspaceLayout
+      workspaceClassName="screen--explorer"
+      briefing={explorerBriefing}
+      composerId="kayd-explorer-composer"
+    >
+
+      <section className="screen-evidence" aria-label="Repository files">
+        <header className="screen-evidence__header">
+          <h3 className="screen-evidence__title">Repository</h3>
+          <p className="screen-evidence__lead muted">Browse knowledge, sources, executive sessions, and reports.</p>
+        </header>
+
         {chatGptImportCount > 0 && (
           <div className="explorer-view-switch" role="tablist" aria-label="Explorer view">
             <button
@@ -182,7 +210,17 @@ export function ExplorerScreen() {
             </button>
           </div>
         )}
-      </header>
+
+      {selectedBreadcrumbs.length > 0 ? (
+        <nav className="explorer-breadcrumbs" aria-label="Breadcrumb">
+          {selectedBreadcrumbs.map((segment, index) => (
+            <span key={`${segment}-${index}`} className="explorer-breadcrumbs__segment">
+              {index > 0 ? <span className="explorer-breadcrumbs__sep">/</span> : null}
+              <span>{segment}</span>
+            </span>
+          ))}
+        </nav>
+      ) : null}
 
       <div className="explorer-toolbar">
         <input
@@ -237,16 +275,25 @@ export function ExplorerScreen() {
                     </button>
                   </li>
                 ))
-              : (filtered as RepositoryFileEntry[]).map((file) => (
-                  <li key={file.relativePath}>
-                    <button
-                      type="button"
-                      className={`explorer-list__item${selected === file.relativePath ? ' explorer-list__item--active' : ''}`}
-                      onClick={() => openFile(file.relativePath)}
-                    >
-                      <span className="explorer-list__name">{file.name}</span>
-                      <span className="explorer-list__meta">{CATEGORY_LABELS[file.category]}</span>
-                    </button>
+              : groupedFiles?.map(([folder, folderFiles]) => (
+                  <li key={folder} className="explorer-folder-group">
+                    <p className="explorer-folder-group__label">{folder}</p>
+                    <ul className="explorer-folder-group__list">
+                      {folderFiles.map((file) => (
+                        <li key={file.relativePath}>
+                          <button
+                            type="button"
+                            className={`explorer-list__item${selected === file.relativePath ? ' explorer-list__item--active' : ''}`}
+                            onClick={() => openFile(file.relativePath)}
+                          >
+                            <span className="explorer-list__name">{file.name}</span>
+                            <span className="explorer-list__meta">
+                              {CATEGORY_LABELS[file.category]} · {formatDate(file.modifiedAt)}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 ))}
           </ul>
@@ -319,6 +366,7 @@ export function ExplorerScreen() {
           </div>
         </div>
       )}
-    </div>
+      </section>
+    </KaydWorkspaceLayout>
   );
 }

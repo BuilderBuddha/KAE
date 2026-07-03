@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { EvidenceDrilldown, RepositorySearchResult } from '@scooper/core';
 import { EvidenceDrilldownPanel } from '../components/EvidenceDrilldownPanel';
+import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
+import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
+import { buildKaydSearchBriefing } from '../utils/kayd-briefings';
 
 function kindLabel(result: RepositorySearchResult): string {
   if (result.evidenceKind) {
@@ -15,6 +18,7 @@ function matchLabel(result: RepositorySearchResult): string {
 }
 
 export function SearchScreen() {
+  const continuity = useExecutiveContinuity();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RepositorySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -78,20 +82,33 @@ export function SearchScreen() {
     }
   };
 
+  const indexSummary = useMemo(() => {
+    if (!indexStats) return null;
+    if (indexStats === 'Index build failed') return null;
+    return indexStats.replace(/^Evidence index:\s*/, '');
+  }, [indexStats]);
+
+  const searchBriefing = buildKaydSearchBriefing(continuity, indexSummary);
+
   return (
-    <div className="screen">
-      <header className="screen__header">
-        <h2 className="screen__title">Knowledge Search</h2>
-        <p className="screen__description">
-          Evidence-indexed search with deterministic drilldown across sources, conversations, messages,
-          attachments, and executive sessions.
-        </p>
-        {indexStats ? (
-          <p className="screen__description muted">
-            {indexing ? 'Building evidence index…' : `Evidence index: ${indexStats}`}
+    <KaydWorkspaceLayout
+      workspaceClassName="screen--search"
+      briefing={searchBriefing}
+      composerId="kayd-search-composer"
+    >
+
+      <section className="screen-evidence" aria-label="Search results">
+        <header className="screen-evidence__header">
+          <h3 className="screen-evidence__title">Search</h3>
+          <p className="screen-evidence__lead muted">
+            Evidence-indexed search across sources, conversations, messages, and executive sessions.
           </p>
-        ) : null}
-      </header>
+          {indexStats ? (
+            <p className="screen-evidence__meta muted">
+              {indexing ? 'Building evidence index…' : `Evidence index: ${indexStats}`}
+            </p>
+          ) : null}
+        </header>
 
       <div className="search-bar">
         <input
@@ -150,6 +167,7 @@ export function SearchScreen() {
           )}
         </div>
       </div>
-    </div>
+      </section>
+    </KaydWorkspaceLayout>
   );
 }

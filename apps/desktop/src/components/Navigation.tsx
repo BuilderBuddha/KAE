@@ -63,7 +63,7 @@ export function Navigation({ activeScreen, onNavigate, compact = false }: Naviga
   return (
     <nav className="nav" aria-label="Main navigation">
       <NavSection
-        label="Vigsy"
+        label="KayD"
         items={primary}
         activeScreen={activeScreen}
         onNavigate={onNavigate}

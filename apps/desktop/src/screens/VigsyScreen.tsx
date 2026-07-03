@@ -49,14 +49,14 @@ export function VigsyScreen() {
   };
 
   if (!ready) {
-    return <LoadingIndicator label="Loading Vigsy…" />;
+    return <LoadingIndicator label="Loading KayD…" />;
   }
 
   return (
     <div className={`vigsy-unified${hasConversation ? ' vigsy-unified--active' : ''}`}>
       <header className="vigsy-unified__header">
         <div className="vigsy-unified__brand-block">
-          <h1 className="vigsy-unified__brand">Vigsy</h1>
+          <h1 className="vigsy-unified__brand">KayD</h1>
           <div className="vigsy-home__luminous-line" aria-hidden="true" />
         </div>
         <div className="vigsy-unified__actions">
@@ -99,13 +99,13 @@ export function VigsyScreen() {
         }}
       >
         <label className="sr-only" htmlFor="vigsy-unified-composer">
-          Ask Vigsy
+          Ask KayD
         </label>
         <textarea
           id="vigsy-unified-composer"
           className="vigsy-home__input vigsy-home__input--hero"
           rows={hasConversation ? 2 : 3}
-          placeholder={hasConversation ? 'Ask a follow-up…' : 'Ask Vigsy anything about your knowledge…'}
+          placeholder={hasConversation ? 'Ask a follow-up…' : 'What would you like to work on today?'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
@@ -118,7 +118,7 @@ export function VigsyScreen() {
         />
         <div className="vigsy-home__composer-actions vigsy-home__composer-actions--center">
           <button type="submit" className="btn btn--primary btn--large" disabled={busy || !input.trim()}>
-            {busy ? 'Thinking…' : hasConversation ? 'Send' : 'Ask Vigsy'}
+            {busy ? 'Thinking…' : hasConversation ? 'Send' : 'Ask KayD'}
           </button>
         </div>
       </form>

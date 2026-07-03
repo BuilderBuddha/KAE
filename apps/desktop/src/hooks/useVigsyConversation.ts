@@ -88,7 +88,9 @@ export function useVigsyConversation() {
       updatedAt: new Date().toISOString(),
       turns: persistedTurns,
       title:
-        recordRef.current.title === 'Vigsy conversation' && persistedTurns[0]?.question
+        (recordRef.current.title === 'Vigsy conversation' ||
+          recordRef.current.title === 'KayD conversation') &&
+        persistedTurns[0]?.question
           ? persistedTurns[0].question.slice(0, 72)
           : recordRef.current.title,
     };
