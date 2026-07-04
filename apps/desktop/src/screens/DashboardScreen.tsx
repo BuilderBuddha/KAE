@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   ConnectorStatus,
   GitReadinessReport,
@@ -13,6 +13,7 @@ import { CategorizedHealthPanel } from '../components/HealthIssuesPanel';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { RepositoryRepairPanel } from '../components/RepositoryRepairPanel';
 import { buildKaydDashboardBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
+import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 
 function statusClass(level?: RepositoryHealthReport['statusLevel']): string {
   switch (level) {
@@ -101,7 +102,10 @@ export function DashboardScreen() {
     setRepairError(null);
   };
 
-  const briefing = buildKaydDashboardBriefing(health, stats, gitReadiness, connectors);
+  const briefing = useMemo(
+    () => buildKaydDashboardBriefing(health, stats, gitReadiness, connectors),
+    [health, stats, gitReadiness, connectors],
+  );
 
   if (loading) {
     return (
@@ -113,9 +117,10 @@ export function DashboardScreen() {
 
   return (
     <KaydWorkspaceLayout
+      workspaceScreen="dashboard"
       workspaceClassName="screen--dashboard"
       briefing={briefing}
-      composerId="kayd-dashboard-composer"
+      composerId={KAYD_WORKSPACE_COMPOSER_ID}
       briefingStatus={KAYD_BRIEFING_STATUS.dashboard}
     >
       <section className="screen-evidence" aria-label="Supporting evidence">

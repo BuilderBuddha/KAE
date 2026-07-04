@@ -32,7 +32,9 @@ export function ExecutiveBriefingPanel({
     <section className={`vigsy-briefing${inline ? ' vigsy-briefing--inline' : ' card'}`}>
       <header className="vigsy-briefing__header">
         <div>
-          <h2 className="vigsy-briefing__title">{inline ? 'Today\'s awareness' : 'Executive Briefing'}</h2>
+          <h2 className="vigsy-briefing__title">
+            {inline ? 'Supporting awareness' : 'Executive Briefing'}
+          </h2>
           {!inline ? (
             <p className="vigsy-briefing__subtitle muted">
               Deterministic awareness from evidence, relationships, imports, and repository health.

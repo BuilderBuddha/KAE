@@ -16,6 +16,8 @@ import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
 import { buildKaydImportBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
+import { useNavigation } from '../context/NavigationContext';
+import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import {
   ADVANCED_IMPORTER_IDS,
   badgeLabel,
@@ -43,6 +45,7 @@ const INITIAL_VALIDATION_PROGRESS = (): ValidationProgress => ({
 });
 
 export function ImportScreen() {
+  const { navigate } = useNavigation();
   const [importers, setImporters] = useState<ImporterInfo[]>([]);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
   const [syncHistory, setSyncHistory] = useState<SyncHistoryEntry[]>([]);
@@ -236,20 +239,30 @@ export function ImportScreen() {
   );
 
   const advancedImporters = importers.filter((importer) => ADVANCED_IMPORTER_IDS.has(importer.id));
-  const importBriefing = buildKaydImportBriefing();
+  const importBriefing = useMemo(() => buildKaydImportBriefing(connectors), [connectors]);
   const selectedSource = PRIMARY_KNOWLEDGE_SOURCES.find((s) => s.id === selectedSourceId);
 
   return (
     <KaydWorkspaceLayout
+      workspaceScreen="import"
       workspaceClassName="screen--import"
       briefing={importBriefing}
-      composerId="kayd-import-composer"
+      composerId={KAYD_WORKSPACE_COMPOSER_ID}
       briefingStatus={KAYD_BRIEFING_STATUS.import}
     >
       <section className="screen-evidence" aria-label="Knowledge sources">
-        <header className="screen-evidence__header">
-          <h3 className="screen-evidence__title">Knowledge sources</h3>
-          <p className="screen-evidence__lead muted">Connect sources to bring knowledge into your repository.</p>
+        <header className="screen-evidence__header screen-evidence__header--split">
+          <div>
+            <h3 className="screen-evidence__title">Knowledge sources</h3>
+            <p className="screen-evidence__lead muted">Select a source to connect or sync.</p>
+          </div>
+          <button
+            type="button"
+            className="vigsy-link-btn workspace-nav-link"
+            onClick={() => navigate('connectors')}
+          >
+            Connector management →
+          </button>
         </header>
 
         {loading ? (
@@ -478,10 +491,10 @@ export function ImportScreen() {
         </section>
       )}
 
-      <details className="import-advanced">
-        <summary className="import-advanced__summary">More import options</summary>
+      <section className="import-advanced import-advanced--open" aria-label="Document imports">
+        <h3 className="screen__section-title">Document imports</h3>
         <p className="muted import-advanced__lead">
-          File-format imports for HTML, Markdown, JSON, TXT, CSV, and other document types.
+          File-format imports for HTML, Markdown, JSON, TXT, and CSV — alongside connector-based sources above.
         </p>
         {advancedImporters.length > 0 ? (
           <ul className="importer-grid">
@@ -503,9 +516,9 @@ export function ImportScreen() {
             ))}
           </ul>
         ) : (
-          <p className="muted">No advanced import options are configured.</p>
+          <p className="muted">No document import options are configured.</p>
         )}
-      </details>
+      </section>
       </section>
     </KaydWorkspaceLayout>
   );

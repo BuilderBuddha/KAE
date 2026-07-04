@@ -38,7 +38,7 @@ export function KaydExecutiveBriefingInline() {
   }, [loadBriefing]);
 
   return (
-    <div className="kayd-briefing-inline vigsy-msg--enter">
+    <div className="kayd-briefing-inline kayd-briefing-inline--continued">
       <ExecutiveBriefingPanel
         variant="inline"
         briefing={briefing}

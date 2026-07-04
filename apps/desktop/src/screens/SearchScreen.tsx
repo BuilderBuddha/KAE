@@ -3,6 +3,7 @@ import type { EvidenceDrilldown, RepositorySearchResult } from '@scooper/core';
 import { EvidenceDrilldownPanel } from '../components/EvidenceDrilldownPanel';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { buildKaydSearchBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
+import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 
 function kindLabel(result: RepositorySearchResult): string {
   if (result.evidenceKind) {
@@ -86,22 +87,19 @@ export function SearchScreen() {
     return indexStats.replace(/^Evidence index:\s*/, '');
   }, [indexStats]);
 
-  const searchBriefing = buildKaydSearchBriefing(indexSummary);
+  const searchBriefing = useMemo(() => buildKaydSearchBriefing(indexSummary), [indexSummary]);
 
   return (
     <KaydWorkspaceLayout
+      workspaceScreen="search"
       workspaceClassName="screen--search"
       briefing={searchBriefing}
-      composerId="kayd-search-composer"
+      composerId={KAYD_WORKSPACE_COMPOSER_ID}
       briefingStatus={KAYD_BRIEFING_STATUS.search}
     >
-
       <section className="screen-evidence" aria-label="Search results">
         <header className="screen-evidence__header">
-          <h3 className="screen-evidence__title">Search</h3>
-          <p className="screen-evidence__lead muted">
-            Evidence-indexed search across sources, conversations, messages, and executive sessions.
-          </p>
+          <h3 className="screen-evidence__title">Supporting evidence</h3>
           {indexStats ? (
             <p className="screen-evidence__meta muted">
               {indexing ? 'Building evidence index…' : `Evidence index: ${indexStats}`}
@@ -109,63 +107,63 @@ export function SearchScreen() {
           ) : null}
         </header>
 
-      <div className="search-bar">
-        <input
-          type="search"
-          className="form__input search-bar__input"
-          placeholder="Search by keyword, KRC, title, prompt, response, or filename…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-        />
-        <button type="button" className="btn btn--primary" onClick={runSearch} disabled={searching}>
-          {searching ? 'Searching…' : 'Search'}
-        </button>
-      </div>
-
-      <div className="explorer-layout">
-        <ul className="explorer-list card">
-          {results.length === 0 ? (
-            <li className="muted explorer-list__empty">
-              {query ? 'No results.' : 'Enter a query to search the evidence index.'}
-            </li>
-          ) : (
-            results.map((result) => (
-              <li key={`${result.recordId ?? result.path}-${result.title}`}>
-                <button
-                  type="button"
-                  className={`explorer-list__item${selected?.recordId === result.recordId ? ' explorer-list__item--active' : ''}`}
-                  onClick={() => openResult(result)}
-                >
-                  <span className="explorer-list__name">{result.title}</span>
-                  <span className="explorer-list__meta">
-                    {kindLabel(result)}
-                    {result.krcId ? ` · ${result.krcId}` : ''}
-                    {result.messageRole ? ` · ${result.messageRole}` : ''}
-                    {' · score '}
-                    {result.score}
-                  </span>
-                  {matchLabel(result) ? (
-                    <span className="explorer-list__meta">Matched: {matchLabel(result)}</span>
-                  ) : null}
-                  <span className="explorer-list__snippet">{result.snippet}</span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-        <div className="card explorer-preview evidence-drilldown-panel">
-          {!selected ? (
-            <p className="muted">Select a result to explore the evidence chain.</p>
-          ) : drilldownLoading ? (
-            <p className="muted">Resolving evidence chain…</p>
-          ) : drilldown ? (
-            <EvidenceDrilldownPanel drilldown={drilldown} />
-          ) : (
-            <p className="muted">Unable to resolve evidence drilldown for this result.</p>
-          )}
+        <div className="search-bar">
+          <input
+            type="search"
+            className="form__input search-bar__input"
+            placeholder="Search by keyword, KRC, title, prompt, response, or filename…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+          />
+          <button type="button" className="btn btn--primary" onClick={runSearch} disabled={searching}>
+            {searching ? 'Searching…' : 'Search'}
+          </button>
         </div>
-      </div>
+
+        <div className="explorer-layout">
+          <ul className="explorer-list card">
+            {results.length === 0 ? (
+              <li className="muted explorer-list__empty">
+                {query ? 'No results.' : 'Enter a query to search the evidence index.'}
+              </li>
+            ) : (
+              results.map((result) => (
+                <li key={`${result.recordId ?? result.path}-${result.title}`}>
+                  <button
+                    type="button"
+                    className={`explorer-list__item${selected?.recordId === result.recordId ? ' explorer-list__item--active' : ''}`}
+                    onClick={() => openResult(result)}
+                  >
+                    <span className="explorer-list__name">{result.title}</span>
+                    <span className="explorer-list__meta">
+                      {kindLabel(result)}
+                      {result.krcId ? ` · ${result.krcId}` : ''}
+                      {result.messageRole ? ` · ${result.messageRole}` : ''}
+                      {' · score '}
+                      {result.score}
+                    </span>
+                    {matchLabel(result) ? (
+                      <span className="explorer-list__meta">Matched: {matchLabel(result)}</span>
+                    ) : null}
+                    <span className="explorer-list__snippet">{result.snippet}</span>
+                  </button>
+                </li>
+              ))
+            )}
+          </ul>
+          <div className="card explorer-preview evidence-drilldown-panel">
+            {!selected ? (
+              <p className="muted">Select a result to explore the evidence chain.</p>
+            ) : drilldownLoading ? (
+              <p className="muted">Resolving evidence chain…</p>
+            ) : drilldown ? (
+              <EvidenceDrilldownPanel drilldown={drilldown} />
+            ) : (
+              <p className="muted">Unable to resolve evidence drilldown for this result.</p>
+            )}
+          </div>
+        </div>
       </section>
     </KaydWorkspaceLayout>
   );

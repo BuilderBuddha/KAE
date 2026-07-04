@@ -13,16 +13,10 @@ export const KAYD_BRIEFING_STATUS = {
   home: 'Reviewing your repository',
   dashboard: 'Reviewing workspace health',
   import: 'Reviewing knowledge sources',
+  connectors: 'Reviewing connector health',
   explorer: 'Reviewing repository structure',
   search: 'Reviewing search index',
 } as const;
-
-function formatNameList(items: string[]): string {
-  if (items.length === 0) return '';
-  if (items.length === 1) return items[0];
-  if (items.length === 2) return `${items[0]} and ${items[1]}`;
-  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
-}
 
 function connectedSourceLabels(connectors: ConnectorStatus[]): string[] {
   const byId = new Map(connectors.map((status) => [status.connectorId, status]));
@@ -50,69 +44,29 @@ function staleConnectorCount(connectors: ConnectorStatus[] | undefined): number 
   ).length;
 }
 
-function dashboardBriefingBody(
+function homeSummaryLine(
   health: RepositoryHealthReport | null,
-  stats: RepositoryStats | null,
-  gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
-): string[] {
-  const messages: string[] = [];
-
-  messages.push("I reviewed today's knowledge activity before you arrived.");
-
-  if (health) {
-    if (health.statusLevel === 'healthy') {
-      messages.push('Repository health remains excellent.');
-    } else if (health.statusLevel === 'attention') {
-      const detail = health.statusSubline?.trim();
-      messages.push(detail ? `A few items need attention. ${detail}` : 'A few items need attention.');
-    } else {
-      const detail = health.statusSubline?.trim();
-      messages.push(detail ? `Repository health needs attention. ${detail}` : 'Repository health needs attention.');
-    }
+): string | null {
+  if (health?.statusLevel === 'healthy') {
+    return 'Repository health looks good.';
   }
-
-  if (stats) {
-    const sessions = stats.sessionCount ?? 0;
-    if (sessions > 0) {
-      messages.push(
-        `${sessions} executive session${sessions === 1 ? '' : 's'} ${sessions === 1 ? 'has' : 'have'} been indexed.`,
-      );
-    }
-    const sources = stats.sourceCount ?? 0;
-    if (sources > 0) {
-      messages.push(`${sources} knowledge source${sources === 1 ? '' : 's'} are currently available.`);
-    }
+  if (health?.statusLevel === 'attention') {
+    const detail = health.statusSubline?.trim();
+    return detail ? `A few items need attention — ${detail}` : 'A few items need attention.';
   }
-
-  if (gitReadiness?.ready) {
-    messages.push('Git is ready.');
-    if (health?.gitDirty) {
-      messages.push('There are uncommitted changes whenever you want a checkpoint.');
-    }
-  } else if (gitReadiness) {
-    messages.push("Git isn't fully ready yet. I left the details below.");
+  if (health?.statusLevel === 'critical') {
+    const detail = health.statusSubline?.trim();
+    return detail ? `Repository health needs attention — ${detail}` : 'Repository health needs attention.';
   }
-
   const stale = staleConnectorCount(connectors);
   if (stale > 0) {
-    messages.push(
-      stale === 1
-        ? 'One source is waiting to synchronize.'
-        : `${stale} sources are waiting to synchronize.`,
-    );
+    return stale === 1 ? 'One source is waiting to synchronize.' : `${stale} sources are waiting to synchronize.`;
   }
-
-  messages.push(
-    stale > 0 || (stats?.sessionCount ?? 0) > 0
-      ? "Would you like me to walk you through today's changes?"
-      : 'What would you like to work on today?',
-  );
-
-  return messages;
+  return null;
 }
 
-/** Executive awareness cards as spoken briefing lines for KayD home text-flow. */
+/** Executive awareness cards as spoken briefing lines — avoid duplicating inline briefing panel. */
 export function executiveBriefingLines(briefing: ExecutiveBriefing | null | undefined): string[] {
   if (!briefing?.cards.length) return [];
   return briefing.cards
@@ -123,37 +77,36 @@ export function executiveBriefingLines(briefing: ExecutiveBriefing | null | unde
     });
 }
 
-/** KayD home — greeting, repository context, then full executive briefing points. */
+/** KayD home — greeting and high-level summary; detail lives in executive briefing panel. */
 export function buildKaydHomeBriefing(
   continuity: ExecutiveContinuity | null | undefined,
   health: RepositoryHealthReport | null,
-  stats: RepositoryStats | null,
-  gitReadiness: GitReadinessReport | null,
+  _stats: RepositoryStats | null,
+  _gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
-  executiveBriefing?: ExecutiveBriefing | null,
 ): string[] {
   const messages: string[] = [];
   const welcome = welcomeLine(continuity);
   if (welcome) messages.push(welcome);
-  messages.push(...dashboardBriefingBody(health, stats, gitReadiness, connectors));
-  const awareness = executiveBriefingLines(executiveBriefing);
-  if (awareness.length > 0) {
-    messages.push(...awareness);
-  }
+
+  const summary = homeSummaryLine(health, connectors);
+  if (summary) messages.push(summary);
+
+  messages.push('Supporting awareness follows — ask me anything in the meantime.');
+  messages.push('What would you like to work on today?');
   return messages;
 }
 
-/** Dashboard workspace — tab-specific briefing only (no greeting). */
+/** Dashboard workspace — one concise intro line. */
 export function buildKaydDashboardBriefing(
   health: RepositoryHealthReport | null,
-  stats: RepositoryStats | null,
-  gitReadiness: GitReadinessReport | null,
+  _stats: RepositoryStats | null,
+  _gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
 ): string[] {
-  const messages = ['Here is your repository dashboard.'];
-  const body = dashboardBriefingBody(health, stats, gitReadiness, connectors);
-  messages.push(...body.slice(1));
-  return messages;
+  const summary = homeSummaryLine(health, connectors);
+  if (summary) return [summary];
+  return ['Here is your repository dashboard.'];
 }
 
 /** Knowledge Sources workspace briefing. */
@@ -161,47 +114,29 @@ export function buildKaydImportBriefing(connectors?: ConnectorStatus[]): string[
   const connected = connectedSourceLabels(connectors ?? []);
 
   if (connected.length === 0) {
-    return [
-      'I connect knowledge sources to your repository.',
-      'Choose a source below, or tell me what you would like to bring in.',
-      'What would you like to connect first?',
-    ];
+    return ['Pick a source below — I can walk you through it.'];
   }
 
   if (connected.length === 1) {
-    return [
-      `You're connected to ${connected[0]}.`,
-      'You can manage it below, or tell me if you want to add another source.',
-      'What would you like to do next?',
-    ];
+    return [`${connected[0]} is connected — manage it below or add another source.`];
   }
 
   return [
-    `You have ${connected.length} sources connected: ${formatNameList(connected)}.`,
-    'I can help you sync, configure, or add another source.',
-    'Which source should we work on?',
+    `${connected.length} sources are connected — select one below to sync or configure.`,
   ];
 }
 
+/** Connector management workspace briefing. */
+export function buildKaydConnectorsBriefing(_connectorCount: number, _connectedCount: number): string[] {
+  return ['Review connector health, sync status, and monitoring.'];
+}
+
 /** Repository explorer briefing. */
-export function buildKaydExplorerBriefing(fileCount: number, chatGptCount: number): string[] {
-  const messages: string[] = ['Your repository is structured and ready to browse.'];
-  if (chatGptCount > 0) {
-    messages.push(`${chatGptCount} ChatGPT conversation${chatGptCount === 1 ? '' : 's'} are indexed here.`);
-  }
-  if (fileCount > 0) {
-    messages.push(`${fileCount} file${fileCount === 1 ? '' : 's'} are available across your knowledge tree.`);
-  }
-  messages.push('Ask me about a source, or select a file below.');
-  return messages;
+export function buildKaydExplorerBriefing(_fileCount: number, _chatGptCount: number): string[] {
+  return ['Select a file below, or ask me what changed.'];
 }
 
 /** Search workspace briefing. */
-export function buildKaydSearchBriefing(indexSummary: string | null): string[] {
-  const messages: string[] = ['I can search across your evidence index.'];
-  if (indexSummary) {
-    messages.push(`The index currently covers ${indexSummary}.`);
-  }
-  messages.push('What would you like to find?');
-  return messages;
+export function buildKaydSearchBriefing(_indexSummary: string | null): string[] {
+  return ['Search runs across your full evidence index — what should I find?'];
 }

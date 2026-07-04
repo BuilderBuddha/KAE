@@ -7,7 +7,7 @@ interface NavigationProps {
 }
 
 const PRIMARY_IDS: ScreenId[] = ['vigsy'];
-const REPOSITORY_IDS: ScreenId[] = ['dashboard', 'import', 'explorer', 'search'];
+const REPOSITORY_IDS: ScreenId[] = ['dashboard', 'import', 'connectors', 'explorer', 'search'];
 const SYSTEM_IDS: ScreenId[] = ['jobs', 'logs', 'repository', 'settings'];
 
 function NavSection({

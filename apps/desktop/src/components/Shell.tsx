@@ -26,15 +26,15 @@ export function Shell({ activeScreen, onNavigate, children }: ShellProps) {
 
   return (
     <div className={`shell${vigsyFocus ? ' shell--vigsy-focus' : ''}`}>
-      <aside className={`shell__sidebar${vigsyFocus ? ' shell__sidebar--compact' : ''}`}>
+      <aside className="shell__sidebar">
         <header className="shell__brand">
           <div className="shell__logo shell__logo--vigsy">✦</div>
           <div className="shell__brand-text">
             <h1 className="shell__title">KayD</h1>
-            {!vigsyFocus ? <p className="shell__subtitle">KayD Intelligence</p> : null}
+            <p className="shell__subtitle">Knowledge workspace</p>
           </div>
         </header>
-        <Navigation activeScreen={activeScreen} onNavigate={onNavigate} compact={vigsyFocus} />
+        <Navigation activeScreen={activeScreen} onNavigate={onNavigate} />
       </aside>
       <main
         ref={contentRef}

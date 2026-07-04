@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   ConnectorConfig,
   ConnectorEvent,
   ConnectorStatus,
   SyncHistoryEntry,
 } from '@scooper/core';
+import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+import { useNavigation } from '../context/NavigationContext';
+import { buildKaydConnectorsBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
+import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 
 function formatTime(value?: string): string {
   if (!value) return '—';
@@ -26,6 +30,7 @@ function healthClass(status: ConnectorStatus['health']['status']): string {
 }
 
 export function ConnectorManagerScreen() {
+  const { navigate } = useNavigation();
   const [statuses, setStatuses] = useState<ConnectorStatus[]>([]);
   const [history, setHistory] = useState<SyncHistoryEntry[]>([]);
   const [events, setEvents] = useState<ConnectorEvent[]>([]);
@@ -54,6 +59,12 @@ export function ConnectorManagerScreen() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const connectedCount = statuses.filter((status) => status.config.connected).length;
+  const briefing = useMemo(
+    () => buildKaydConnectorsBriefing(statuses.length, connectedCount),
+    [statuses.length, connectedCount],
+  );
 
   const handleConnect = async (status: ConnectorStatus) => {
     setBusyId(status.connectorId);
@@ -127,20 +138,34 @@ export function ConnectorManagerScreen() {
 
   if (loading && statuses.length === 0) {
     return (
-      <div className="screen">
+      <div className="screen screen--conversation-first">
         <LoadingIndicator label="Loading connectors…" />
       </div>
     );
   }
 
   return (
-    <div className="screen">
-      <header className="screen__header">
-        <h2 className="screen__title">Connector Manager</h2>
-        <p className="screen__description">
-          Connect, configure, and sync knowledge sources into KAE.
-        </p>
-      </header>
+    <KaydWorkspaceLayout
+      workspaceScreen="connectors"
+      workspaceClassName="screen--connectors"
+      briefing={briefing}
+      composerId={KAYD_WORKSPACE_COMPOSER_ID}
+      briefingStatus={KAYD_BRIEFING_STATUS.connectors}
+    >
+      <section className="screen-evidence" aria-label="Connector management">
+        <header className="screen-evidence__header screen-evidence__header--split">
+          <div>
+            <h3 className="screen-evidence__title">Connector management</h3>
+            <p className="screen-evidence__lead muted">Health, sync, and monitoring for all connectors.</p>
+          </div>
+          <button
+            type="button"
+            className="vigsy-link-btn workspace-nav-link"
+            onClick={() => navigate('import')}
+          >
+            Knowledge Sources →
+          </button>
+        </header>
 
       {error ? <p className="form__error">{error}</p> : null}
 
@@ -398,6 +423,7 @@ export function ConnectorManagerScreen() {
           </table>
         )}
       </section>
-    </div>
+      </section>
+    </KaydWorkspaceLayout>
   );
 }

@@ -6,6 +6,7 @@ import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useNavigation } from '../context/NavigationContext';
 import { buildKaydExplorerBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
+import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import { parentFolder, pathBreadcrumbs } from '../utils/repository-path';
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData } from '../types/kae';
 
@@ -171,20 +172,24 @@ export function ExplorerScreen() {
 
   const selectedBreadcrumbs = selected ? pathBreadcrumbs(selected) : [];
 
-  const explorerBriefing = buildKaydExplorerBriefing(files.length, chatGptImportCount);
+  const explorerBriefing = useMemo(
+    () => buildKaydExplorerBriefing(files.length, chatGptImportCount),
+    [files.length, chatGptImportCount],
+  );
 
   return (
     <KaydWorkspaceLayout
+      workspaceScreen="explorer"
       workspaceClassName="screen--explorer"
       briefing={explorerBriefing}
-      composerId="kayd-explorer-composer"
+      composerId={KAYD_WORKSPACE_COMPOSER_ID}
       briefingStatus={KAYD_BRIEFING_STATUS.explorer}
     >
 
       <section className="screen-evidence" aria-label="Repository files">
         <header className="screen-evidence__header">
-          <h3 className="screen-evidence__title">Repository</h3>
-          <p className="screen-evidence__lead muted">Browse knowledge, sources, executive sessions, and reports.</p>
+          <h3 className="screen-evidence__title">Supporting evidence</h3>
+          <p className="screen-evidence__lead muted">Files, sources, and previews.</p>
         </header>
 
         {chatGptImportCount > 0 && (

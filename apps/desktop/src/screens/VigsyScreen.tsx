@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { ExecutiveBriefing } from '@scooper/core';
+import { useMemo, useRef, useState } from 'react';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { KaydChatPanel } from '../components/vigsy/KaydChatPanel';
 import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBriefingInline';
@@ -30,34 +29,18 @@ export function VigsyScreen() {
   } = useVigsyConversation();
   const [confirmClear, setConfirmClear] = useState(false);
   const [briefingComplete, setBriefingComplete] = useState(false);
-  const [executiveBriefing, setExecutiveBriefing] = useState<ExecutiveBriefing | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void window.kae.getExecutiveBriefing().then((result) => {
-      if (!cancelled) setExecutiveBriefing(result.briefing);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [openerKey, setOpenerKey] = useState(0);
 
   const briefing = useMemo(
-    () =>
-      buildKaydHomeBriefing(
-        continuity,
-        health,
-        stats,
-        gitReadiness,
-        connectors,
-        executiveBriefing,
-      ),
-    [continuity, health, stats, gitReadiness, connectors, executiveBriefing],
+    () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors),
+    [continuity, health, stats, gitReadiness, connectors],
   );
 
-  useEffect(() => {
-    setBriefingComplete(false);
-  }, [briefing]);
+  const frozenBriefingRef = useRef<{ key: number; lines: string[] } | null>(null);
+  if (frozenBriefingRef.current === null || frozenBriefingRef.current.key !== openerKey) {
+    frozenBriefingRef.current = { key: openerKey, lines: briefing };
+  }
+  const openerBriefing = frozenBriefingRef.current.lines;
 
   const handleAsk = async (text: string) => {
     await submitQuestion(text);
@@ -70,11 +53,13 @@ export function VigsyScreen() {
     }
     setConfirmClear(false);
     setBriefingComplete(false);
+    setOpenerKey((key) => key + 1);
     await clearConversation();
   };
 
   const handleNewConversation = async () => {
     setBriefingComplete(false);
+    setOpenerKey((key) => key + 1);
     await startNewConversation();
   };
 
@@ -83,7 +68,7 @@ export function VigsyScreen() {
   }
 
   return (
-    <div className={`vigsy-unified vigsy-unified--home screen--conversation-first${hasConversation ? ' vigsy-unified--active' : ''}`}>
+    <div className={`vigsy-unified vigsy-unified--home kayd-conversation-shell screen--conversation-first${hasConversation ? ' vigsy-unified--active' : ''}`}>
       <header className="vigsy-unified__header">
         <div className="vigsy-unified__brand-block">
           <h1 className="vigsy-unified__brand">KayD</h1>
@@ -105,8 +90,9 @@ export function VigsyScreen() {
 
       <div className="vigsy-unified__body vigsy-unified__body--chat">
         <KaydChatPanel
-          briefing={briefing}
+          briefing={openerBriefing}
           composerId="vigsy-unified-composer"
+          openerKey={openerKey}
           briefingStatus={KAYD_BRIEFING_STATUS.home}
           onBriefingComplete={() => setBriefingComplete(true)}
         >

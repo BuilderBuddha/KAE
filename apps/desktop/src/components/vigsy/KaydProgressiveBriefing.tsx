@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CognitionPulse } from './CognitionPulse';
 import { KaydBriefingLine } from './KaydBriefingLine';
 import { KaydPresenceHeader } from './KaydPresenceHeader';
@@ -34,6 +34,7 @@ export function KaydProgressiveBriefing({
   const [lineIndex, setLineIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(() => initialPhase(messages));
   const completedRef = useRef(false);
+  const messagesKey = useMemo(() => messages.join('\u0001'), [messages]);
 
   const activeLine = messages[lineIndex] ?? '';
   const streaming = phase === 'streaming';
@@ -42,10 +43,10 @@ export function KaydProgressiveBriefing({
   const thinking = phase === 'thinking';
 
   useEffect(() => {
+    completedRef.current = false;
     setLineIndex(0);
     setPhase(initialPhase(messages));
-    completedRef.current = false;
-  }, [messages]);
+  }, [messagesKey, messages]);
 
   useEffect(() => {
     if (finished || phase !== 'thinking') return undefined;

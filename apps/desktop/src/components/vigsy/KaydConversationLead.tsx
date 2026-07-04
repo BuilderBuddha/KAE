@@ -1,8 +1,10 @@
 import { KaydChatPanel } from './KaydChatPanel';
+import type { ScreenId } from '../../types/navigation';
 
 interface KaydConversationLeadProps {
   briefing: string[];
   composerId: string;
+  workspaceScreen?: ScreenId;
   briefingStatus?: string;
   onBriefingComplete?: () => void;
 }
@@ -11,6 +13,7 @@ interface KaydConversationLeadProps {
 export function KaydConversationLead({
   briefing,
   composerId,
+  workspaceScreen,
   briefingStatus,
   onBriefingComplete,
 }: KaydConversationLeadProps) {
@@ -19,6 +22,7 @@ export function KaydConversationLead({
       <KaydChatPanel
         briefing={briefing}
         composerId={composerId}
+        workspaceScreen={workspaceScreen}
         briefingStatus={briefingStatus}
         onBriefingComplete={onBriefingComplete}
       />
