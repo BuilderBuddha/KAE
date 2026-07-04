@@ -1,32 +1,38 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
 import { VigsyConversationThread } from './VigsyConversationThread';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
+import { resetWorkspaceScroll } from '../../utils/workspace-scroll';
 
 interface KaydChatPanelProps {
   briefing: string[];
   composerId: string;
+  briefingStatus?: string;
   onBriefingComplete?: () => void;
   children?: ReactNode;
 }
 
 /**
- * Unified chatbot shell — single-line briefing slot and composer inside one panel.
+ * Unified chatbot shell — section opener first, then follow-up thread when present.
  */
 export function KaydChatPanel({
   briefing,
   composerId,
+  briefingStatus,
   onBriefingComplete,
   children,
 }: KaydChatPanelProps) {
-  const { turns, busy, ready, hasConversation, submitQuestion } = useVigsyConversation();
+  const { turns, busy, ready, hasConversation, submitQuestion, conversationId } = useVigsyConversation();
   const [input, setInput] = useState('');
   const [briefingDone, setBriefingDone] = useState(false);
+  const displayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setBriefingDone(false);
-  }, [briefing]);
+    resetWorkspaceScroll();
+    displayRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [briefing, conversationId]);
 
   const handleSubmit = async (text?: string) => {
     const question = (text ?? input).trim();
@@ -56,15 +62,20 @@ export function KaydChatPanel({
 
   return (
     <section className="kayd-chat-panel">
-      <div className="kayd-chat-panel__display">
-        {!hasConversation ? (
-          <KaydProgressiveBriefing messages={briefing} onComplete={handleBriefingComplete} />
-        ) : (
+      <div className="kayd-chat-panel__display" ref={displayRef}>
+        {!briefingDone ? (
+          <KaydProgressiveBriefing
+            messages={briefing}
+            statusLabel={briefingStatus}
+            onComplete={handleBriefingComplete}
+          />
+        ) : null}
+        {briefingDone && hasConversation ? (
           <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
-        )}
+        ) : null}
       </div>
 
-      {children}
+      {briefingDone ? children : null}
 
       <form
         className="kayd-chat-panel__composer"
@@ -79,7 +90,7 @@ export function KaydChatPanel({
         <textarea
           id={composerId}
           className="kayd-chat-panel__input"
-          rows={hasConversation ? 2 : 2}
+          rows={2}
           placeholder={ready ? placeholder : 'Loading conversation…'}
           value={input}
           onChange={(e) => setInput(e.target.value)}

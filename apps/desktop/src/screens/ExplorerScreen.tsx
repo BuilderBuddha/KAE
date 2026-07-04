@@ -5,7 +5,7 @@ import { ChatGptSourcePreview } from '../components/ChatGptSourcePreview';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useNavigation } from '../context/NavigationContext';
-import { buildKaydExplorerBriefing } from '../utils/kayd-briefings';
+import { buildKaydExplorerBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { parentFolder, pathBreadcrumbs } from '../utils/repository-path';
 import type { ChatGptImportListEntry, ChatGptSourcePreviewData } from '../types/kae';
 
@@ -178,6 +178,7 @@ export function ExplorerScreen() {
       workspaceClassName="screen--explorer"
       briefing={explorerBriefing}
       composerId="kayd-explorer-composer"
+      briefingStatus={KAYD_BRIEFING_STATUS.explorer}
     >
 
       <section className="screen-evidence" aria-label="Repository files">

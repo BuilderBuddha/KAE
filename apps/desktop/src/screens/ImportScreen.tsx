@@ -15,7 +15,7 @@ import { LoadingIndicator } from '../components/LoadingIndicator';
 import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
-import { buildKaydImportBriefing } from '../utils/kayd-briefings';
+import { buildKaydImportBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import {
   ADVANCED_IMPORTER_IDS,
   badgeLabel,
@@ -244,6 +244,7 @@ export function ImportScreen() {
       workspaceClassName="screen--import"
       briefing={importBriefing}
       composerId="kayd-import-composer"
+      briefingStatus={KAYD_BRIEFING_STATUS.import}
     >
       <section className="screen-evidence" aria-label="Knowledge sources">
         <header className="screen-evidence__header">

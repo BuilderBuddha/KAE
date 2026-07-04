@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ExecutiveBriefing } from '@scooper/core';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { KaydChatPanel } from '../components/vigsy/KaydChatPanel';
 import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBriefingInline';
@@ -6,7 +7,7 @@ import { KaydGuidedChips } from '../components/vigsy/KaydGuidedChips';
 import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { useKaydHomeBriefingData } from '../hooks/useKaydHomeBriefingData';
 import { useVigsyConversation } from '../context/VigsyConversationContext';
-import { buildKaydHomeBriefing } from '../utils/kayd-briefings';
+import { buildKaydHomeBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 
 const STARTER_CHIPS = [
   'What happened with ChatGPT Import?',
@@ -29,17 +30,34 @@ export function VigsyScreen() {
   } = useVigsyConversation();
   const [confirmClear, setConfirmClear] = useState(false);
   const [briefingComplete, setBriefingComplete] = useState(false);
+  const [executiveBriefing, setExecutiveBriefing] = useState<ExecutiveBriefing | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void window.kae.getExecutiveBriefing().then((result) => {
+      if (!cancelled) setExecutiveBriefing(result.briefing);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const briefing = useMemo(
-    () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors),
-    [continuity, health, stats, gitReadiness, connectors],
+    () =>
+      buildKaydHomeBriefing(
+        continuity,
+        health,
+        stats,
+        gitReadiness,
+        connectors,
+        executiveBriefing,
+      ),
+    [continuity, health, stats, gitReadiness, connectors, executiveBriefing],
   );
 
   useEffect(() => {
-    if (!hasConversation) {
-      setBriefingComplete(false);
-    }
-  }, [briefing, hasConversation]);
+    setBriefingComplete(false);
+  }, [briefing]);
 
   const handleAsk = async (text: string) => {
     await submitQuestion(text);
@@ -89,9 +107,10 @@ export function VigsyScreen() {
         <KaydChatPanel
           briefing={briefing}
           composerId="vigsy-unified-composer"
+          briefingStatus={KAYD_BRIEFING_STATUS.home}
           onBriefingComplete={() => setBriefingComplete(true)}
         >
-          {!hasConversation && briefingComplete ? (
+          {briefingComplete ? (
             <>
               <KaydExecutiveBriefingInline />
               <KaydGuidedChips

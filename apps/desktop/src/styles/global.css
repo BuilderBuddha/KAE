@@ -111,6 +111,17 @@ select {
   flex: 1;
   overflow-y: auto;
   padding: 32px 40px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.shell__content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.shell__content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
 }
 
 .shell--vigsy-focus .shell__content--vigsy {
@@ -799,13 +810,25 @@ select {
 }
 
 .kayd-chat-panel__display {
-  min-height: 88px;
+  min-height: 120px;
   max-height: min(42vh, 360px);
   padding: 18px 20px 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  gap: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.kayd-chat-panel__display::-webkit-scrollbar {
+  width: 5px;
+}
+
+.kayd-chat-panel__display::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
 }
 
 .kayd-chat-panel__display .vigsy-thread {
@@ -817,6 +840,194 @@ select {
   display: flex;
   align-items: flex-end;
   transition: opacity 0.28s ease;
+}
+
+/* Vigsy teleprompter briefing flow inside chat panel */
+.kayd-briefing-flow {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 72px;
+  transition: opacity 0.28s ease;
+}
+
+.kayd-briefing-flow--fading {
+  opacity: 0;
+}
+
+.kayd-briefing-flow--done {
+  min-height: 0;
+}
+
+.kayd-presence-header {
+  flex-shrink: 0;
+}
+
+.kayd-presence-header__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #f4f4f5;
+}
+
+.kayd-presence-header__dot {
+  flex-shrink: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: #3f3f46;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  transition:
+    background 0.35s ease,
+    box-shadow 0.35s ease,
+    transform 0.35s ease;
+}
+
+.kayd-presence-header--thinking .kayd-presence-header__dot {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 10px rgba(255, 255, 255, 0.28),
+    0 0 22px rgba(255, 255, 255, 0.1);
+  animation: kayd-presence-dot-pulse 1s ease-in-out infinite;
+}
+
+.kayd-presence-header--alive .kayd-presence-header__dot {
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.12);
+}
+
+.kayd-presence-header__status {
+  margin: 3px 0 0;
+  padding-left: calc(0.42rem + 8px);
+  font-size: 0.68rem;
+  color: #52525b;
+  font-style: italic;
+}
+
+.kayd-presence-header__status--pulse {
+  animation: kayd-presence-status-pulse 1s ease-in-out infinite;
+}
+
+@keyframes kayd-presence-dot-pulse {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes kayd-presence-status-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.kayd-briefing-flow__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.kayd-briefing-flow__thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 4px;
+}
+
+.kayd-briefing-flow__thinking-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(244, 244, 245, 0.72);
+  animation: kayd-thinking-label 4.5s ease-in-out infinite;
+}
+
+@keyframes kayd-thinking-label {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.kayd-briefing-line {
+  margin: 0;
+  font-size: clamp(1.02rem, 2.5vw, 1.12rem);
+  line-height: 1.48;
+  color: #f4f4f5;
+  text-align: left;
+  animation: kayd-briefing-line-in 0.28s ease-out both;
+}
+
+.kayd-briefing-line--streaming {
+  color: #ffffff;
+}
+
+.kayd-briefing-line--latest {
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.08),
+    0 0 36px rgba(255, 255, 255, 0.04);
+}
+
+.kayd-briefing-line--fading {
+  opacity: 0.72;
+  color: #71717a;
+}
+
+.kayd-briefing-line__cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.35);
+  animation: kayd-briefing-cursor 1s step-end infinite;
+}
+
+@keyframes kayd-briefing-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes kayd-briefing-cursor {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .kayd-seq-briefing--fading {
@@ -2297,7 +2508,21 @@ select {
 
 .kayd-briefing-inline {
   max-width: 700px;
-  margin: 4px auto 12px;
+  margin: 8px auto 16px;
+  padding-top: 4px;
+  animation: kayd-briefing-reveal 0.45s ease-out both;
+}
+
+@keyframes kayd-briefing-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .vigsy-briefing--inline {
@@ -2308,7 +2533,7 @@ select {
 }
 
 .vigsy-briefing--inline .vigsy-briefing__header {
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   align-items: center;
 }
 
@@ -2323,16 +2548,41 @@ select {
 .vigsy-briefing--inline .vigsy-briefing__refresh {
   font-size: 11px;
   padding: 4px 10px;
+  opacity: 0.85;
 }
 
 .vigsy-briefing--inline .vigsy-briefing__meta {
   font-size: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
+  color: var(--cf-text-soft, var(--color-text-muted));
+}
+
+.vigsy-briefing--inline .vigsy-briefing__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
+  padding: 4px 8px 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
+.vigsy-briefing--inline .vigsy-briefing__grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.vigsy-briefing--inline .vigsy-briefing__grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
 }
 
 .vigsy-briefing--inline .vigsy-briefing-card {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
+  border: none;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .vigsy-empty {

@@ -1,11 +1,21 @@
 import type {
   ConnectorStatus,
+  ExecutiveBriefing,
   ExecutiveContinuity,
   GitReadinessReport,
   RepositoryHealthReport,
   RepositoryStats,
 } from '@scooper/core';
 import { PRIMARY_KNOWLEDGE_SOURCES } from './import-source-display';
+
+/** Vigsy-style status subtitles shown during briefing thinking pulse. */
+export const KAYD_BRIEFING_STATUS = {
+  home: 'Reviewing your repository',
+  dashboard: 'Reviewing workspace health',
+  import: 'Reviewing knowledge sources',
+  explorer: 'Reviewing repository structure',
+  search: 'Reviewing search index',
+} as const;
 
 function formatNameList(items: string[]): string {
   if (items.length === 0) return '';
@@ -102,18 +112,34 @@ function dashboardBriefingBody(
   return messages;
 }
 
-/** KayD home — greeting plus full repository briefing. */
+/** Executive awareness cards as spoken briefing lines for KayD home text-flow. */
+export function executiveBriefingLines(briefing: ExecutiveBriefing | null | undefined): string[] {
+  if (!briefing?.cards.length) return [];
+  return briefing.cards
+    .filter((card) => !card.isPlaceholder)
+    .map((card) => {
+      const summary = card.summary.trim();
+      return summary ? `${card.title}. ${summary}` : card.title;
+    });
+}
+
+/** KayD home — greeting, repository context, then full executive briefing points. */
 export function buildKaydHomeBriefing(
   continuity: ExecutiveContinuity | null | undefined,
   health: RepositoryHealthReport | null,
   stats: RepositoryStats | null,
   gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
+  executiveBriefing?: ExecutiveBriefing | null,
 ): string[] {
   const messages: string[] = [];
   const welcome = welcomeLine(continuity);
   if (welcome) messages.push(welcome);
   messages.push(...dashboardBriefingBody(health, stats, gitReadiness, connectors));
+  const awareness = executiveBriefingLines(executiveBriefing);
+  if (awareness.length > 0) {
+    messages.push(...awareness);
+  }
   return messages;
 }
 

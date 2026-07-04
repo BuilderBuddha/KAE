@@ -1,41 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
-import { ThinkingIndicator } from './CognitionPulse';
-import { KaydBriefingBubble } from './KaydBriefingBubble';
-import { useStreamReveal } from '../../hooks/useStreamReveal';
-import { presenceDelayMs } from '../../utils/vigsy-stream';
+import { CognitionPulse } from './CognitionPulse';
+import { KaydBriefingLine } from './KaydBriefingLine';
+import { KaydPresenceHeader } from './KaydPresenceHeader';
+import { useBriefingStreamReveal } from '../../hooks/useBriefingStreamReveal';
+import {
+  BRIEFING_BETWEEN_LINES_MS,
+  BRIEFING_FADE_MS,
+  BRIEFING_SEGMENT_GAP_MS,
+  BRIEFING_THINKING_PULSE_MS,
+  briefingHoldMs,
+  shouldShowThinkingPulse,
+} from '../../utils/briefing-pacing';
 
 type Phase = 'thinking' | 'streaming' | 'hold' | 'fade';
 
+function initialPhase(messages: string[]): Phase {
+  if (messages.length === 0) return 'hold';
+  return shouldShowThinkingPulse(0) ? 'thinking' : 'streaming';
+}
+
 /**
- * One briefing line at a time — streams in place, fades out, then the next line begins.
+ * Vigsy guided opener — thinking pulse on every third segment, then readable text flow.
  */
 export function KaydProgressiveBriefing({
   messages,
   onComplete,
+  statusLabel = 'Reviewing your workspace',
 }: {
   messages: string[];
   onComplete?: () => void;
+  statusLabel?: string;
 }) {
   const [lineIndex, setLineIndex] = useState(0);
-  const [phase, setPhase] = useState<Phase>(messages.length > 0 ? 'thinking' : 'hold');
+  const [phase, setPhase] = useState<Phase>(() => initialPhase(messages));
   const completedRef = useRef(false);
 
   const activeLine = messages[lineIndex] ?? '';
   const streaming = phase === 'streaming';
-  const { revealed, done } = useStreamReveal(activeLine, streaming);
+  const { revealed, done } = useBriefingStreamReveal(activeLine, streaming);
   const finished = lineIndex >= messages.length;
+  const thinking = phase === 'thinking';
 
   useEffect(() => {
     setLineIndex(0);
-    setPhase(messages.length > 0 ? 'thinking' : 'hold');
+    setPhase(initialPhase(messages));
     completedRef.current = false;
   }, [messages]);
 
   useEffect(() => {
     if (finished || phase !== 'thinking') return undefined;
-    const timer = window.setTimeout(() => setPhase('streaming'), presenceDelayMs(lineIndex === 0));
+    const timer = window.setTimeout(() => setPhase('streaming'), BRIEFING_THINKING_PULSE_MS);
     return () => window.clearTimeout(timer);
-  }, [finished, phase, lineIndex]);
+  }, [finished, phase]);
 
   useEffect(() => {
     if (phase !== 'streaming' || !done) return undefined;
@@ -45,17 +61,19 @@ export function KaydProgressiveBriefing({
 
   useEffect(() => {
     if (phase !== 'hold') return undefined;
-    const timer = window.setTimeout(() => setPhase('fade'), 650);
+    const timer = window.setTimeout(() => setPhase('fade'), briefingHoldMs(activeLine));
     return () => window.clearTimeout(timer);
-  }, [phase]);
+  }, [phase, activeLine]);
 
   useEffect(() => {
     if (phase !== 'fade') return undefined;
     const timer = window.setTimeout(() => {
       const next = lineIndex + 1;
       if (next < messages.length) {
-        setLineIndex(next);
-        setPhase('thinking');
+        window.setTimeout(() => {
+          setLineIndex(next);
+          setPhase(shouldShowThinkingPulse(next) ? 'thinking' : 'streaming');
+        }, shouldShowThinkingPulse(next) ? BRIEFING_BETWEEN_LINES_MS : BRIEFING_SEGMENT_GAP_MS);
       } else {
         setLineIndex(messages.length);
         if (!completedRef.current) {
@@ -63,28 +81,39 @@ export function KaydProgressiveBriefing({
           onComplete?.();
         }
       }
-    }, 300);
+    }, BRIEFING_FADE_MS);
     return () => window.clearTimeout(timer);
   }, [phase, lineIndex, messages.length, onComplete]);
 
-  if (finished) return <div className="kayd-seq-briefing kayd-seq-briefing--done" aria-live="polite" />;
+  if (finished) {
+    return <div className="kayd-briefing-flow kayd-briefing-flow--done" aria-live="polite" />;
+  }
+
+  const showLine = phase === 'streaming' || phase === 'hold' || phase === 'fade';
+  const lineText = phase === 'streaming' ? revealed : activeLine;
 
   return (
     <div
-      className={`kayd-seq-briefing${phase === 'fade' ? ' kayd-seq-briefing--fading' : ''}`}
+      className={`kayd-briefing-flow${thinking ? ' kayd-briefing-flow--thinking' : ' kayd-briefing-flow--alive'}`}
       aria-live="polite"
+      data-presence={thinking ? 'thinking' : 'present'}
     >
-      {phase === 'thinking' ? (
-        <div className="kayd-seq-briefing__thinking">
-          <ThinkingIndicator label="KayD is thinking…" />
-        </div>
-      ) : null}
-      {phase === 'streaming' ? (
-        <KaydBriefingBubble text={revealed} streaming={!done} compact />
-      ) : null}
-      {phase === 'hold' || phase === 'fade' ? (
-        <KaydBriefingBubble text={activeLine} compact />
-      ) : null}
+      <KaydPresenceHeader thinking={thinking} statusLabel={statusLabel} />
+      <div className="kayd-briefing-flow__body">
+        {thinking ? (
+          <div className="kayd-briefing-flow__thinking">
+            <CognitionPulse compact />
+            <span className="kayd-briefing-flow__thinking-label">Thinking</span>
+          </div>
+        ) : null}
+        {showLine ? (
+          <KaydBriefingLine
+            text={lineText}
+            streaming={phase === 'streaming' && !done}
+            fading={phase === 'fade'}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

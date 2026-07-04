@@ -1,17 +1,19 @@
-/** Plain briefing text â€” no bubble chrome inside the chat panel. */
+/** Plain briefing text — Vigsy teleprompter stream line inside the chat panel. */
 export function KaydBriefingLine({
   text,
   streaming = false,
+  fading = false,
 }: {
   text: string;
   streaming?: boolean;
+  fading?: boolean;
 }) {
   return (
     <p
-      className={`kayd-seq-briefing__text${streaming ? ' kayd-seq-briefing__text--streaming' : ''}`}
+      className={`kayd-briefing-line${streaming ? ' kayd-briefing-line--streaming' : ' kayd-briefing-line--latest'}${fading ? ' kayd-briefing-line--fading' : ''}`}
     >
       {text}
-      {streaming ? <span className="kayd-seq-briefing__cursor" aria-hidden /> : null}
+      {streaming ? <span className="kayd-briefing-line__cursor" aria-hidden /> : null}
     </p>
   );
 }

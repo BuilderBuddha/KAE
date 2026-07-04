@@ -12,7 +12,7 @@ import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { CategorizedHealthPanel } from '../components/HealthIssuesPanel';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { RepositoryRepairPanel } from '../components/RepositoryRepairPanel';
-import { buildKaydDashboardBriefing } from '../utils/kayd-briefings';
+import { buildKaydDashboardBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 
 function statusClass(level?: RepositoryHealthReport['statusLevel']): string {
   switch (level) {
@@ -116,6 +116,7 @@ export function DashboardScreen() {
       workspaceClassName="screen--dashboard"
       briefing={briefing}
       composerId="kayd-dashboard-composer"
+      briefingStatus={KAYD_BRIEFING_STATUS.dashboard}
     >
       <section className="screen-evidence" aria-label="Supporting evidence">
         <header className="screen-evidence__header">

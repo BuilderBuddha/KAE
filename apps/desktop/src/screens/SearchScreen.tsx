@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EvidenceDrilldown, RepositorySearchResult } from '@scooper/core';
 import { EvidenceDrilldownPanel } from '../components/EvidenceDrilldownPanel';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
-import { buildKaydSearchBriefing } from '../utils/kayd-briefings';
+import { buildKaydSearchBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 
 function kindLabel(result: RepositorySearchResult): string {
   if (result.evidenceKind) {
@@ -93,6 +93,7 @@ export function SearchScreen() {
       workspaceClassName="screen--search"
       briefing={searchBriefing}
       composerId="kayd-search-composer"
+      briefingStatus={KAYD_BRIEFING_STATUS.search}
     >
 
       <section className="screen-evidence" aria-label="Search results">
