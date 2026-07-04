@@ -984,6 +984,17 @@ select {
   animation: kayd-presence-status-pulse 1s ease-in-out infinite;
 }
 
+.kayd-presence-header--status-only .kayd-presence-header__title {
+  font-weight: 500;
+  font-size: 0.68rem;
+  color: #52525b;
+  font-style: italic;
+}
+
+.kayd-presence-header--status-only.kayd-presence-header--thinking .kayd-presence-header__title {
+  animation: kayd-presence-status-pulse 1s ease-in-out infinite;
+}
+
 @keyframes kayd-presence-dot-pulse {
   0%,
   100% {

@@ -66,24 +66,25 @@ function homeSummaryLine(
   return null;
 }
 
-/** Executive awareness cards as spoken briefing lines — avoid duplicating inline briefing panel. */
+/** Executive awareness cards as spoken briefing lines. */
 export function executiveBriefingLines(briefing: ExecutiveBriefing | null | undefined): string[] {
   if (!briefing?.cards.length) return [];
   return briefing.cards
     .filter((card) => !card.isPlaceholder)
     .map((card) => {
       const summary = card.summary.trim();
-      return summary ? `${card.title}. ${summary}` : card.title;
+      return summary ? `${card.title}: ${summary}` : card.title;
     });
 }
 
-/** KayD home — greeting and high-level summary; detail lives in executive briefing panel. */
+/** KayD home — greeting, summary, and awareness cards in the opener text flow. */
 export function buildKaydHomeBriefing(
   continuity: ExecutiveContinuity | null | undefined,
   health: RepositoryHealthReport | null,
   _stats: RepositoryStats | null,
   _gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
+  executiveBriefing?: ExecutiveBriefing | null,
 ): string[] {
   const messages: string[] = [];
   const welcome = welcomeLine(continuity);
@@ -92,7 +93,11 @@ export function buildKaydHomeBriefing(
   const summary = homeSummaryLine(health, connectors);
   if (summary) messages.push(summary);
 
-  messages.push('Supporting awareness follows — ask me anything in the meantime.');
+  const cardLines = executiveBriefingLines(executiveBriefing);
+  if (cardLines.length > 0) {
+    messages.push(...cardLines);
+  }
+
   messages.push('What would you like to work on today?');
   return messages;
 }

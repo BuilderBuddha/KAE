@@ -13,6 +13,8 @@ interface KaydChatPanelProps {
   workspaceScreen?: ScreenId;
   /** Bumps when the opener should replay (KayD home only). */
   openerKey?: string | number;
+  /** Hide duplicate KayD label when the page header already shows it. */
+  hidePresenceName?: boolean;
   onBriefingComplete?: () => void;
   children?: ReactNode;
 }
@@ -26,6 +28,7 @@ export function KaydChatPanel({
   briefingStatus,
   workspaceScreen,
   openerKey,
+  hidePresenceName = false,
   onBriefingComplete,
   children,
 }: KaydChatPanelProps) {
@@ -76,6 +79,7 @@ export function KaydChatPanel({
           <KaydProgressiveBriefing
             messages={briefing}
             statusLabel={briefingStatus}
+            showPresenceName={!hidePresenceName}
             onComplete={handleBriefingComplete}
           />
         ) : null}
@@ -83,6 +87,8 @@ export function KaydChatPanel({
           <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
         ) : null}
       </div>
+
+      {briefingDone ? <div className="kayd-chat-panel__below">{children}</div> : null}
 
       {briefingDone ? (
         <form
@@ -112,8 +118,6 @@ export function KaydChatPanel({
           />
         </form>
       ) : null}
-
-      {briefingDone ? <div className="kayd-chat-panel__below">{children}</div> : null}
     </section>
   );
 }

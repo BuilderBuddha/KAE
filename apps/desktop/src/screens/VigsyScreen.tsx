@@ -17,7 +17,8 @@ const STARTER_CHIPS = [
 
 export function VigsyScreen() {
   const continuity = useExecutiveContinuity();
-  const { stats, health, gitReadiness, connectors, loading: briefingLoading } = useKaydHomeBriefingData();
+  const { stats, health, gitReadiness, connectors, executiveBriefing, loading: briefingLoading } =
+    useKaydHomeBriefingData();
   const {
     busy,
     ready,
@@ -32,8 +33,8 @@ export function VigsyScreen() {
   const [openerKey, setOpenerKey] = useState(0);
 
   const briefing = useMemo(
-    () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors),
-    [continuity, health, stats, gitReadiness, connectors],
+    () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors, executiveBriefing),
+    [continuity, health, stats, gitReadiness, connectors, executiveBriefing],
   );
 
   const frozenBriefingRef = useRef<{ key: number; lines: string[] } | null>(null);
@@ -94,6 +95,7 @@ export function VigsyScreen() {
           composerId="vigsy-unified-composer"
           openerKey={openerKey}
           briefingStatus={KAYD_BRIEFING_STATUS.home}
+          hidePresenceName
           onBriefingComplete={() => setBriefingComplete(true)}
         >
           {briefingComplete ? (

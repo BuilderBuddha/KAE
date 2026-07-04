@@ -26,10 +26,12 @@ export function KaydProgressiveBriefing({
   messages,
   onComplete,
   statusLabel = 'Reviewing your workspace',
+  showPresenceName = true,
 }: {
   messages: string[];
   onComplete?: () => void;
   statusLabel?: string;
+  showPresenceName?: boolean;
 }) {
   const [lineIndex, setLineIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(() => initialPhase(messages));
@@ -99,7 +101,7 @@ export function KaydProgressiveBriefing({
       aria-live="polite"
       data-presence={thinking ? 'thinking' : 'present'}
     >
-      <KaydPresenceHeader thinking={thinking} statusLabel={statusLabel} />
+      <KaydPresenceHeader thinking={thinking} statusLabel={statusLabel} showName={showPresenceName} />
       <div className="kayd-briefing-flow__body">
         {thinking ? (
           <div className="kayd-briefing-flow__thinking">

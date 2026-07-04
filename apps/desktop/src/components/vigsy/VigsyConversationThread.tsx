@@ -53,7 +53,7 @@ function AssistantBubble({
           <p className="vigsy-msg__text">{text}</p>
           {streaming ? <span className="vigsy-cursor" aria-hidden /> : null}
         </div>
-        {!streaming && summary ? <p className="vigsy-msg__summary muted">{summary}</p> : null}
+        {!streaming && summary && !answer ? <p className="vigsy-msg__summary muted">{summary}</p> : null}
         {answer && !streaming ? (
           <>
             <VigsyEvidencePanel answer={answer} expandedSections={expandedSections} />
