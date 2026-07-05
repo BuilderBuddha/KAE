@@ -5,6 +5,7 @@ import { ChatGptSourcePreview } from '../components/ChatGptSourcePreview';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useNavigation } from '../context/NavigationContext';
+import { useInvestigationSync } from '../hooks/useInvestigationSync';
 import { buildKaydExplorerBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import { parentFolder, pathBreadcrumbs } from '../utils/repository-path';
@@ -74,6 +75,11 @@ export function ExplorerScreen() {
   useEffect(() => {
     loadFiles();
   }, [loadFiles]);
+
+  useInvestigationSync((ctx) => {
+    setSearch(ctx.searchQuery);
+    void loadFiles();
+  });
 
   useEffect(() => {
     if (loading || defaultFilterApplied) return;

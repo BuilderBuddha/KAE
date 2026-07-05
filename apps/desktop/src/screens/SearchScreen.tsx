@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EvidenceDrilldown, RepositorySearchResult } from '@scooper/core';
 import { EvidenceDrilldownPanel } from '../components/EvidenceDrilldownPanel';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { useNavigation } from '../context/NavigationContext';
 import { useVigsyConversation } from '../context/VigsyConversationContext';
+import { useInvestigationSync } from '../hooks/useInvestigationSync';
 import { buildKaydSearchBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 
@@ -31,11 +32,28 @@ export function SearchScreen() {
   const [drilldown, setDrilldown] = useState<EvidenceDrilldown | null>(null);
   const [drilldownLoading, setDrilldownLoading] = useState(false);
 
+  const syncLocalResults = useCallback(async (searchQuery: string) => {
+    setSearching(true);
+    try {
+      const hits = await window.kae.searchKnowledge(searchQuery);
+      setResults(hits);
+      setSelected(null);
+      setDrilldown(null);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeInvestigation?.searchQuery) {
       setQuery(activeInvestigation.searchQuery);
     }
   }, [activeInvestigation?.searchQuery]);
+
+  useInvestigationSync((ctx) => {
+    setQuery(ctx.searchQuery);
+    void syncLocalResults(ctx.searchQuery);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -59,18 +77,6 @@ export function SearchScreen() {
       cancelled = true;
     };
   }, []);
-
-  const syncLocalResults = async (searchQuery: string) => {
-    setSearching(true);
-    try {
-      const hits = await window.kae.searchKnowledge(searchQuery);
-      setResults(hits);
-      setSelected(null);
-      setDrilldown(null);
-    } finally {
-      setSearching(false);
-    }
-  };
 
   const runSearch = async () => {
     const q = query.trim();
@@ -119,29 +125,36 @@ export function SearchScreen() {
           {indexStats ? (
             <p className="screen-evidence__meta muted">
               {indexing ? 'Building evidence index…' : `Evidence index: ${indexStats}`}
+              {investigationActive && query ? ` · synced to "${query}"` : ''}
             </p>
           ) : null}
         </header>
 
-        <div className="search-bar">
-          <input
-            type="search"
-            className="form__input search-bar__input"
-            placeholder="Search by keyword, KRC, title, prompt, response, or filename…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void runSearch()}
-          />
-          <button type="button" className="btn btn--primary" onClick={() => void runSearch()} disabled={searching || busy}>
-            {searching ? 'Searching…' : 'Ask KayD'}
-          </button>
-        </div>
+        {!investigationActive ? (
+          <div className="search-bar">
+            <input
+              type="search"
+              className="form__input search-bar__input"
+              placeholder="Search by keyword, KRC, title, prompt, response, or filename…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void runSearch()}
+            />
+            <button type="button" className="btn btn--primary" onClick={() => void runSearch()} disabled={searching || busy}>
+              {searching ? 'Searching…' : 'Ask KayD'}
+            </button>
+          </div>
+        ) : null}
 
         <div className="explorer-layout">
           <ul className="explorer-list card">
             {results.length === 0 ? (
               <li className="muted explorer-list__empty">
-                {query ? 'No results.' : 'Enter a query — KayD will answer and results appear here.'}
+                {searching
+                  ? 'Searching…'
+                  : query
+                    ? 'No results for this investigation.'
+                    : 'Enter a query — KayD will answer and results appear here.'}
               </li>
             ) : (
               results.map((result) => (

@@ -11,6 +11,7 @@ import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { CategorizedHealthPanel } from '../components/HealthIssuesPanel';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { RepositoryRepairPanel } from '../components/RepositoryRepairPanel';
+import { useInvestigationSync } from '../hooks/useInvestigationSync';
 import { buildKaydDashboardBriefing, buildKaydDashboardWalkthrough, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 
@@ -61,6 +62,10 @@ export function DashboardScreen() {  const [stats, setStats] = useState<Reposito
     const unsub = window.kae.onImportComplete(() => refresh());
     return unsub;
   }, []);
+
+  useInvestigationSync(() => {
+    void refresh();
+  });
 
   const handleAnalyzeRepair = async () => {
     setRepairError(null);

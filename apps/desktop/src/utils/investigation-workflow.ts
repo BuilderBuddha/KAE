@@ -60,6 +60,43 @@ export function extractInvestigationTopic(text: string): string {
   return trimmed;
 }
 
+/** Map display lens label to investigation view id. */
+export function investigationViewFromLens(lens: string | null): InvestigationView | null {
+  if (!lens) return null;
+  const map: Record<string, InvestigationView> = {
+    Timeline: 'timeline',
+    Sources: 'sources',
+    Images: 'images',
+    Videos: 'videos',
+    'Related Knowledge': 'related',
+    'Open Conversation': 'conversation',
+    Repository: 'repository',
+    Confidence: 'confidence',
+    Why: 'why',
+    Summary: 'summarize',
+  };
+  return map[lens] ?? null;
+}
+
+/** Screen-native capability role during an investigation. */
+export function investigationCapabilityRole(screen: string): string {
+  switch (screen) {
+    case 'search':
+      return 'Sources & evidence index';
+    case 'explorer':
+      return 'Repository files';
+    case 'import':
+    case 'connectors':
+      return 'Knowledge sources';
+    case 'dashboard':
+      return 'Health & repair';
+    case 'vigsy':
+      return 'Executive conversation';
+    default:
+      return 'Supporting capability';
+  }
+}
+
 /** Maps a supporting capability to a conversation continuation prompt. */
 export function investigationViewQuestion(view: InvestigationView, searchQuery: string): string {
   const q = searchQuery.trim();

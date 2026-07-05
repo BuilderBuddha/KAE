@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { KaydConversationLead } from './KaydConversationLead';
+import { KaydInvestigationLensPanel } from './KaydInvestigationLensPanel';
+import { KaydInvestigationSectionHeader } from './KaydInvestigationSectionHeader';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 
 import type { ScreenId } from '../../types/navigation';
@@ -18,7 +20,7 @@ interface KaydWorkspaceLayoutProps {
 }
 
 /**
- * Conversation-first workspace shell — alive section briefing tied to investigation.
+ * Workspace shell — KayD composer during investigation; each capability body syncs below.
  */
 export function KaydWorkspaceLayout({
   workspaceScreen,
@@ -31,13 +33,13 @@ export function KaydWorkspaceLayout({
   contextWalkthroughTitle,
   children,
 }: KaydWorkspaceLayoutProps) {
-  const { investigationActive } = useVigsyConversation();
+  const { investigationActive, activeInvestigation, investigationEpoch, investigationLens } =
+    useVigsyConversation();
   const [frozenBriefing] = useState(() => briefing);
   const [briefingComplete, setBriefingComplete] = useState(() => briefing.length === 0);
   const [sectionKey, setSectionKey] = useState(0);
 
   const effectiveBriefing = useMemo(() => {
-    // Phase 2: during an active investigation, do not replay workspace briefings.
     if (investigationActive) return [];
     return frozenBriefing;
   }, [investigationActive, frozenBriefing]);
@@ -69,8 +71,20 @@ export function KaydWorkspaceLayout({
         contextWalkthroughTitle={contextWalkthroughTitle}
         onBriefingComplete={() => setBriefingComplete(true)}
       />
-      {briefingComplete && !investigationActive ? (
-        <div className="workspace__body">{children}</div>
+      {briefingComplete ? (
+        <div className="workspace__body" key={investigationActive ? investigationEpoch : 'idle'}>
+          {investigationActive && activeInvestigation ? (
+            <>
+              <KaydInvestigationSectionHeader
+                workspaceScreen={workspaceScreen}
+                investigation={activeInvestigation}
+                lens={investigationLens}
+              />
+              <KaydInvestigationLensPanel />
+            </>
+          ) : null}
+          {children}
+        </div>
       ) : null}
     </div>
   );

@@ -14,9 +14,7 @@ interface KaydChatPanelProps {
   composerId: string;
   briefingStatus?: string;
   workspaceScreen?: ScreenId;
-  /** Bumps when the opener should replay (KayD home only). */
   openerKey?: string | number;
-  /** Hide duplicate KayD label when the page header already shows it. */
   hidePresenceName?: boolean;
   contextWalkthrough?: string[];
   contextWalkthroughKey?: string;
@@ -26,8 +24,8 @@ interface KaydChatPanelProps {
 }
 
 /**
- * Unified chatbot shell — guided opener on workspace entry, then follow-up thread.
- * Home layout: display → below (awareness, chips) → composer.
+ * KayD home — executive conversation flow.
+ * Workspace — composer + spine only during investigation (capability body lives below).
  */
 export function KaydChatPanel({
   briefing,
@@ -43,8 +41,18 @@ export function KaydChatPanel({
   children,
 }: KaydChatPanelProps) {
   const { navigate } = useNavigation();
-  const { turns, busy, ready, hasConversation, investigationActive, submitQuestion } =
-    useVigsyConversation();
+  const {
+    turns,
+    busy,
+    ready,
+    hasConversation,
+    investigationActive,
+    activeInvestigation,
+    submitQuestion,
+  } = useVigsyConversation();
+
+  const isKaydHome = !workspaceScreen || workspaceScreen === 'vigsy';
+  const workspaceSync = investigationActive && !isKaydHome;
 
   const [input, setInput] = useState('');
   const [briefingDone, setBriefingDone] = useState(() => briefing.length === 0);
@@ -63,19 +71,21 @@ export function KaydChatPanel({
   }, [workspaceScreen, openerKey, briefing.length, investigationActive]);
 
   useEffect(() => {
-    if (!hasConversation) {
+    if (!investigationActive || !activeInvestigation?.searchQuery) return;
+    setInput(activeInvestigation.searchQuery);
+  }, [investigationActive, activeInvestigation?.searchQuery]);
+
+  useEffect(() => {
+    if (!hasConversation || workspaceSync) {
       prevTurnCountRef.current = turns.length;
       return;
     }
     if (turns.length > prevTurnCountRef.current) {
-      const thread = displayRef.current?.querySelector('.vigsy-thread');
-      thread?.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    } else if (!investigationActive) {
-      displayRef.current?.scrollTo({ top: 0, behavior: 'auto' });
-      panelRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      const thread = displayRef.current?.querySelector('.kayd-conversation-flow');
+      thread?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
     prevTurnCountRef.current = turns.length;
-  }, [hasConversation, turns.length, investigationActive]);
+  }, [hasConversation, turns.length, workspaceSync]);
 
   const latestAnswer = useMemo(() => {
     for (let index = turns.length - 1; index >= 0; index -= 1) {
@@ -107,77 +117,91 @@ export function KaydChatPanel({
   const placeholder = busy
     ? 'KayD is thinking…'
     : hasConversation
-      ? 'Ask a follow-up…'
+      ? 'Continue the investigation…'
       : briefingDone
         ? 'What would you like to work on today?'
         : 'Listening…';
 
+  const composer = (
+    <form
+      className={`kayd-chat-panel__composer${workspaceSync ? ' kayd-chat-panel__composer--top' : ''}`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void handleSubmit();
+      }}
+    >
+      <label className="sr-only" htmlFor={composerId}>
+        Ask KayD
+      </label>
+      <textarea
+        id={composerId}
+        className="kayd-chat-panel__input"
+        rows={workspaceSync ? 1 : 2}
+        placeholder={ready ? placeholder : 'Loading conversation…'}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            void handleSubmit();
+          }
+        }}
+        disabled={busy || !ready}
+      />
+    </form>
+  );
+
   return (
     <section
       ref={panelRef}
-      className={`kayd-chat-panel kayd-conversation-shell${briefingDone ? ' kayd-chat-panel--ready' : ' kayd-chat-panel--opener'}`}
+      className={`kayd-chat-panel kayd-conversation-shell${briefingDone ? ' kayd-chat-panel--ready' : ' kayd-chat-panel--opener'}${workspaceSync ? ' kayd-chat-panel--workspace-sync' : ''}`}
     >
-      <div className="kayd-chat-panel__display" ref={displayRef}>
-        {!briefingDone && briefing.length > 0 ? (
-          <KaydProgressiveBriefing
-            messages={briefing}
-            statusLabel={briefingStatus}
-            showPresenceName={!hidePresenceName}
-            onComplete={handleBriefingComplete}
-          />
-        ) : null}
-        {briefingDone && investigationActive && !hasConversation ? <KaydInvestigationSpine /> : null}
-        {briefingDone && hasConversation ? (
-          <KaydConversationFlow turns={turns} statusLabel="With you on this" />
-        ) : null}
-        {briefingDone && !hasConversation && contextWalkthrough && contextWalkthrough.length > 0 ? (
-          <KaydProgressiveBriefing
-            key={contextWalkthroughKey}
-            messages={contextWalkthrough}
-            statusLabel={contextWalkthroughTitle ?? 'Walkthrough'}
-            showPresenceName={false}
-          />
-        ) : null}
-      </div>
+      {briefingDone && workspaceSync ? (
+        <>
+          <KaydInvestigationSpine />
+          {composer}
+        </>
+      ) : null}
 
-      {briefingDone ? (
+      {!workspaceSync ? (
+        <div className="kayd-chat-panel__display" ref={displayRef}>
+          {!briefingDone && briefing.length > 0 ? (
+            <KaydProgressiveBriefing
+              messages={briefing}
+              statusLabel={briefingStatus}
+              showPresenceName={!hidePresenceName}
+              onComplete={handleBriefingComplete}
+            />
+          ) : null}
+          {briefingDone && investigationActive && !hasConversation ? <KaydInvestigationSpine /> : null}
+          {briefingDone && hasConversation && isKaydHome ? (
+            <KaydConversationFlow turns={turns} statusLabel="With you on this" />
+          ) : null}
+          {briefingDone && !hasConversation && contextWalkthrough && contextWalkthrough.length > 0 ? (
+            <KaydProgressiveBriefing
+              key={contextWalkthroughKey}
+              messages={contextWalkthrough}
+              statusLabel={contextWalkthroughTitle ?? 'Walkthrough'}
+              showPresenceName={false}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {briefingDone && isKaydHome ? (
         <div className="kayd-chat-panel__below">
           {hasConversation && latestAnswer ? (
-            <VigsyFollowUpChips answer={latestAnswer} onAction={handleFollowUp} busy={busy} />
+            <>
+              {children}
+              <VigsyFollowUpChips answer={latestAnswer} onAction={handleFollowUp} busy={busy} />
+            </>
           ) : (
             children
           )}
         </div>
       ) : null}
 
-      {briefingDone ? (
-        <form
-          className="kayd-chat-panel__composer"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void handleSubmit();
-          }}
-        >
-          <label className="sr-only" htmlFor={composerId}>
-            Ask KayD
-          </label>
-          <textarea
-            id={composerId}
-            className="kayd-chat-panel__input"
-            rows={2}
-            placeholder={ready ? placeholder : 'Loading conversation…'}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmit();
-              }
-            }}
-            disabled={busy || !ready}
-          />
-        </form>
-      ) : null}
+      {briefingDone && !workspaceSync ? composer : null}
     </section>
   );
 }

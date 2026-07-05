@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { VigsyConversationRecord, VigsyConversationTurnRecord, VigsyKnowledgeAnswer, ExecutiveContinuity } from '@scooper/core';
 import {
   enrichFollowUpQuestion,
@@ -352,6 +352,14 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     [busy, investigationSearchQuery, submitQuestion],
   );
 
+  const latestInvestigationAnswer = useMemo(() => {
+    for (let index = turns.length - 1; index >= 0; index -= 1) {
+      const turn = turns[index];
+      if (turn.role === 'assistant' && !turn.thinking && turn.answer) return turn.answer;
+    }
+    return null;
+  }, [turns]);
+
   return {
     turns,
     busy,
@@ -362,6 +370,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     activeInvestigation,
     investigationLens,
     investigationEpoch,
+    latestInvestigationAnswer,
     sealedOpenerLines,
     submitQuestion,
     continueInvestigationView,

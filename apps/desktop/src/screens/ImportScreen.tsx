@@ -16,6 +16,7 @@ import { LoadingIndicator } from '../components/LoadingIndicator';
 import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
+import { useInvestigationSync } from '../hooks/useInvestigationSync';
 import { buildKaydConnectorWalkthrough, buildKaydImportBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import {
@@ -81,6 +82,10 @@ export function ImportScreen() {
   useEffect(() => {
     refreshSources().finally(() => setLoading(false));
   }, [refreshSources]);
+
+  useInvestigationSync(() => {
+    void refreshSources();
+  });
 
   useEffect(() => {
     const unsubComplete = window.kae.onImportComplete((result) => {

@@ -106,13 +106,15 @@ export function VigsyScreen() {
         >
           {briefingComplete ? (
             <>
-              {!hasConversation ? <KaydExecutiveBriefingInline /> : null}
-              <KaydGuidedChips
-                chips={STARTER_CHIPS}
-                busy={busy}
-                continuity={sessionContinuity ?? continuity}
-                onAsk={(q) => void handleAsk(q)}
-              />
+              <KaydExecutiveBriefingInline />
+              {!hasConversation ? (
+                <KaydGuidedChips
+                  chips={STARTER_CHIPS}
+                  busy={busy}
+                  continuity={sessionContinuity ?? continuity}
+                  onAsk={(q) => void handleAsk(q)}
+                />
+              ) : null}
             </>
           ) : null}
         </KaydChatPanel>
