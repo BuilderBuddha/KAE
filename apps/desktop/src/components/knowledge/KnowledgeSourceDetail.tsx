@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ConnectorConfig, ConnectorStatus, SyncHistoryEntry } from '@scooper/core';
+import type { ConnectorConfig, ConnectorEvent, ConnectorStatus, SyncHistoryEntry } from '@scooper/core';
 import type { ImportSourceDisplay } from '../../utils/import-source-display';
 
 function formatTime(value?: string): string {
@@ -7,10 +7,24 @@ function formatTime(value?: string): string {
   return new Date(value).toLocaleString();
 }
 
+function healthClass(status: ConnectorStatus['health']['status']): string {
+  switch (status) {
+    case 'healthy':
+      return 'dashboard-status--ready';
+    case 'degraded':
+      return 'dashboard-status--attention';
+    case 'disconnected':
+      return 'muted';
+    default:
+      return 'dashboard-status--issues';
+  }
+}
+
 interface KnowledgeSourceDetailProps {
   source: ImportSourceDisplay;
   status?: ConnectorStatus;
   history: SyncHistoryEntry[];
+  events?: ConnectorEvent[];
   busy: boolean;
   onRefresh: () => void;
 }
@@ -19,12 +33,14 @@ export function KnowledgeSourceDetail({
   source,
   status,
   history,
+  events = [],
   busy,
   onRefresh,
 }: KnowledgeSourceDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [configuring, setConfiguring] = useState(false);
   const [draftSettings, setDraftSettings] = useState<Record<string, unknown>>({});
+  const [healthOpen, setHealthOpen] = useState(true);
 
   const sourceHistory = history.filter((entry) => entry.connectorId === source.id).slice(0, 5);
 
@@ -109,24 +125,61 @@ export function KnowledgeSourceDetail({
 
       {error ? <p className="form__error">{error}</p> : null}
 
-      <dl className="knowledge-source-detail__stats">
-        <div>
-          <dt>Health</dt>
-          <dd>{status.health.status}</dd>
-        </div>
-        <div>
-          <dt>Last sync</dt>
-          <dd>{formatTime(status.lastSyncAt)}</dd>
-        </div>
-        <div>
-          <dt>Items imported</dt>
-          <dd>{status.itemsImported}</dd>
-        </div>
-        <div>
-          <dt>Monitoring</dt>
-          <dd>{status.monitoring.active ? 'Active' : 'Inactive'}</dd>
-        </div>
-      </dl>
+      <section className={`knowledge-source-detail__health${healthOpen ? ' knowledge-source-detail__health--open' : ''}`}>
+        <button
+          type="button"
+          className="knowledge-source-detail__health-toggle"
+          aria-expanded={healthOpen}
+          onClick={() => setHealthOpen((open) => !open)}
+        >
+          <span>Connector health &amp; monitoring</span>
+          <span aria-hidden>{healthOpen ? '−' : '+'}</span>
+        </button>
+        {healthOpen ? (
+          <dl className="knowledge-source-detail__stats knowledge-source-detail__stats--grid">
+            <div>
+              <dt>Status</dt>
+              <dd>{status.config.enabled ? 'Enabled' : 'Disabled'}</dd>
+            </div>
+            <div>
+              <dt>Connected</dt>
+              <dd>{status.config.connected ? 'Yes' : 'No'}</dd>
+            </div>
+            <div>
+              <dt>Health</dt>
+              <dd className={healthClass(status.health.status)}>{status.health.status}</dd>
+            </div>
+            <div>
+              <dt>Last sync</dt>
+              <dd>{formatTime(status.lastSyncAt)}</dd>
+            </div>
+            <div>
+              <dt>Items imported</dt>
+              <dd>{status.itemsImported}</dd>
+            </div>
+            <div>
+              <dt>Monitoring</dt>
+              <dd>{status.monitoring.active ? 'Active' : 'Inactive'}</dd>
+            </div>
+            <div>
+              <dt>Last checked</dt>
+              <dd>{formatTime(status.monitoring.lastCheckedAt)}</dd>
+            </div>
+            <div>
+              <dt>Next check</dt>
+              <dd>{formatTime(status.monitoring.nextCheckAt)}</dd>
+            </div>
+            <div>
+              <dt>Last change</dt>
+              <dd>{formatTime(status.monitoring.lastChangeDetectedAt)}</dd>
+            </div>
+            <div>
+              <dt>Last auto-sync</dt>
+              <dd>{formatTime(status.monitoring.lastSuccessfulAutoSyncAt)}</dd>
+            </div>
+          </dl>
+        ) : null}
+      </section>
 
       <div className="form__actions knowledge-source-detail__actions">
         {!status.config.connected ? (
@@ -268,6 +321,22 @@ export function KnowledgeSourceDetail({
           </ul>
         )}
       </div>
+
+      {events.length > 0 ? (
+        <div className="knowledge-source-detail__events">
+          <h4 className="screen__section-title">Recent events</h4>
+          <ul className="knowledge-source-detail__history-list">
+            {events.map((entry) => (
+              <li key={entry.eventId}>
+                <span>{formatTime(entry.timestamp)}</span>
+                <span>
+                  {entry.type} — {entry.message}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }

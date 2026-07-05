@@ -1138,9 +1138,25 @@ select {
   margin: 0;
 }
 
-.kayd-chat-panel__composer {
-  padding: 10px 14px 12px;
+.kayd-chat-panel__action-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 6px 4px;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.kayd-chat-panel__action-zone .kayd-guided-chips {
+  padding: 0 8px 2px;
+}
+
+.kayd-chat-panel__action-zone .kayd-guided-chips__label {
+  margin-bottom: 6px;
+}
+
+.kayd-chat-panel__composer {
+  padding: 4px 8px 10px;
+  border-top: none;
   background: transparent;
 }
 
@@ -1441,6 +1457,52 @@ select {
 .knowledge-source-detail__stats dd {
   margin: 2px 0 0;
   font-weight: 500;
+}
+
+.knowledge-source-detail__stats--grid {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.knowledge-source-detail__health {
+  margin-bottom: 14px;
+}
+
+.knowledge-source-detail__health--open .knowledge-source-detail__health-toggle {
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 8px;
+}
+
+.knowledge-source-detail__events {
+  margin-top: 14px;
+}
+
+.kayd-context-walkthrough {
+  margin: 8px 0 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kayd-context-walkthrough__label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.kayd-context-walkthrough__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kayd-context-walkthrough__line {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #e4e4e7;
 }
 
 .knowledge-source-detail__history-list {
@@ -2252,8 +2314,42 @@ select {
 .chatgpt-asset--missing { border-color: color-mix(in srgb, var(--color-warning) 40%, var(--color-border)); }
 
 /* Health panel */
-.health-categorized { display: flex; flex-direction: column; gap: 16px; }
+.health-categorized { display: flex; flex-direction: column; gap: 8px; }
 .health-panel__title { font-size: 13px; margin-bottom: 8px; color: var(--color-text-muted); }
+.health-panel__toggle,
+.health-diagnostics__toggle,
+.knowledge-source-detail__health-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.health-panel__toggle:hover,
+.health-diagnostics__toggle:hover,
+.knowledge-source-detail__health-toggle:hover {
+  color: var(--color-text);
+}
+.health-diagnostics__toggle .screen__section-title {
+  margin: 0;
+}
+.health-diagnostics__count {
+  font-weight: 400;
+  font-size: 0.85em;
+}
+.health-diagnostics--open .health-diagnostics__toggle {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 8px;
+}
 .health-issue__header { display: flex; flex-direction: column; gap: 2px; }
 .health-issue__recovery { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
 .health-issue__link { padding: 0; font-size: 12px; margin-top: 4px; }

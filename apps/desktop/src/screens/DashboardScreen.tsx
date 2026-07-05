@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import type {
+import { useEffect, useMemo, useState } from 'react';import type {
   ConnectorStatus,
   GitReadinessReport,
   ImportSummary,
@@ -40,7 +39,20 @@ export function DashboardScreen() {
   const [repairAnalyzing, setRepairAnalyzing] = useState(false);
   const [repairRunning, setRepairRunning] = useState(false);
   const [repairError, setRepairError] = useState<string | null>(null);
+  const [healthDiagnosticsOpen, setHealthDiagnosticsOpen] = useState(false);
 
+  const healthIssueCount = useMemo(() => {
+    if (!health) return 0;
+    const c = health.categorizedIssues;
+    return c.errors.length + c.warnings.length + c.information.length + c.recommendations.length;
+  }, [health]);
+
+  useEffect(() => {
+    if (!health) return;
+    const hasUrgent =
+      health.categorizedIssues.errors.length > 0 || health.categorizedIssues.warnings.length > 0;
+    setHealthDiagnosticsOpen(hasUrgent);
+  }, [health]);
   const refresh = async () => {
     setLoading(true);
     try {
@@ -256,15 +268,23 @@ export function DashboardScreen() {
           </div>
         </section>
 
-        {health && (
-          <section className="card dashboard-card--evidence">
-            <h3 className="screen__section-title">
-              {health.categorizedIssues.errors.length > 0 ? 'Issues Detected' : 'Health Diagnostics'}
-            </h3>
-            <CategorizedHealthPanel categorized={health.categorizedIssues} />
+        {health && healthIssueCount > 0 ? (
+          <section className={`card dashboard-card--evidence health-diagnostics${healthDiagnosticsOpen ? ' health-diagnostics--open' : ''}`}>
+            <button
+              type="button"
+              className="health-diagnostics__toggle"
+              aria-expanded={healthDiagnosticsOpen}
+              onClick={() => setHealthDiagnosticsOpen((open) => !open)}
+            >
+              <span className="screen__section-title">
+                {health.categorizedIssues.errors.length > 0 ? 'Issues Detected' : 'Health Diagnostics'}
+                <span className="health-diagnostics__count muted"> ({healthIssueCount})</span>
+              </span>
+              <span aria-hidden>{healthDiagnosticsOpen ? '−' : '+'}</span>
+            </button>
+            {healthDiagnosticsOpen ? <CategorizedHealthPanel categorized={health.categorizedIssues} /> : null}
           </section>
-        )}
-
+        ) : null}
         <RepositoryRepairPanel
           plan={repairPlan}
           result={repairResult}

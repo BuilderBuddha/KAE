@@ -8,6 +8,10 @@ import type {
   VigsyExplorerLink,
   VigsyKnowledgeAnswer,
 } from '@scooper/core';
+import {
+  buildSteeringDirectAnswer,
+  buildSteeringSupportingSummary,
+} from './steering-compose.js';
 
 function toCitation(item: RetrievedEvidenceItem): VigsyEvidenceCitation {
   return {
@@ -91,76 +95,11 @@ function computeConfidence(context: AssembledEvidenceContext): VigsyConfidence {
 }
 
 function buildDirectAnswer(context: AssembledEvidenceContext, confidence: VigsyConfidence): string {
-  if (confidence.level === 'insufficient') {
-    return `I found limited evidence for "${context.searchQuery}". ${confidence.rationale}. Consider refining the question or checking the Search screen for raw hits.`;
-  }
-
-  const top = context.items.slice(0, 3);
-  const lead = top[0];
-
-  switch (context.intent) {
-    case 'decision': {
-      const session = context.executiveSessions[0];
-      if (session) {
-        return `Based on executive session evidence (${session.krcId ?? session.title}): ${session.excerpt}`;
-      }
-      const assistant = context.messages.find((item) =>
-        item.messageRole?.toLowerCase().includes('assistant'),
-      );
-      if (assistant) {
-        return `Based on assistant evidence (${assistant.krcId ?? assistant.title}): ${assistant.excerpt}`;
-      }
-      return `Based on indexed evidence (${lead.krcId ?? lead.title}): ${lead.excerpt}`;
-    }
-    case 'summarize': {
-      const krcList = context.topKrcIds.slice(0, 3).join(', ') || 'indexed sources';
-      return `Summary grounded in ${krcList}: ${top.map((item) => item.excerpt).join(' ')}`.slice(0, 500);
-    }
-    case 'show_evidence': {
-      const att = context.attachments[0];
-      if (att) {
-        return `Evidence located: attachment "${att.title}" (${att.krcId ?? 'source'}). ${att.excerpt}`;
-      }
-      return `Evidence located in ${lead.krcId ?? lead.explorerPath}: ${lead.excerpt}`;
-    }
-    case 'blockers': {
-      const blockerHits = context.items.filter((item) =>
-        /blocker|unresolved|remaining|issue|risk|todo|pending|missing/i.test(item.excerpt),
-      );
-      if (blockerHits.length === 0) {
-        return `No explicit blocker language found for "${context.searchQuery}" in retrieved evidence. Showing closest matches only — confidence is reduced.`;
-      }
-      return `Blocker-related evidence (${blockerHits.length} hit(s)): ${blockerHits[0].excerpt}`;
-    }
-    default:
-      return `Based on retrieved evidence (${lead.krcId ?? lead.title}): ${lead.excerpt}`;
-  }
+  return buildSteeringDirectAnswer(context, confidence);
 }
 
-function buildReasonedSummary(context: AssembledEvidenceContext): string {
-  const lines: string[] = [];
-  const used = context.items.slice(0, 6);
-
-  if (used.length === 0) {
-    return 'No evidence items available to summarize.';
-  }
-
-  lines.push(`Retrieved ${context.items.length} evidence record(s) for "${context.searchQuery}".`);
-
-  for (const item of used) {
-    const cite = item.krcId ? `[${item.krcId}]` : `[${item.kind}]`;
-    lines.push(`- ${cite} ${item.title}: ${item.excerpt}`);
-  }
-
-  if (context.topKrcIds.length > 1) {
-    lines.push(`- Sources span ${context.topKrcIds.length} KRC records: ${context.topKrcIds.slice(0, 5).join(', ')}.`);
-  }
-
-  if (context.attachments.length > 0) {
-    lines.push(`- ${context.attachments.length} attachment reference(s) included in evidence.`);
-  }
-
-  return lines.join('\n');
+function buildReasonedSummary(context: AssembledEvidenceContext, confidence: VigsyConfidence): string {
+  return buildSteeringSupportingSummary(context, confidence);
 }
 
 function buildExplorerLinks(context: AssembledEvidenceContext): VigsyExplorerLink[] {
@@ -204,7 +143,7 @@ export class DeterministicAnswerComposer implements VigsyAnswerComposer {
       intent: context.intent,
       searchQuery: context.searchQuery,
       directAnswer: buildDirectAnswer(context, confidence),
-      reasonedSummary: buildReasonedSummary(context),
+      reasonedSummary: buildReasonedSummary(context, confidence),
       evidenceUsed,
       confidence,
       timeline: context.timeline,

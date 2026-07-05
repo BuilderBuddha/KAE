@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
+import { KaydContextWalkthrough } from './KaydContextWalkthrough';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
 import { VigsyConversationThread } from './VigsyConversationThread';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
@@ -15,6 +16,12 @@ interface KaydChatPanelProps {
   openerKey?: string | number;
   /** Hide duplicate KayD label when the page header already shows it. */
   hidePresenceName?: boolean;
+  /** Instant guidance when workspace context changes (e.g. selected connector). */
+  contextWalkthrough?: string[];
+  contextWalkthroughKey?: string;
+  contextWalkthroughTitle?: string;
+  /** Chips / quick actions — rendered above composer, below thread. */
+  actionSlot?: ReactNode;
   onBriefingComplete?: () => void;
   children?: ReactNode;
 }
@@ -29,6 +36,10 @@ export function KaydChatPanel({
   workspaceScreen,
   openerKey,
   hidePresenceName = false,
+  contextWalkthrough,
+  contextWalkthroughKey,
+  contextWalkthroughTitle,
+  actionSlot,
   onBriefingComplete,
   children,
 }: KaydChatPanelProps) {
@@ -86,38 +97,48 @@ export function KaydChatPanel({
         {briefingDone && hasConversation ? (
           <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
         ) : null}
+        {briefingDone && contextWalkthrough && contextWalkthrough.length > 0 ? (
+          <KaydContextWalkthrough
+            key={contextWalkthroughKey}
+            lines={contextWalkthrough}
+            title={contextWalkthroughTitle}
+          />
+        ) : null}
       </div>
 
-      {briefingDone ? <div className="kayd-chat-panel__below">{children}</div> : null}
-
       {briefingDone ? (
-        <form
-          className="kayd-chat-panel__composer"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void handleSubmit();
-          }}
-        >
-          <label className="sr-only" htmlFor={composerId}>
-            Ask KayD
-          </label>
-          <textarea
-            id={composerId}
-            className="kayd-chat-panel__input"
-            rows={2}
-            placeholder={ready ? placeholder : 'Loading conversation…'}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void handleSubmit();
-              }
+        <div className="kayd-chat-panel__action-zone">
+          {actionSlot}
+          <form
+            className="kayd-chat-panel__composer"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSubmit();
             }}
-            disabled={busy || !ready}
-          />
-        </form>
+          >
+            <label className="sr-only" htmlFor={composerId}>
+              Ask KayD
+            </label>
+            <textarea
+              id={composerId}
+              className="kayd-chat-panel__input"
+              rows={2}
+              placeholder={ready ? placeholder : 'Loading conversation…'}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSubmit();
+                }
+              }}
+              disabled={busy || !ready}
+            />
+          </form>
+        </div>
       ) : null}
+
+      {briefingDone ? <div className="kayd-chat-panel__below">{children}</div> : null}
     </section>
   );
 }

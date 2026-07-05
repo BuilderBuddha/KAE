@@ -10,7 +10,6 @@ import { RepositorySettingsScreen } from './screens/RepositorySettingsScreen';
 import { JobQueueScreen } from './screens/JobQueueScreen';
 import { LogsScreen } from './screens/LogsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
-import { ConnectorManagerScreen } from './screens/ConnectorManagerScreen';
 import { VigsyConversationProvider } from './context/VigsyConversationContext';
 import type { ScreenId } from './types/navigation';
 
@@ -21,7 +20,7 @@ function renderScreen(screen: ScreenId) {
     case 'import':
       return <ImportScreen />;
     case 'connectors':
-      return <ConnectorManagerScreen />;
+      return <ImportScreen />;
     case 'explorer':
       return <ExplorerScreen />;
     case 'search':

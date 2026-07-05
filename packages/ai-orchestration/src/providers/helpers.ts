@@ -18,6 +18,10 @@ const STYLE_SUMMARY_PREFIX: Record<Exclude<AIProviderId, 'deterministic'>, strin
   ollama: 'Local notes:',
 };
 
+function isSteeringAnswer(text: string): boolean {
+  return /what changed\s*[—-]/i.test(text) && /what i recommend next\s*[—-]/i.test(text);
+}
+
 export function offlineStyledResponse(
   request: ReasoningRequest,
   providerId: Exclude<AIProviderId, 'deterministic'>,
@@ -25,6 +29,17 @@ export function offlineStyledResponse(
 ): ReasoningResponse {
   const direct = request.groundedAnswer.directAnswer.trim();
   const summary = request.groundedAnswer.reasonedSummary.trim();
+
+  if (isSteeringAnswer(direct)) {
+    return {
+      providerId,
+      model: model ?? 'offline',
+      directAnswer: direct,
+      reasonedSummary: summary,
+      usedOfflineFallback: true,
+    };
+  }
+
   const prefix = STYLE_PREFIX[providerId];
   const summaryPrefix = STYLE_SUMMARY_PREFIX[providerId];
 
@@ -48,8 +63,13 @@ export function buildCuratedPrompt(request: ReasoningRequest): string {
     .map((item) => `- ${item.label}: ${item.excerpt}`);
 
   return [
-    'You are Vigsy, a grounded knowledge assistant.',
+    'You are KayD, an executive investigation partner.',
     'Use ONLY the curated evidence below. Do not invent facts or citations.',
+    'Structure directAnswer as three short paragraphs:',
+    '1) What changed — key finding',
+    '2) Why it matters — executive significance',
+    '3) What I recommend next — one concrete next step',
+    'Keep reasonedSummary brief — point to evidence, do not dump citations.',
     'Return JSON: {"directAnswer":"...","reasonedSummary":"..."}',
     '',
     `Question: ${context.question}`,
@@ -61,7 +81,7 @@ export function buildCuratedPrompt(request: ReasoningRequest): string {
     'Evidence:',
     ...evidenceLines,
     '',
-    `Deterministic draft answer: ${groundedAnswer.directAnswer}`,
+    `Deterministic steering draft:\n${groundedAnswer.directAnswer}`,
   ]
     .filter(Boolean)
     .join('\n');

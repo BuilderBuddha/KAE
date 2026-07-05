@@ -97,18 +97,18 @@ export function VigsyScreen() {
           briefingStatus={KAYD_BRIEFING_STATUS.home}
           hidePresenceName
           onBriefingComplete={() => setBriefingComplete(true)}
-        >
-          {briefingComplete ? (
-            <>
-              <KaydExecutiveBriefingInline />
+          actionSlot={
+            briefingComplete ? (
               <KaydGuidedChips
                 chips={STARTER_CHIPS}
                 busy={busy}
                 continuity={sessionContinuity ?? continuity}
                 onAsk={(q) => void handleAsk(q)}
               />
-            </>
-          ) : null}
+            ) : null
+          }
+        >
+          {briefingComplete ? <KaydExecutiveBriefingInline /> : null}
         </KaydChatPanel>
       </div>
     </div>

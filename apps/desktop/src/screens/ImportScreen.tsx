@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
+  ConnectorEvent,
   ConnectorStatus,
   ImportSummary,
   ImportTimelineStep,
@@ -15,8 +16,7 @@ import { LoadingIndicator } from '../components/LoadingIndicator';
 import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
-import { buildKaydImportBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
-import { useNavigation } from '../context/NavigationContext';
+import { buildKaydConnectorWalkthrough, buildKaydImportBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import {
   ADVANCED_IMPORTER_IDS,
@@ -45,9 +45,9 @@ const INITIAL_VALIDATION_PROGRESS = (): ValidationProgress => ({
 });
 
 export function ImportScreen() {
-  const { navigate } = useNavigation();
   const [importers, setImporters] = useState<ImporterInfo[]>([]);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
+  const [connectorEvents, setConnectorEvents] = useState<ConnectorEvent[]>([]);
   const [syncHistory, setSyncHistory] = useState<SyncHistoryEntry[]>([]);
   const [selectedSourceId, setSelectedSourceId] = useState<string>('chatgpt-export-zip');
   const [connectorBusy, setConnectorBusy] = useState(false);
@@ -66,14 +66,16 @@ export function ImportScreen() {
   const elapsedTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const refreshSources = useCallback(async () => {
-    const [nextImporters, nextConnectors, nextHistory] = await Promise.all([
+    const [nextImporters, nextConnectors, nextHistory, nextEvents] = await Promise.all([
       window.kae.getImporters(),
       window.kae.getConnectorStatuses(),
       window.kae.getConnectorSyncHistory(),
+      window.kae.getConnectorEvents(),
     ]);
     setImporters(nextImporters);
     setConnectors(nextConnectors);
     setSyncHistory(nextHistory);
+    setConnectorEvents(nextEvents);
   }, []);
 
   useEffect(() => {
@@ -241,6 +243,15 @@ export function ImportScreen() {
   const advancedImporters = importers.filter((importer) => ADVANCED_IMPORTER_IDS.has(importer.id));
   const importBriefing = useMemo(() => buildKaydImportBriefing(connectors), [connectors]);
   const selectedSource = PRIMARY_KNOWLEDGE_SOURCES.find((s) => s.id === selectedSourceId);
+  const selectedConnector = selectedSource ? connectorById.get(selectedSource.id) : undefined;
+  const connectorWalkthrough = useMemo(
+    () => (selectedSource ? buildKaydConnectorWalkthrough(selectedSource, selectedConnector) : []),
+    [selectedSource, selectedConnector],
+  );
+  const sourceEvents = useMemo(
+    () => connectorEvents.filter((event) => event.connectorId === selectedSourceId).slice(0, 8),
+    [connectorEvents, selectedSourceId],
+  );
 
   return (
     <KaydWorkspaceLayout
@@ -249,20 +260,16 @@ export function ImportScreen() {
       briefing={importBriefing}
       composerId={KAYD_WORKSPACE_COMPOSER_ID}
       briefingStatus={KAYD_BRIEFING_STATUS.import}
+      contextWalkthrough={connectorWalkthrough}
+      contextWalkthroughKey={selectedSourceId}
+      contextWalkthroughTitle={selectedSource ? `${selectedSource.label} walkthrough` : undefined}
     >
       <section className="screen-evidence" aria-label="Knowledge sources">
-        <header className="screen-evidence__header screen-evidence__header--split">
+        <header className="screen-evidence__header">
           <div>
             <h3 className="screen-evidence__title">Knowledge sources</h3>
-            <p className="screen-evidence__lead muted">Select a source to connect or sync.</p>
+            <p className="screen-evidence__lead muted">Select a source — KayD will guide you through connect and sync.</p>
           </div>
-          <button
-            type="button"
-            className="vigsy-link-btn workspace-nav-link"
-            onClick={() => navigate('connectors')}
-          >
-            Connector management →
-          </button>
         </header>
 
         {loading ? (
@@ -300,6 +307,7 @@ export function ImportScreen() {
             source={selectedSource}
             status={connectorById.get(selectedSource.id)}
             history={syncHistory}
+            events={sourceEvents}
             busy={connectorBusy}
             onRefresh={async () => {
               setConnectorBusy(true);

@@ -37,12 +37,6 @@ export const NAV_ITEMS: NavItem[] = [
     description: 'Connect knowledge sources to your repository',
   },
   {
-    id: 'connectors',
-    label: 'Connectors',
-    icon: '⎈',
-    description: 'Sync health, monitoring, and connector management',
-  },
-  {
     id: 'explorer',
     label: 'Repository',
     icon: '◈',
