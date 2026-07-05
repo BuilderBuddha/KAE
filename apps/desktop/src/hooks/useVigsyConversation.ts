@@ -9,6 +9,8 @@ import { formatConversationalAnswer } from '../utils/vigsy-answer-format';
 import { presenceDelayMs, streamTextReveal } from '../utils/vigsy-stream';
 import {
   investigationFromSession,
+  investigationViewLabel,
+  extractInvestigationTopic,
   isNewInvestigationQuestion,
   investigationViewQuestion,
   type ActiveInvestigation,
@@ -73,6 +75,8 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
   const [continuity, setContinuity] = useState<ExecutiveContinuity | null>(null);
   const [activeInvestigation, setActiveInvestigation] = useState<ActiveInvestigation | null>(null);
   const [investigationEpoch, setInvestigationEpoch] = useState(0);
+  const [investigationLens, setInvestigationLens] = useState<string | null>(null);
+  const [sealedOpenerLines, setSealedOpenerLines] = useState<string[]>([]);
 
   const refreshContinuity = useCallback(async () => {
     const next = await window.kae.getExecutiveContinuity();
@@ -138,6 +142,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     if (startingNewInvestigation) {
       navigate?.('vigsy');
       setInvestigationEpoch((epoch) => epoch + 1);
+      setInvestigationLens(null);
+    } else {
+      const lens = investigationViewLabel(rawQuestion);
+      if (lens) setInvestigationLens(lens);
     }
 
     const question = enrichFollowUpQuestion(rawQuestion, sessionRef.current);
@@ -193,13 +201,39 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
           offStream();
         }
         if (abortRef.current) return;
-        const formatted = formatConversationalAnswer(answer);
+        const topicQuery =
+          sessionRef.current.lastSearchQuery ||
+          extractInvestigationTopic(question) ||
+          answer.searchQuery;
+        const formatted = formatConversationalAnswer(answer, question, topicQuery);
         streamText = formatted.streamText;
         supportingText = formatted.supportingText;
+
+        await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
+        if (abortRef.current) return;
+
+        setTurns((prev) =>
+          prev.map((turn) =>
+            turn.id === assistantId
+              ? { ...turn, thinking: false, streaming: true, answer, text: '', summary: supportingText }
+              : turn,
+          ),
+        );
+
+        await streamTextReveal(streamText, (visible) => {
+          if (abortRef.current) return;
+          setTurns((prev) =>
+            prev.map((turn) => (turn.id === assistantId ? { ...turn, text: visible } : turn)),
+          );
+        });
       } else {
         answer = await window.kae.answerKnowledgeQuestion(question, { conversationContext });
         if (abortRef.current) return;
-        const formatted = formatConversationalAnswer(answer);
+        const topicQuery =
+          sessionRef.current.lastSearchQuery ||
+          extractInvestigationTopic(question) ||
+          answer.searchQuery;
+        const formatted = formatConversationalAnswer(answer, question, topicQuery);
         streamText = formatted.streamText;
         supportingText = formatted.supportingText;
 
@@ -261,10 +295,17 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     }
   }, [busy, conversationId, navigate, persistConversation, refreshContinuity, turns]);
 
+  const sealHomeOpener = useCallback((lines: string[]) => {
+    const trimmed = lines.map((line) => line.trim()).filter(Boolean);
+    if (trimmed.length > 0) setSealedOpenerLines(trimmed);
+  }, []);
+
   const startNewConversation = useCallback(async () => {
     abortRef.current = true;
     sessionRef.current = {};
     setActiveInvestigation(null);
+    setInvestigationLens(null);
+    setSealedOpenerLines([]);
     setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
@@ -283,6 +324,8 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     }
     sessionRef.current = {};
     setActiveInvestigation(null);
+    setInvestigationLens(null);
+    setSealedOpenerLines([]);
     setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
@@ -317,9 +360,12 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     hasConversation,
     investigationActive,
     activeInvestigation,
+    investigationLens,
     investigationEpoch,
+    sealedOpenerLines,
     submitQuestion,
     continueInvestigationView,
+    sealHomeOpener,
     startNewConversation,
     clearConversation,
     continuity,

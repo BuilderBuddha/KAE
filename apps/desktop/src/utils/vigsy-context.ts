@@ -34,13 +34,19 @@ export function enrichFollowUpQuestion(question: string, session: VigsySessionCo
   return `${q} (following up on: ${session.lastSearchQuery})`;
 }
 
+import { extractInvestigationTopic } from './investigation-workflow';
+
 export function sessionFromAnswer(
   question: string,
   answer: VigsyKnowledgeAnswer,
 ): VigsySessionContext {
+  const topic =
+    extractInvestigationTopic(answer.searchQuery) ||
+    extractInvestigationTopic(question) ||
+    answer.searchQuery;
   return {
     lastQuestion: question,
-    lastSearchQuery: answer.searchQuery,
+    lastSearchQuery: topic,
     lastKrcIds: answer.explorerLinks.map((link) => link.krcId).filter(Boolean) as string[],
   };
 }

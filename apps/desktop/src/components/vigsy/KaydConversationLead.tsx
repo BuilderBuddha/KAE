@@ -1,6 +1,5 @@
 import { KaydChatPanel } from './KaydChatPanel';
 import type { ScreenId } from '../../types/navigation';
-import type { ReactNode } from 'react';
 
 interface KaydConversationLeadProps {
   briefing: string[];
@@ -12,8 +11,6 @@ interface KaydConversationLeadProps {
   contextWalkthrough?: string[];
   contextWalkthroughKey?: string;
   contextWalkthroughTitle?: string;
-  actionSlot?: ReactNode;
-  awarenessSlot?: ReactNode;
   onBriefingComplete?: () => void;
 }
 
@@ -28,8 +25,6 @@ export function KaydConversationLead({
   contextWalkthrough,
   contextWalkthroughKey,
   contextWalkthroughTitle,
-  actionSlot,
-  awarenessSlot,
   onBriefingComplete,
 }: KaydConversationLeadProps) {
   return (
@@ -44,8 +39,6 @@ export function KaydConversationLead({
         contextWalkthrough={contextWalkthrough}
         contextWalkthroughKey={contextWalkthroughKey}
         contextWalkthroughTitle={contextWalkthroughTitle}
-        actionSlot={actionSlot}
-        awarenessSlot={awarenessSlot}
         onBriefingComplete={onBriefingComplete}
       />
     </div>

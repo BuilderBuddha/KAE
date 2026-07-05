@@ -21,7 +21,44 @@ export type InvestigationView =
 const VIEW_QUESTION_PATTERNS =
   /^(walk me through the timeline|show me the supporting sources|show me the images|show me the videos|what related knowledge|continue the open conversation|show me repository evidence|explain the confidence|why does|summarize more about)/i;
 
+/** True when the user is continuing the same investigation via a capability lens. */
+export function isInvestigationCapabilityQuestion(question: string): boolean {
+  return VIEW_QUESTION_PATTERNS.test(question.trim());
+}
+
+const VIEW_LABELS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /^walk me through the timeline/i, label: 'Timeline' },
+  { pattern: /^show me the supporting sources/i, label: 'Sources' },
+  { pattern: /^show me the images|^show images/i, label: 'Images' },
+  { pattern: /^show me the videos|^show videos/i, label: 'Videos' },
+  { pattern: /^what related knowledge/i, label: 'Related Knowledge' },
+  { pattern: /^continue the open conversation/i, label: 'Open Conversation' },
+  { pattern: /^show me repository evidence/i, label: 'Repository' },
+  { pattern: /^explain the confidence/i, label: 'Confidence' },
+  { pattern: /^why does/i, label: 'Why' },
+  { pattern: /^summarize more/i, label: 'Summary' },
+];
+
+/** Human-readable capability lens for the active investigation thread. */
+export function investigationViewLabel(question: string): string | null {
+  const q = question.trim();
+  for (const entry of VIEW_LABELS) {
+    if (entry.pattern.test(q)) return entry.label;
+  }
+  return null;
+}
+
 const FOLLOW_UP_MARKERS = /\(following up on:/i;
+
+/** Strip follow-up enrichment so the investigation topic stays stable across capability lenses. */
+export function extractInvestigationTopic(text: string): string {
+  const trimmed = text.trim();
+  const followUp = trimmed.match(/\(following up on:\s*([^)]+)\)/i)?.[1]?.trim();
+  if (followUp) return followUp;
+  const quoted = trimmed.match(/for ['"]([^'"]+)['"]/i)?.[1]?.trim();
+  if (quoted) return quoted;
+  return trimmed;
+}
 
 /** Maps a supporting capability to a conversation continuation prompt. */
 export function investigationViewQuestion(view: InvestigationView, searchQuery: string): string {
@@ -131,14 +168,29 @@ export function buildInvestigationSectionLines(
   }
 }
 
-/** Conversational awareness lines — no static placecards. */
 export function buildSectionAwarenessBriefing(
   briefing: ExecutiveBriefing | null | undefined,
   investigation: ActiveInvestigation | null | undefined,
 ): string[] {
-  if (!briefing?.cards.length) return [];
-  const topic = investigation?.searchQuery?.toLowerCase();
+  const filtered = filterExecutiveBriefingForInvestigation(briefing, investigation?.searchQuery);
+  if (!filtered?.cards.length) return [];
+  return filtered.cards.map((card) => {
+    const summary = card.summary.trim();
+    const why = card.whyItMatters.trim();
+    return summary
+      ? `${card.title} — ${summary} Why it matters: ${why}`
+      : `${card.title}. Why it matters: ${why}`;
+  });
+}
+
+/** Narrow supporting awareness to the active investigation topic when one is in flight. */
+export function filterExecutiveBriefingForInvestigation(
+  briefing: ExecutiveBriefing | null | undefined,
+  searchQuery?: string,
+): ExecutiveBriefing | null {
+  if (!briefing) return null;
   let cards = briefing.cards.filter((card) => !card.isPlaceholder);
+  const topic = searchQuery?.trim();
   if (topic) {
     const matched = cards.filter(
       (card) =>
@@ -148,12 +200,5 @@ export function buildSectionAwarenessBriefing(
     );
     if (matched.length > 0) cards = matched;
   }
-  if (cards.length === 0) return [];
-  return cards.map((card) => {
-    const summary = card.summary.trim();
-    const why = card.whyItMatters.trim();
-    return summary
-      ? `${card.title} — ${summary} Why it matters: ${why}`
-      : `${card.title}. Why it matters: ${why}`;
-  });
+  return { ...briefing, cards };
 }

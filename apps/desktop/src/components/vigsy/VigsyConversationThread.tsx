@@ -3,6 +3,8 @@ import type { VigsyKnowledgeAnswer } from '@scooper/core';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
 import { ThinkingIndicator } from './CognitionPulse';
+import { KaydOpenerThreadLead } from './KaydOpenerThreadLead';
+import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import type { VigsyConversationTurn } from '../../hooks/useVigsyConversation';
 
 function UserBubble({ text }: { text: string }) {
@@ -77,16 +79,17 @@ function latestAssistantTurnId(turns: VigsyConversationTurn[]): string | null {
 }
 
 export function VigsyConversationThread({ turns, busy, onFollowUp }: VigsyConversationThreadProps) {
-  const topRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const { sealedOpenerLines } = useVigsyConversation();
   const latestAssistantId = useMemo(() => latestAssistantTurnId(turns), [turns]);
 
   useEffect(() => {
-    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [turns]);
 
   return (
     <div className="vigsy-thread">
-      <div ref={topRef} />
+      {sealedOpenerLines.length > 0 ? <KaydOpenerThreadLead lines={sealedOpenerLines} /> : null}
       {turns.map((turn) => {
         if (turn.role === 'user') {
           return <UserBubble key={turn.id} text={turn.text} />;
@@ -107,6 +110,7 @@ export function VigsyConversationThread({ turns, busy, onFollowUp }: VigsyConver
           />
         );
       })}
+      <div ref={bottomRef} />
     </div>
   );
 }

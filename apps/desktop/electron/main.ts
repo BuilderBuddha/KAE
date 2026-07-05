@@ -105,6 +105,22 @@ function parseKaeAssetRequestUrl(url: string): string {
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+function reloadAllWindows(): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.reload();
+    }
+  }
+}
+
+if (process.env.VITE_DEV_SERVER_URL) {
+  process.on('message', (msg) => {
+    if (msg === 'electron-vite&type=hot-reload') {
+      reloadAllWindows();
+    }
+  });
+}
 let lastValidationReport: ImportValidationReport | null = null;
 let lastValidatedImportPackage: ImportPackage | null = null;
 let lastValidatedFilePath: string | null = null;

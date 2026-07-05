@@ -905,6 +905,48 @@ select {
   margin-bottom: 0;
 }
 
+.kayd-investigation-spine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.kayd-investigation-spine__label {
+  color: var(--color-text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+
+.kayd-investigation-spine__topic {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.kayd-investigation-spine__lens {
+  font-size: 11px;
+}
+
+.vigsy-msg--opener-lead .vigsy-msg__bubble--opener-lead {
+  opacity: 0.92;
+}
+
+.vigsy-msg--opener-lead .vigsy-msg__text {
+  margin: 0 0 8px;
+}
+
+.vigsy-msg--opener-lead .vigsy-msg__text:last-child {
+  margin-bottom: 0;
+}
+
 .kayd-seq-briefing {
   min-height: 44px;
   display: flex;
@@ -1159,15 +1201,6 @@ select {
   margin-bottom: 6px;
 }
 
-.kayd-chat-panel__awareness {
-  margin: 8px 0 4px;
-  animation: kayd-briefing-continued 0.65s ease-out both;
-}
-
-.kayd-chat-panel--active-thread .kayd-chat-panel__display {
-  padding-top: 4px;
-}
-
 .kayd-chat-panel__composer {
   padding: 4px 8px 10px;
   border-top: none;
@@ -1377,6 +1410,28 @@ select {
 .workspace__body {
   margin-top: 0;
   padding-top: 6px;
+}
+
+.workspace--investigation.screen--conversation-first {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 140px);
+}
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace--investigation .kayd-chat-panel {
+  flex: 1;
+  min-height: 0;
+}
+
+.workspace--investigation .kayd-chat-panel--ready .kayd-chat-panel__display {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
 }
 
 .workspace-transition {

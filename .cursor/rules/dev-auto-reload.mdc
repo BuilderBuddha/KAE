@@ -1,0 +1,14 @@
+---
+description: Restart dev server after code changes so the KayD app reflects latest work
+alwaysApply: true
+---
+
+# Dev auto-reload
+
+After making code changes to KAE (especially `apps/desktop` or `packages/*`):
+
+1. Restart the dev server if it is not running or if package builds changed.
+2. Use `npm run dev` from the repo root (rebuilds packages, then starts Vite + Electron).
+3. The Electron window should hot-reload on save; if it looks stale, reload once manually.
+
+When restarting dev, kill any existing process on port 5173 first, then start fresh.
