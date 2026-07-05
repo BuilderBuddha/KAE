@@ -7,6 +7,11 @@ import type {
   RepositoryStats,
 } from '@scooper/core';
 import { PRIMARY_KNOWLEDGE_SOURCES, type ImportSourceDisplay } from './import-source-display';
+import {
+  executiveSessionInvite,
+  formatAttentionBrief,
+  pushUniqueLine,
+} from './executive-brief-flow';
 
 /** Vigsy-style status subtitles shown during briefing thinking pulse. */
 export const KAYD_BRIEFING_STATUS = {
@@ -44,27 +49,6 @@ function staleConnectorCount(connectors: ConnectorStatus[] | undefined): number 
   ).length;
 }
 
-function homeSummaryLine(
-  health: RepositoryHealthReport | null,
-  connectors?: ConnectorStatus[],
-): string | null {
-  if (health?.statusLevel === 'healthy') {
-    return 'Repository health looks good.';
-  }
-  if (health?.statusLevel === 'attention') {
-    const detail = health.statusSubline?.trim();
-    return detail ? `A few items need attention — ${detail}` : 'A few items need attention.';
-  }
-  if (health?.statusLevel === 'critical') {
-    const detail = health.statusSubline?.trim();
-    return detail ? `Repository health needs attention — ${detail}` : 'Repository health needs attention.';
-  }
-  const stale = staleConnectorCount(connectors);
-  if (stale > 0) {
-    return stale === 1 ? 'One source is waiting to synchronize.' : `${stale} sources are waiting to synchronize.`;
-  }
-  return null;
-}
 
 /** Executive awareness cards as spoken briefing lines. */
 export function executiveBriefingLines(briefing: ExecutiveBriefing | null | undefined): string[] {
@@ -77,7 +61,137 @@ export function executiveBriefingLines(briefing: ExecutiveBriefing | null | unde
     });
 }
 
-/** KayD home — greeting, summary, and awareness cards in the opener text flow. */
+/** Tasks needing executive attention — bullet list for the briefing. */
+function buildWhatNeedsAttention(
+  continuity: ExecutiveContinuity | null | undefined,
+  health: RepositoryHealthReport | null,
+  executiveBriefing?: ExecutiveBriefing | null,
+  connectors?: ConnectorStatus[],
+): string {
+  const tasks: string[] = [];
+
+  if (continuity?.session?.currentBlockers?.length) {
+    for (const blocker of continuity.session.currentBlockers.slice(0, 3)) {
+      const line = blocker.detail?.trim() || blocker.label;
+      if (line) tasks.push(line);
+    }
+  }
+
+  if (continuity?.session?.unfinishedWork?.length) {
+    for (const item of continuity.session.unfinishedWork.slice(0, 3)) {
+      if (item.trim()) tasks.push(item.trim());
+    }
+  }
+
+  if (health?.statusLevel === 'attention' || health?.statusLevel === 'critical') {
+    const detail = health.statusSubline?.trim();
+    tasks.push(detail ?? 'Repository health needs a look.');
+  }
+
+  const stale = staleConnectorCount(connectors);
+  if (stale > 0) {
+    tasks.push(stale === 1 ? 'One knowledge source is waiting to sync.' : `${stale} knowledge sources are waiting to sync.`);
+  }
+
+  if (executiveBriefing?.cards.length) {
+    for (const card of executiveBriefing.cards) {
+      if (card.isPlaceholder) continue;
+      if (
+        card.category === 'recent_blocker' ||
+        card.category === 'repository_health' ||
+        card.category === 'suggested_next_action'
+      ) {
+        const line = card.summary.trim() ? `${card.title}: ${card.summary.trim()}` : card.title;
+        if (!tasks.some((t) => t.includes(card.title))) tasks.push(line);
+      }
+    }
+  }
+
+  if (tasks.length === 0) {
+    return '• Nothing urgent is flagged right now.';
+  }
+
+  return tasks.map((task) => `• ${task}`).join('\n');
+}
+
+function buildWhereWeAre(
+  continuity: ExecutiveContinuity | null | undefined,
+  health: RepositoryHealthReport | null,
+): string {
+  if (continuity?.session?.currentCampaign) {
+    const objective = continuity.session.currentObjective?.trim();
+    return objective
+      ? `We're in ${continuity.session.currentCampaign}, focused on ${objective}.`
+      : `We're in ${continuity.session.currentCampaign}.`;
+  }
+
+  const welcome = welcomeLine(continuity);
+  if (welcome) {
+    return welcome.replace(/^Welcome back[,.]?\s*/i, 'Welcome back. ');
+  }
+
+  if (health?.statusLevel === 'healthy') {
+    return 'Welcome back — the knowledge base is in good shape for a working session.';
+  }
+
+  return 'Welcome back — ready to pick up where we left off.';
+}
+
+function buildLastSessionLine(continuity: ExecutiveContinuity | null | undefined): string | null {
+  const session = continuity?.session;
+  if (!session) return null;
+  const title = session.title?.trim();
+  if (!title) return null;
+
+  const accomplishment = session.currentAccomplishments?.[0];
+  if (accomplishment) {
+    const detail = accomplishment.detail?.trim() || accomplishment.label;
+    return `Last time we worked on ${title} — ${detail}`;
+  }
+
+  if (continuity && continuity.daysSinceLastActivity > 0) {
+    return `Last time we worked on ${title}, about ${continuity.daysSinceLastActivity} day(s) ago.`;
+  }
+
+  return `Last time we worked on ${title}.`;
+}
+
+function buildWhatsChanged(
+  health: RepositoryHealthReport | null,
+  connectors: ConnectorStatus[] | undefined,
+  continuity: ExecutiveContinuity | null | undefined,
+): string | null {
+  const changes: string[] = [];
+
+  const repoChange = continuity?.session?.currentRepositoryChanges?.[0];
+  if (repoChange) {
+    changes.push(repoChange.detail?.trim() || repoChange.label);
+  }
+
+  const importCard = continuity?.session?.currentAccomplishments?.find((item) =>
+    /import|sync|connect/i.test(item.label),
+  );
+  if (importCard) {
+    changes.push(importCard.detail?.trim() || importCard.label);
+  }
+
+  if (health?.statusLevel === 'healthy') {
+    changes.push('Health has stayed steady.');
+  } else if (health?.statusLevel === 'attention') {
+    const detail = health.statusSubline?.trim();
+    changes.push(detail ?? 'A couple of items shifted since we last met.');
+  }
+
+  const stale = staleConnectorCount(connectors);
+  if (stale > 0) {
+    changes.push(stale === 1 ? 'One source has not synced recently.' : `${stale} sources have not synced recently.`);
+  }
+
+  if (changes.length === 0) return 'Steady since we last met — nothing major shifted.';
+  return changes[0];
+}
+
+/** KayD home — flowing executive brief (awareness cards render separately below). */
 export function buildKaydHomeBriefing(
   continuity: ExecutiveContinuity | null | undefined,
   health: RepositoryHealthReport | null,
@@ -87,84 +201,181 @@ export function buildKaydHomeBriefing(
   executiveBriefing?: ExecutiveBriefing | null,
 ): string[] {
   const messages: string[] = [];
-  const welcome = welcomeLine(continuity);
-  if (welcome) messages.push(welcome);
 
-  const summary = homeSummaryLine(health, connectors);
-  if (summary) messages.push(summary);
+  pushUniqueLine(messages, buildWhereWeAre(continuity, health));
 
-  const cardLines = executiveBriefingLines(executiveBriefing);
-  if (cardLines.length > 0) {
-    messages.push(...cardLines);
+  const lastSession = buildLastSessionLine(continuity);
+  if (lastSession) pushUniqueLine(messages, lastSession);
+
+  const changed = buildWhatsChanged(health, connectors, continuity);
+  if (changed) {
+    const line = changed.match(/^(steady|since|last|one|health)/i)
+      ? changed
+      : `Since we last met, ${changed.charAt(0).toLowerCase()}${changed.slice(1)}`;
+    pushUniqueLine(messages, line);
   }
 
-  messages.push('What would you like to work on today?');
+  const attention = formatAttentionBrief(
+    buildWhatNeedsAttention(continuity, health, executiveBriefing, connectors),
+  );
+  if (attention) pushUniqueLine(messages, attention);
+
+  const nextStep =
+    continuity?.recommendedNextAction?.trim() ||
+    continuity?.session?.recommendedNextAction?.trim() ||
+    'tell me what you want to move forward today.';
+  const nextLine = nextStep.match(/^i['']d|^tell me|^pick|^close|^decide/i)
+    ? nextStep
+    : `I'd start with ${nextStep.replace(/\.$/, '')}.`;
+  pushUniqueLine(messages, nextLine);
+
+  pushUniqueLine(messages, executiveSessionInvite('home'));
   return messages;
 }
 
-/** Dashboard workspace — one concise intro line. */
+/** Dashboard workspace — health context, not a repeat of KayD home. */
 export function buildKaydDashboardBriefing(
-  health: RepositoryHealthReport | null,
-  _stats: RepositoryStats | null,
-  _gitReadiness: GitReadinessReport | null,
-  connectors?: ConnectorStatus[],
-): string[] {
-  const summary = homeSummaryLine(health, connectors);
-  if (summary) return [summary];
-  return ['Here is your repository dashboard.'];
-}
-
-/** Knowledge Sources workspace briefing. */
-export function buildKaydImportBriefing(connectors?: ConnectorStatus[]): string[] {
-  const connected = connectedSourceLabels(connectors ?? []);
-
-  if (connected.length === 0) {
-    return ['Pick a source below — I can walk you through it.'];
-  }
-
-  if (connected.length === 1) {
-    return [`${connected[0]} is connected — manage it below or add another source.`];
-  }
-
-  return [
-    `${connected.length} sources are connected — select one below to sync or configure.`,
-  ];
-}
-
-/** Connector management workspace briefing. */
-export function buildKaydConnectorsBriefing(_connectorCount: number, _connectedCount: number): string[] {
-  return ['Review connector health, sync status, and monitoring.'];
-}
-
-/** Repository explorer briefing. */
-export function buildKaydExplorerBriefing(_fileCount: number, _chatGptCount: number): string[] {
-  return ['Select a file below, or ask me what changed.'];
-}
-
-/** Search workspace briefing. */
-export function buildKaydSearchBriefing(_indexSummary: string | null): string[] {
-  return ['Search runs across your full evidence index — what should I find?'];
-}
-
-/** Dashboard walkthrough — alive guided lines after the opener. */
-export function buildKaydDashboardWalkthrough(
   health: RepositoryHealthReport | null,
   stats: RepositoryStats | null,
   gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
 ): string[] {
-  const lines: string[] = [];
-  const summary = homeSummaryLine(health, connectors);
-  if (summary) lines.push(summary);
+  const messages: string[] = [];
+
+  if (health?.statusLevel === 'healthy') {
+    pushUniqueLine(messages, 'This is your health desk — everything looks stable right now.');
+  } else if (health?.statusLevel === 'attention' || health?.statusLevel === 'critical') {
+    const detail = health.statusSubline?.trim();
+    pushUniqueLine(
+      messages,
+      detail
+        ? `Health desk — a few items need a decision: ${detail}`
+        : 'Health desk — a few items need a decision before the next push.',
+    );
+  } else {
+    pushUniqueLine(messages, 'This is your health desk — scan status, then tell me what to fix first.');
+  }
+
   if (stats) {
-    lines.push(
-      `${stats.sourceCount} sources and ${stats.sessionCount} executive sessions are indexed in your repository.`,
+    pushUniqueLine(
+      messages,
+      `${stats.sourceCount} sources and ${stats.sessionCount} executive sessions are in play.`,
     );
   }
-  if (gitReadiness) {
-    lines.push(`Git readiness is ${gitReadiness.ready ? 'good' : 'not ready'} — ${gitReadiness.status}.`);
+
+  if (gitReadiness && !gitReadiness.ready) {
+    pushUniqueLine(messages, `Git is not ready yet — ${gitReadiness.status}.`);
   }
-  lines.push('Use repair and health tools below, or ask me what needs attention first.');
+
+  const stale = staleConnectorCount(connectors);
+  if (stale > 0) {
+    pushUniqueLine(
+      messages,
+      stale === 1 ? 'One connector still needs a sync.' : `${stale} connectors still need a sync.`,
+    );
+  }
+
+  pushUniqueLine(messages, executiveSessionInvite('workspace'));
+  return messages;
+}
+
+/** Knowledge Sources — connector-specific guidance, not KayD echo. */
+export function buildKaydImportBriefing(connectors?: ConnectorStatus[]): string[] {
+  const connected = connectedSourceLabels(connectors ?? []);
+  const messages: string[] = [];
+
+  if (connected.length === 0) {
+    pushUniqueLine(messages, 'No sources are connected yet — pick one below and I will walk you through it.');
+  } else if (connected.length === 1) {
+    pushUniqueLine(
+      messages,
+      `${connected[0]} is live — sync or add another source from the panel below.`,
+    );
+  } else {
+    pushUniqueLine(
+      messages,
+      `${connected.length} sources are live — choose one to sync, configure, or troubleshoot.`,
+    );
+  }
+
+  pushUniqueLine(messages, executiveSessionInvite('workspace'));
+  return messages;
+}
+
+/** Connector management — operational focus. */
+export function buildKaydConnectorsBriefing(connectorCount: number, connectedCount: number): string[] {
+  const messages: string[] = [];
+  if (connectorCount === 0) {
+    pushUniqueLine(messages, 'No connectors are configured yet.');
+  } else {
+    pushUniqueLine(
+      messages,
+      `${connectedCount} of ${connectorCount} connectors are connected — check sync health below.`,
+    );
+  }
+  pushUniqueLine(messages, 'Flag any connector that looks stale and we will fix it.');
+  return messages;
+}
+
+/** Repository explorer — file context, not investigation echo. */
+export function buildKaydExplorerBriefing(fileCount: number, chatGptCount: number): string[] {
+  const messages: string[] = [];
+  if (fileCount > 0) {
+    pushUniqueLine(
+      messages,
+      `${fileCount} files are in the tree${chatGptCount > 0 ? `, including ${chatGptCount} ChatGPT import(s)` : ''}.`,
+    );
+  } else {
+    pushUniqueLine(messages, 'The repository tree is empty — import knowledge to populate it.');
+  }
+  pushUniqueLine(messages, 'Open a file below or ask me what changed since last session.');
+  return messages;
+}
+
+/** Search workspace — index context unique to this screen. */
+export function buildKaydSearchBriefing(indexSummary: string | null): string[] {
+  const messages: string[] = [];
+  if (indexSummary) {
+    pushUniqueLine(messages, `${indexSummary} are indexed — tell me what to hunt for.`);
+  } else {
+    pushUniqueLine(messages, 'Search spans your full evidence index — tell me what to hunt for.');
+  }
+  pushUniqueLine(messages, 'I will keep the investigation thread while you scan hits below.');
+  return messages;
+}
+
+/** Dashboard walkthrough — details beyond the opener, no repeated health line. */
+export function buildKaydDashboardWalkthrough(
+  health: RepositoryHealthReport | null,
+  stats: RepositoryStats | null,
+  gitReadiness: GitReadinessReport | null,
+  connectors?: ConnectorStatus[],
+  openerLines?: string[],
+): string[] {
+  const lines: string[] = [];
+  const opener = openerLines ?? [];
+
+  if (stats) {
+    const line = `${stats.sourceCount} sources and ${stats.sessionCount} executive sessions are indexed.`;
+    if (!opener.some((existing) => existing.includes(String(stats.sourceCount)))) {
+      pushUniqueLine(lines, line);
+    }
+  }
+
+  if (gitReadiness) {
+    const line = `Git readiness is ${gitReadiness.ready ? 'good' : 'not ready'} — ${gitReadiness.status}.`;
+    pushUniqueLine(lines, line);
+  }
+
+  const stale = staleConnectorCount(connectors);
+  if (stale > 0 && health?.statusLevel !== 'attention') {
+    pushUniqueLine(
+      lines,
+      stale === 1 ? 'One source is waiting to sync.' : `${stale} sources are waiting to sync.`,
+    );
+  }
+
+  pushUniqueLine(lines, 'Use repair tools below, or ask me what to prioritize.');
   return lines;
 }
 

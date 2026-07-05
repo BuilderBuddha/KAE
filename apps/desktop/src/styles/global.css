@@ -1444,120 +1444,169 @@ select {
   padding-top: 6px;
 }
 
-.kayd-chat-panel--workspace-sync {
-  margin-bottom: 8px;
+.kayd-investigation-rail {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 4px 12px;
+  margin-bottom: 4px;
 }
 
-.kayd-chat-panel__composer--top {
-  order: -1;
-  margin-bottom: 10px;
-  padding-top: 0;
+.kayd-investigation-rail--thinking .kayd-investigation-rail__presence {
+  animation: kayd-rail-pulse 1.4s ease-in-out infinite;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
 }
 
-.kayd-investigation-section-header {
-  margin-bottom: 12px;
-}
-
-.kayd-investigation-section-header__lead {
-  margin: 0 0 4px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: #e4e4e7;
-}
-
-.kayd-investigation-section-header__lens {
-  margin: 0;
+.kayd-investigation-rail__presence {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+  color: #fff;
   font-size: 12px;
+  margin-top: 2px;
 }
 
-.kayd-lens-panel {
-  margin-bottom: 14px;
-  padding: 12px 14px;
+.kayd-investigation-rail__lead {
+  margin: 0;
+  font-size: clamp(1rem, 2.2vw, 1.12rem);
+  line-height: 1.5;
+  color: #fafafa;
+  font-weight: 500;
 }
 
-.kayd-lens-panel__title {
+@keyframes kayd-rail-pulse {
+  0%, 100% { opacity: 0.7; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+.kayd-capability-native {
+  margin-bottom: 16px;
+}
+
+.kayd-capability-native__title {
   margin: 0 0 10px;
   font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #94a3b8;
 }
 
-.kayd-lens-panel__list {
-  list-style: none;
+.kayd-capability-focus {
+  margin-bottom: 14px;
+}
+
+.kayd-capability-focus__title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.kayd-capability-timeline {
   margin: 0;
   padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.kayd-lens-panel__item {
+.kayd-capability-timeline__btn {
   width: 100%;
   text-align: left;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
 }
 
-.kayd-lens-panel__item:hover {
-  border-color: rgba(56, 189, 248, 0.3);
+.kayd-capability-timeline__btn:hover {
+  border-color: rgba(56, 189, 248, 0.28);
 }
 
-.kayd-lens-panel__item-title {
+.kayd-capability-timeline__label {
   display: block;
   font-size: 13px;
   color: #fafafa;
 }
 
-.kayd-lens-panel__item-excerpt {
+.kayd-capability-timeline__time {
   display: block;
   font-size: 11px;
   margin-top: 4px;
 }
 
-.kayd-lens-panel__timeline {
+.kayd-capability-timeline__sub {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.kayd-capability-images {
+  list-style: none;
   margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
 }
 
-.kayd-lens-panel__timeline-label {
-  font-weight: 500;
-  color: #fafafa;
+.kayd-capability-images__item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
 }
 
-.kayd-lens-panel__timeline-time {
+.kayd-capability-images__label {
+  display: block;
+  font-size: 13px;
+}
+
+.kayd-capability-images__excerpt {
   display: block;
   font-size: 11px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
-.kayd-lens-panel__confidence {
+.kayd-capability__empty {
   margin: 0;
   font-size: 13px;
-  line-height: 1.5;
 }
 
-.kayd-lens-panel__empty {
-  margin: 0;
-  font-size: 13px;
+.screen-evidence__header--compact {
+  margin-bottom: 10px;
+}
+
+.screen-evidence__header--compact .screen-evidence__title {
+  margin-bottom: 4px;
+}
+
+.kayd-chat-panel--workspace-sync {
+  margin-bottom: 4px;
+}
+
+.kayd-chat-panel__composer--top {
+  margin-bottom: 8px;
+  padding-top: 0;
 }
 
 .workspace--investigation.screen--conversation-first {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 140px);
-}
   flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  min-height: calc(100vh - 140px);
 }
 
 .workspace--investigation .kayd-chat-panel {

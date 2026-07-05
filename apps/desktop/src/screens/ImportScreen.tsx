@@ -17,6 +17,8 @@ import { SafeImportGuarantee } from '../components/SafeImportGuarantee';
 import { ValidationProgressPanel } from '../components/ValidationProgressPanel';
 import { ValidationReportPanel } from '../components/ValidationReportPanel';
 import { useInvestigationSync } from '../hooks/useInvestigationSync';
+import { useVigsyConversation } from '../context/VigsyConversationContext';
+import { topicsOverlap } from '../utils/investigation-workflow';
 import { buildKaydConnectorWalkthrough, buildKaydImportBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import {
@@ -46,6 +48,7 @@ const INITIAL_VALIDATION_PROGRESS = (): ValidationProgress => ({
 });
 
 export function ImportScreen() {
+  const { investigationActive, activeInvestigation } = useVigsyConversation();
   const [importers, setImporters] = useState<ImporterInfo[]>([]);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
   const [connectorEvents, setConnectorEvents] = useState<ConnectorEvent[]>([]);
@@ -258,6 +261,18 @@ export function ImportScreen() {
     [connectorEvents, selectedSourceId],
   );
 
+  const sortedSources = useMemo(() => {
+    const topic = activeInvestigation?.searchQuery;
+    if (!investigationActive || !topic) return PRIMARY_KNOWLEDGE_SOURCES;
+    return [...PRIMARY_KNOWLEDGE_SOURCES].sort((a, b) => {
+      const aMatch =
+        topicsOverlap(a.label, topic) || topicsOverlap(a.description, topic) ? 1 : 0;
+      const bMatch =
+        topicsOverlap(b.label, topic) || topicsOverlap(b.description, topic) ? 1 : 0;
+      return bMatch - aMatch;
+    });
+  }, [activeInvestigation?.searchQuery, investigationActive]);
+
   return (
     <KaydWorkspaceLayout
       workspaceScreen="import"
@@ -270,18 +285,22 @@ export function ImportScreen() {
       contextWalkthroughTitle={selectedSource ? `${selectedSource.label} walkthrough` : undefined}
     >
       <section className="screen-evidence" aria-label="Knowledge sources">
-        <header className="screen-evidence__header">
-          <div>
-            <h3 className="screen-evidence__title">Knowledge sources</h3>
-            <p className="screen-evidence__lead muted">Select a source — KayD will guide you through connect and sync.</p>
-          </div>
+        <header className="screen-evidence__header screen-evidence__header--compact">
+          <h3 className="screen-evidence__title">Knowledge sources</h3>
+          {investigationActive && activeInvestigation ? (
+            <p className="screen-evidence__meta muted">
+              Imported knowledge for &ldquo;{activeInvestigation.searchQuery}&rdquo;
+            </p>
+          ) : (
+            <p className="screen-evidence__lead muted">Connect and sync knowledge into your repository.</p>
+          )}
         </header>
 
         {loading ? (
           <LoadingIndicator label="Loading sources…" />
         ) : (
           <ul className="import-source-grid">
-            {PRIMARY_KNOWLEDGE_SOURCES.map((source) => {
+            {sortedSources.map((source) => {
               const connector = connectorById.get(source.id);
               const badge = sourceBadge(source, connector);
               return (

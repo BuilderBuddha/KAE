@@ -6,6 +6,10 @@ import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useNavigation } from '../context/NavigationContext';
 import { useInvestigationSync } from '../hooks/useInvestigationSync';
+import { KaydCapabilityImages } from '../components/vigsy/capabilities/KaydCapabilityImages';
+import { KaydCapabilityTimeline } from '../components/vigsy/capabilities/KaydCapabilityTimeline';
+import { useVigsyConversation } from '../context/VigsyConversationContext';
+import { investigationViewFromLens } from '../utils/investigation-workflow';
 import { buildKaydExplorerBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 import { parentFolder, pathBreadcrumbs } from '../utils/repository-path';
@@ -43,6 +47,9 @@ function formatListDate(entry: ChatGptImportListEntry): string {
 
 export function ExplorerScreen() {
   const { explorerTargetPath, clearExplorerTarget } = useNavigation();
+  const { investigationActive, investigationLens, latestInvestigationAnswer, activeInvestigation } =
+    useVigsyConversation();
+  const lensView = investigationViewFromLens(investigationLens);
   const [files, setFiles] = useState<RepositoryFileEntry[]>([]);
   const [chatGptEntries, setChatGptEntries] = useState<ChatGptImportListEntry[]>([]);
   const [filter, setFilter] = useState<string>('all');
@@ -193,11 +200,38 @@ export function ExplorerScreen() {
     >
 
       <section className="screen-evidence" aria-label="Repository files">
-        <header className="screen-evidence__header">
-          <h3 className="screen-evidence__title">Supporting evidence</h3>
-          <p className="screen-evidence__lead muted">Files, sources, and previews.</p>
-        </header>
+        {!investigationActive ? (
+          <header className="screen-evidence__header">
+            <h3 className="screen-evidence__title">Supporting evidence</h3>
+            <p className="screen-evidence__lead muted">Files, sources, and previews.</p>
+          </header>
+        ) : null}
 
+        {investigationActive && lensView === 'timeline' && latestInvestigationAnswer ? (
+          <section className="kayd-capability-native" aria-label="Timeline">
+            <h3 className="kayd-capability-native__title">Timeline</h3>
+            <KaydCapabilityTimeline answer={latestInvestigationAnswer} />
+          </section>
+        ) : null}
+
+        {investigationActive && lensView === 'images' && latestInvestigationAnswer ? (
+          <section className="kayd-capability-native" aria-label="Images">
+            <h3 className="kayd-capability-native__title">Images</h3>
+            <KaydCapabilityImages answer={latestInvestigationAnswer} />
+          </section>
+        ) : null}
+
+        {investigationActive && activeInvestigation && lensView !== 'timeline' && lensView !== 'images' ? (
+          <header className="screen-evidence__header screen-evidence__header--compact">
+            <h3 className="screen-evidence__title">Repository</h3>
+            <p className="screen-evidence__meta muted">
+              {filtered.length} record(s) matching &ldquo;{activeInvestigation.searchQuery}&rdquo;
+            </p>
+          </header>
+        ) : null}
+
+        {(!investigationActive || (lensView !== 'timeline' && lensView !== 'images')) && (
+          <>
         {chatGptImportCount > 0 && (
           <div className="explorer-view-switch" role="tablist" aria-label="Explorer view">
             <button
@@ -376,6 +410,8 @@ export function ExplorerScreen() {
           </div>
         </div>
       )}
+          </>
+        )}
       </section>
     </KaydWorkspaceLayout>
   );

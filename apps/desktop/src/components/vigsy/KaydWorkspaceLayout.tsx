@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { KaydConversationLead } from './KaydConversationLead';
-import { KaydInvestigationLensPanel } from './KaydInvestigationLensPanel';
-import { KaydInvestigationSectionHeader } from './KaydInvestigationSectionHeader';
+import { KaydInvestigationCapabilityFocus } from './KaydInvestigationCapabilityFocus';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 
 import type { ScreenId } from '../../types/navigation';
@@ -19,9 +18,7 @@ interface KaydWorkspaceLayoutProps {
   children: ReactNode;
 }
 
-/**
- * Workspace shell — KayD composer during investigation; each capability body syncs below.
- */
+/** Workspace shell — KayD rail + composer; capability body is unique per section. */
 export function KaydWorkspaceLayout({
   workspaceScreen,
   workspaceClassName = '',
@@ -33,8 +30,7 @@ export function KaydWorkspaceLayout({
   contextWalkthroughTitle,
   children,
 }: KaydWorkspaceLayoutProps) {
-  const { investigationActive, activeInvestigation, investigationEpoch, investigationLens } =
-    useVigsyConversation();
+  const { investigationActive, investigationEpoch } = useVigsyConversation();
   const [frozenBriefing] = useState(() => briefing);
   const [briefingComplete, setBriefingComplete] = useState(() => briefing.length === 0);
   const [sectionKey, setSectionKey] = useState(0);
@@ -73,16 +69,7 @@ export function KaydWorkspaceLayout({
       />
       {briefingComplete ? (
         <div className="workspace__body" key={investigationActive ? investigationEpoch : 'idle'}>
-          {investigationActive && activeInvestigation ? (
-            <>
-              <KaydInvestigationSectionHeader
-                workspaceScreen={workspaceScreen}
-                investigation={activeInvestigation}
-                lens={investigationLens}
-              />
-              <KaydInvestigationLensPanel />
-            </>
-          ) : null}
+          <KaydInvestigationCapabilityFocus workspaceScreen={workspaceScreen} />
           {children}
         </div>
       ) : null}

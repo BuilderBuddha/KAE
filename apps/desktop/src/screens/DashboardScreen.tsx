@@ -108,8 +108,8 @@ export function DashboardScreen() {  const [stats, setStats] = useState<Reposito
   );
 
   const dashboardWalkthrough = useMemo(
-    () => buildKaydDashboardWalkthrough(health, stats, gitReadiness, connectors),
-    [health, stats, gitReadiness, connectors],
+    () => buildKaydDashboardWalkthrough(health, stats, gitReadiness, connectors, briefing),
+    [health, stats, gitReadiness, connectors, briefing],
   );
 
   if (loading) {

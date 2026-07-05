@@ -120,12 +120,14 @@ export function SearchScreen() {
       briefingStatus={KAYD_BRIEFING_STATUS.search}
     >
       <section className="screen-evidence" aria-label="Search results">
-        <header className="screen-evidence__header">
-          <h3 className="screen-evidence__title">Supporting evidence</h3>
+        <header className="screen-evidence__header screen-evidence__header--compact">
+          <h3 className="screen-evidence__title">
+            {investigationActive ? 'Sources' : 'Supporting evidence'}
+          </h3>
           {indexStats ? (
             <p className="screen-evidence__meta muted">
               {indexing ? 'Building evidence index…' : `Evidence index: ${indexStats}`}
-              {investigationActive && query ? ` · synced to "${query}"` : ''}
+              {investigationActive && query ? ` · ${results.length} hit(s) for "${query}"` : ''}
             </p>
           ) : null}
         </header>

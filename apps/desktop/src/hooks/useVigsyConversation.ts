@@ -16,6 +16,7 @@ import {
   type ActiveInvestigation,
   type InvestigationView,
 } from '../utils/investigation-workflow';
+import { investigationScreenForView } from '../utils/investigation-capability';
 import type { ScreenId } from '../types/navigation';
 
 export interface VigsyConversationTurn {
@@ -347,9 +348,11 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     (view: InvestigationView) => {
       const searchQuery = sessionRef.current.lastSearchQuery || investigationSearchQuery;
       if (!searchQuery || busy) return;
+      const screen = investigationScreenForView(view);
+      if (screen && screen !== 'vigsy') navigate?.(screen);
       void submitQuestion(investigationViewQuestion(view, searchQuery));
     },
-    [busy, investigationSearchQuery, submitQuestion],
+    [busy, investigationSearchQuery, navigate, submitQuestion],
   );
 
   const latestInvestigationAnswer = useMemo(() => {

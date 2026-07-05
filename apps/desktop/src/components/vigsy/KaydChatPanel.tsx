@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
-import { KaydInvestigationSpine } from './KaydInvestigationSpine';
+import { KaydInvestigationRail } from './KaydInvestigationRail';
 import { KaydConversationFlow } from './KaydConversationFlow';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
 import { useNavigation } from '../../context/NavigationContext';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import type { ScreenId } from '../../types/navigation';
 import { resetWorkspaceScroll } from '../../utils/workspace-scroll';
+import { investigationViewFromQuestion } from '../../utils/investigation-workflow';
+import { investigationScreenForView } from '../../utils/investigation-capability';
 
 interface KaydChatPanelProps {
   briefing: string[];
@@ -106,6 +108,12 @@ export function KaydChatPanel({
   };
 
   const handleFollowUp = (action: FollowUpAction) => {
+    const view = investigationViewFromQuestion(action.question);
+    if (view) {
+      const screen = investigationScreenForView(view);
+      const here = workspaceScreen ?? 'vigsy';
+      if (screen && screen !== here) navigate(screen);
+    }
     void handleSubmit(action.question);
   };
 
@@ -158,7 +166,7 @@ export function KaydChatPanel({
     >
       {briefingDone && workspaceSync ? (
         <>
-          <KaydInvestigationSpine />
+          <KaydInvestigationRail workspaceScreen={workspaceScreen} />
           {composer}
         </>
       ) : null}
@@ -173,7 +181,9 @@ export function KaydChatPanel({
               onComplete={handleBriefingComplete}
             />
           ) : null}
-          {briefingDone && investigationActive && !hasConversation ? <KaydInvestigationSpine /> : null}
+          {briefingDone && investigationActive && !hasConversation ? (
+            <KaydInvestigationRail workspaceScreen={workspaceScreen} />
+          ) : null}
           {briefingDone && hasConversation && isKaydHome ? (
             <KaydConversationFlow turns={turns} statusLabel="With you on this" />
           ) : null}

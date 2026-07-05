@@ -114,6 +114,7 @@ export function KaydProgressiveBriefing({
             text={lineText}
             streaming={phase === 'streaming' && !done}
             fading={phase === 'fade'}
+            multiline={activeLine.includes('\n')}
           />
         ) : null}
       </div>

@@ -48,6 +48,12 @@ export function investigationViewLabel(question: string): string | null {
   return null;
 }
 
+/** Resolve capability view from a follow-up question. */
+export function investigationViewFromQuestion(question: string): InvestigationView | null {
+  const label = investigationViewLabel(question);
+  return label ? investigationViewFromLens(label) : null;
+}
+
 const FOLLOW_UP_MARKERS = /\(following up on:/i;
 
 /** Strip follow-up enrichment so the investigation topic stays stable across capability lenses. */
@@ -124,7 +130,7 @@ export function investigationViewQuestion(view: InvestigationView, searchQuery: 
   }
 }
 
-function topicsOverlap(a: string, b: string): boolean {
+export function topicsOverlap(a: string, b: string): boolean {
   const left = a.toLowerCase().trim();
   const right = b.toLowerCase().trim();
   if (!left || !right) return false;

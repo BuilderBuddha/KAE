@@ -5,6 +5,7 @@ function gist(text: string, max = 220): string {
     .trim()
     .replace(/^#+\s*/gm, '')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\bKRC-\d+\b/gi, '')
     .replace(/\s+/g, ' ');
   if (!normalized) return '';
   if (normalized.length <= max) return normalized;
@@ -13,182 +14,218 @@ function gist(text: string, max = 220): string {
   return `${normalized.slice(0, max - 1).trim()}…`;
 }
 
+function sanitizeGist(text: string): string {
+  return text
+    .replace(/^#+\s*/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\bKRC-\d+\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function tokens(text: string): Set<string> {
+  return new Set(
+    sanitizeGist(text)
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((word) => word.length > 3),
+  );
+}
+
+function substantiallyOverlaps(a: string, b: string): boolean {
+  const left = sanitizeGist(a);
+  const right = sanitizeGist(b);
+  if (!left || !right) return false;
+  if (left === right || left.includes(right) || right.includes(left)) return true;
+  const aTokens = tokens(left);
+  const bTokens = tokens(right);
+  if (aTokens.size === 0 || bTokens.size === 0) return false;
+  let shared = 0;
+  for (const token of aTokens) {
+    if (bTokens.has(token)) shared += 1;
+  }
+  return shared / Math.min(aTokens.size, bTokens.size) >= 0.55;
+}
+
+function pushUnique(parts: string[], line: string): void {
+  const trimmed = sanitizeGist(line);
+  if (!trimmed) return;
+  if (parts.some((existing) => substantiallyOverlaps(existing, trimmed))) return;
+  parts.push(trimmed);
+}
+
 function leadItem(context: AssembledEvidenceContext) {
   return context.items[0];
 }
 
-function whatChanged(context: AssembledEvidenceContext, confidence: VigsyConfidence): string {
+function whereWeAre(context: AssembledEvidenceContext, confidence: VigsyConfidence): string {
+  const topic = context.searchQuery;
+  if (confidence.level === 'insufficient') {
+    return `We're early on "${topic}" — give me a bit more context and I'll tighten the brief.`;
+  }
+  if (context.executiveSessions.length > 0) {
+    const session = context.executiveSessions[0];
+    const title = session.conversationTitle ?? session.title;
+    return `We're on "${topic}", tied to your work on ${title}.`;
+  }
+  return `We're on "${topic}" — I'll keep this about progress, decisions, and the next move.`;
+}
+
+function lastSession(context: AssembledEvidenceContext): string | null {
+  const session = context.executiveSessions[0];
+  if (!session) return null;
+  const title = session.conversationTitle ?? session.title;
+  const detail = gist(session.excerpt, 180);
+  if (!detail) return `Last session we were on ${title}.`;
+  return `Last session we were on ${title} — ${detail}`;
+}
+
+function whatChanged(context: AssembledEvidenceContext, confidence: VigsyConfidence): string | null {
   if (confidence.level === 'insufficient' || context.items.length === 0) {
-    return `I found limited grounded evidence for "${context.searchQuery}".`;
+    return 'Not much has moved on this thread since we last looked.';
   }
 
   const lead = leadItem(context)!;
+  const detail = gist(lead.excerpt, 220);
 
   switch (context.intent) {
     case 'decision': {
       const session = context.executiveSessions[0];
-      if (session) {
-        return `Executive session "${session.title}" records a decision tied to your question — ${gist(session.excerpt)}`;
-      }
-      const assistant = context.messages.find((item) =>
-        item.messageRole?.toLowerCase().includes('assistant'),
-      );
-      if (assistant) {
-        return `The strongest decision signal is in "${assistant.title}" — ${gist(assistant.excerpt)}`;
-      }
+      if (session) return gist(session.excerpt, 220);
       break;
     }
     case 'summarize': {
-      const krcList = context.topKrcIds.slice(0, 3).join(', ') || 'indexed sources';
-      return `Across ${context.items.length} retrieved record(s) (${krcList}), the through-line is — ${gist(
+      const throughLine = gist(
         context.items
           .slice(0, 3)
           .map((item) => item.excerpt)
           .join(' '),
-        280,
-      )}`;
-    }
-    case 'show_evidence': {
-      const att = context.attachments[0];
-      if (att) {
-        return `Attachment "${att.title}" surfaced as the primary evidence — ${gist(att.excerpt)}`;
-      }
-      return `Primary evidence is in "${lead.title}" — ${gist(lead.excerpt)}`;
+        240,
+      );
+      return throughLine || null;
     }
     case 'blockers': {
       const blockerHits = context.items.filter((item) =>
         /blocker|unresolved|remaining|issue|risk|todo|pending|missing/i.test(item.excerpt),
       );
-      if (blockerHits.length === 0) {
-        return `No explicit blocker language appeared for "${context.searchQuery}" — closest matches may be incomplete.`;
+      if (blockerHits.length > 0) {
+        return gist(blockerHits[0].excerpt, 180);
       }
-      return `${blockerHits.length} blocker-related hit(s); lead item "${blockerHits[0].title}" — ${gist(blockerHits[0].excerpt)}`;
+      break;
     }
     default:
       break;
   }
 
-  const corroboration =
-    context.topKrcIds.length > 1
-      ? ` with ${context.topKrcIds.length} corroborating sources`
-      : '';
-  return `"${lead.title}" is the lead finding${corroboration} — ${gist(lead.excerpt)}`;
+  return detail || null;
 }
 
-function whyItMatters(context: AssembledEvidenceContext, confidence: VigsyConfidence): string {
-  if (confidence.level === 'insufficient') {
-    return 'Without grounded sources, the team risks acting on assumptions instead of agreed facts.';
+function whatNeedsAttention(context: AssembledEvidenceContext): string[] {
+  const tasks: string[] = [];
+
+  const blockerHits = context.items.filter((item) =>
+    /blocker|unresolved|remaining|issue|risk|todo|pending|missing|attention|repair/i.test(item.excerpt),
+  );
+  for (const hit of blockerHits.slice(0, 3)) {
+    const line = gist(hit.excerpt, 120);
+    if (line && !tasks.some((task) => substantiallyOverlaps(task, line))) tasks.push(line);
   }
 
-  if (context.executiveSessions.length > 0) {
-    return 'Executive sessions anchor what was agreed and what follow-up work should respect.';
+  if (context.intent === 'blockers' && tasks.length === 0) {
+    tasks.push('Confirm whether anything still blocks the next executive move.');
   }
 
-  switch (context.intent) {
-    case 'decision':
-      return 'Recent decisions define what the team committed to and what KayD can ground follow-up answers on.';
-    case 'blockers':
-      return 'Unresolved blockers can stall campaigns until they are visible, owned, and tracked.';
-    case 'summarize':
-      return 'A concise, evidence-backed picture reduces rework before you commit to the next move.';
-    case 'show_evidence':
-      return 'Seeing the underlying source lets you verify claims before acting on them.';
-    default:
-      return `This connects "${context.searchQuery}" to indexed repository knowledge you can act on.`;
-  }
+  return tasks;
 }
 
 function recommendNext(context: AssembledEvidenceContext, confidence: VigsyConfidence): string {
   if (confidence.level === 'insufficient') {
-    return 'Rephrase the question with a campaign or KRC label, or use Search to scan the raw index.';
+    return 'Name the outcome you care about and I will re-ground this brief.';
   }
 
-  const lead = leadItem(context);
   const session = context.executiveSessions[0];
-  const explorer = context.items.find((item) => item.explorerPath)?.explorerPath;
+  const lead = leadItem(context);
 
   if (context.intent === 'blockers') {
     return lead
-      ? `Open "${lead.title}" and decide whether to add this blocker to your active campaign tracker.`
-      : 'Ask me which campaign this blocker affects, then we can trace ownership.';
+      ? 'Decide if this stays on your tracker, assign an owner, and set the next checkpoint.'
+      : 'Clarify which campaign this affects so we can pick the next move.';
   }
 
   if (context.intent === 'decision' && session) {
-    return `Continue the "${session.title}" thread — ask what was decided, or open it in Explorer to verify.`;
+    return `Close the loop on ${session.conversationTitle ?? session.title} — confirm the decision and what follows.`;
   }
 
   if (session) {
-    return `Pick up the executive session on "${session.title}" and ask what we should do next there.`;
+    return `Pick up ${session.conversationTitle ?? session.title} and choose the next action.`;
   }
 
-  if (lead?.explorerPath) {
-    return `Open "${lead.title}" in Explorer, then ask me to explain how it affects your current objective.`;
+  if (lead) {
+    return `Skim the strongest thread on "${context.searchQuery}", then tell me the outcome you want to steer toward.`;
   }
 
-  if (explorer) {
-    return 'Open the lead source in Explorer and ask me to connect it to your current campaign.';
-  }
-
-  return `Ask me to go deeper on "${context.searchQuery}" or name the campaign you want to steer toward.`;
+  return `Tell me the outcome you want on "${context.searchQuery}" and I'll keep us pointed there.`;
 }
 
-/** Executive steering envelope — conversational, guided delivery. */
+function formatAttention(tasks: string[]): string | null {
+  if (tasks.length === 0) return null;
+  if (tasks.length === 1) return `One thing needs your call — ${tasks[0]}.`;
+  return `A few things need your call:\n${tasks.map((task) => `• ${task}`).join('\n')}`;
+}
+
+/** Chief-of-staff investigation brief — one cohesive narrative, no label stacking. */
 export function buildSteeringDirectAnswer(
   context: AssembledEvidenceContext,
   confidence: VigsyConfidence,
 ): string {
-  const topic = context.searchQuery;
-  const changed = sanitizeGist(whatChanged(context, confidence));
-  const matters = sanitizeGist(whyItMatters(context, confidence));
-  const next = sanitizeGist(recommendNext(context, confidence));
+  const parts: string[] = [];
 
-  if (confidence.level === 'insufficient') {
-    return [
-      `I looked through what we have on "${topic}", but the evidence is thin.`,
-      changed,
-      matters,
-      'If you want, we can rephrase with a campaign or KRC name — or I can scan Search with you.',
-    ].join('\n\n');
+  pushUnique(parts, whereWeAre(context, confidence));
+
+  const last = lastSession(context);
+  if (last) pushUnique(parts, last);
+
+  const changed = whatChanged(context, confidence);
+  if (changed) {
+    const line = changed.match(/^(since|last|not much)/i) ? changed : `Since then, ${changed}`;
+    pushUnique(parts, line);
   }
 
-  return [
-    `On "${topic}" — ${changed}`,
-    matters,
-    `I would start here: ${next}`,
-    'Use the options below — timeline, sources, conversation — and I will stay with you on this thread.',
-  ].join('\n\n');
+  const attention = formatAttention(whatNeedsAttention(context));
+  if (attention) pushUnique(parts, attention);
+
+  pushUnique(parts, `I'd move next on this: ${recommendNext(context, confidence)}`);
+
+  return parts.join('\n\n');
 }
 
-function sanitizeGist(text: string): string {
-  return text
-    .replace(/^#+\s*/gm, '')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-/** Brief pointer to expandable evidence — not a report dump. */
+/** Supporting awareness backs the brief — brief, not a file listing. */
 export function buildSteeringSupportingSummary(
   context: AssembledEvidenceContext,
   confidence: VigsyConfidence,
 ): string {
   if (context.items.length === 0) {
-    return 'No supporting records to cite — expand Search if you need raw hits.';
+    return 'I can widen the search if you want more backup on this thread.';
   }
 
-  const krc = context.topKrcIds.slice(0, 4).join(', ');
   const confidenceNote =
     confidence.level === 'high'
-      ? 'High confidence'
+      ? "I'm confident in this read"
       : confidence.level === 'medium'
-        ? 'Medium confidence'
+        ? 'This read is moderate confidence'
         : confidence.level === 'low'
-          ? 'Lower confidence'
-          : 'Limited confidence';
+          ? 'Treat this as a lower-confidence read'
+          : 'Treat this as an early read';
 
-  return `${confidenceNote} — I am drawing on ${context.items.length} indexed record(s)${krc ? ` across ${krc}` : ''}. Say the word if you want me to open any of them with you.`;
+  const threadCount = context.items.length;
+  const sessionNote =
+    context.executiveSessions.length > 0
+      ? ` — ${context.executiveSessions.length} prior session(s) align.`
+      : '';
+
+  return `${confidenceNote} across ${threadCount} corroborating thread(s)${sessionNote} Use the lenses below for sources, timeline, or files.`;
 }
 
 export function isSteeringFormattedAnswer(text: string): boolean {
-  return /what changed\s*[—-]/i.test(text) && /what i recommend next\s*[—-]/i.test(text);
+  return /i'd move next on this/i.test(text);
 }

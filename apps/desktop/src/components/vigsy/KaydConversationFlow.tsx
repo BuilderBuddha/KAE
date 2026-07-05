@@ -55,6 +55,8 @@ export function KaydConversationFlow({
   const streaming = Boolean(displayedTurn.streaming);
   const bodyText = displayedTurn.error ?? displayedTurn.text;
   const paragraphs = splitFlowParagraphs(bodyText);
+  const supporting = displayedTurn.summary?.trim();
+  const showSupporting = !thinking && !streaming && Boolean(supporting);
 
   return (
     <div
@@ -78,6 +80,7 @@ export function KaydConversationFlow({
               <p
                 key={`${displayedTurn.id}-${index}`}
                 className={`kayd-briefing-line kayd-briefing-line--latest${streaming && index === paragraphs.length - 1 ? ' kayd-briefing-line--streaming' : ''}`}
+                style={paragraph.includes('\n') ? { whiteSpace: 'pre-line' } : undefined}
               >
                 {paragraph}
                 {streaming && index === paragraphs.length - 1 ? (
@@ -86,6 +89,11 @@ export function KaydConversationFlow({
               </p>
             ))
           : null}
+        {showSupporting ? (
+          <p className="kayd-briefing-line kayd-briefing-line--supporting" style={{ whiteSpace: 'pre-line' }}>
+            {supporting}
+          </p>
+        ) : null}
       </div>
     </div>
   );
