@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { VigsyKnowledgeAnswer } from '@scooper/core';
 import type { FollowUpAction } from './VigsyFollowUpChips';
-import { VigsyEvidencePanel } from './VigsyEvidencePanel';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
 import { ThinkingIndicator } from './CognitionPulse';
-import type { InvestigationView } from '../../utils/investigation-workflow';
 import type { VigsyConversationTurn } from '../../hooks/useVigsyConversation';
 
 function UserBubble({ text }: { text: string }) {
@@ -36,7 +34,6 @@ function AssistantBubble({
   showCapabilities,
   busy,
   onFollowUp,
-  onContinueView,
 }: {
   text: string;
   summary?: string;
@@ -45,7 +42,6 @@ function AssistantBubble({
   showCapabilities?: boolean;
   busy?: boolean;
   onFollowUp: (action: FollowUpAction) => void;
-  onContinueView: (view: InvestigationView) => void;
 }) {
   return (
     <div className={`vigsy-msg vigsy-msg--assistant vigsy-msg--enter${streaming ? ' vigsy-msg--alive' : ''}`}>
@@ -59,10 +55,7 @@ function AssistantBubble({
         </div>
         {!streaming && summary && !answer ? <p className="vigsy-msg__summary muted">{summary}</p> : null}
         {answer && !streaming && showCapabilities ? (
-          <>
-            <VigsyEvidencePanel answer={answer} onContinueView={onContinueView} busy={busy} />
-            <VigsyFollowUpChips answer={answer} onAction={onFollowUp} busy={busy} />
-          </>
+          <VigsyFollowUpChips answer={answer} onAction={onFollowUp} busy={busy} />
         ) : null}
       </div>
     </div>
@@ -73,7 +66,6 @@ interface VigsyConversationThreadProps {
   turns: VigsyConversationTurn[];
   busy?: boolean;
   onFollowUp: (action: FollowUpAction) => void;
-  onContinueView: (view: InvestigationView) => void;
 }
 
 function latestAssistantTurnId(turns: VigsyConversationTurn[]): string | null {
@@ -84,21 +76,17 @@ function latestAssistantTurnId(turns: VigsyConversationTurn[]): string | null {
   return null;
 }
 
-export function VigsyConversationThread({
-  turns,
-  busy,
-  onFollowUp,
-  onContinueView,
-}: VigsyConversationThreadProps) {
-  const bottomRef = useRef<HTMLDivElement>(null);
+export function VigsyConversationThread({ turns, busy, onFollowUp }: VigsyConversationThreadProps) {
+  const topRef = useRef<HTMLDivElement>(null);
   const latestAssistantId = useMemo(() => latestAssistantTurnId(turns), [turns]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [turns]);
 
   return (
     <div className="vigsy-thread">
+      <div ref={topRef} />
       {turns.map((turn) => {
         if (turn.role === 'user') {
           return <UserBubble key={turn.id} text={turn.text} />;
@@ -116,11 +104,9 @@ export function VigsyConversationThread({
             showCapabilities={turn.id === latestAssistantId}
             busy={busy}
             onFollowUp={onFollowUp}
-            onContinueView={onContinueView}
           />
         );
       })}
-      <div ref={bottomRef} />
     </div>
   );
 }

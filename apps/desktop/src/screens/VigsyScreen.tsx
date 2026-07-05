@@ -119,9 +119,10 @@ export function VigsyScreen() {
               />
             ) : null
           }
-        >
-          {briefingComplete ? <KaydExecutiveBriefingInline key={`awareness-${investigationEpoch}`} /> : null}
-        </KaydChatPanel>
+          awarenessSlot={
+            briefingComplete ? <KaydExecutiveBriefingInline key={`awareness-${investigationEpoch}`} /> : null
+          }
+        />
       </div>
     </div>
   );

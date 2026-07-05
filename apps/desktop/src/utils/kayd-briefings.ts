@@ -146,6 +146,28 @@ export function buildKaydSearchBriefing(_indexSummary: string | null): string[] 
   return ['Search runs across your full evidence index — what should I find?'];
 }
 
+/** Dashboard walkthrough — alive guided lines after the opener. */
+export function buildKaydDashboardWalkthrough(
+  health: RepositoryHealthReport | null,
+  stats: RepositoryStats | null,
+  gitReadiness: GitReadinessReport | null,
+  connectors?: ConnectorStatus[],
+): string[] {
+  const lines: string[] = [];
+  const summary = homeSummaryLine(health, connectors);
+  if (summary) lines.push(summary);
+  if (stats) {
+    lines.push(
+      `${stats.sourceCount} sources and ${stats.sessionCount} executive sessions are indexed in your repository.`,
+    );
+  }
+  if (gitReadiness) {
+    lines.push(`Git readiness is ${gitReadiness.ready ? 'good' : 'not ready'} — ${gitReadiness.status}.`);
+  }
+  lines.push('Use repair and health tools below, or ask me what needs attention first.');
+  return lines;
+}
+
 function formatConnectorTime(value?: string): string {
   if (!value) return 'not yet';
   return new Date(value).toLocaleString();

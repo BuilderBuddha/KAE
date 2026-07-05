@@ -1,20 +1,26 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ExecutiveBriefing } from '@scooper/core';
-import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
-import { useVigsyConversation } from '../../context/VigsyConversationContext';
-import { buildSectionAwarenessBriefing } from '../../utils/investigation-workflow';
+import { ExecutiveBriefingPanel } from './ExecutiveBriefingPanel';
 
-/** Investigation-aware awareness — spoken lines, not static placecards. */
+/** Full supporting awareness panel — cards, evidence links, refresh. */
 export function KaydExecutiveBriefingInline() {
-  const { investigationActive, activeInvestigation } = useVigsyConversation();
   const [briefing, setBriefing] = useState<ExecutiveBriefing | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
 
   const loadBriefing = useCallback(async () => {
-    const result = await window.kae.getExecutiveBriefing();
-    setBriefing(result.briefing);
-    if (result.stale) {
-      const fresh = await window.kae.refreshExecutiveBriefing();
-      setBriefing(fresh);
+    setLoading(true);
+    try {
+      const result = await window.kae.getExecutiveBriefing();
+      setBriefing(result.briefing);
+      if (result.stale) {
+        setBackgroundRefreshing(true);
+        const fresh = await window.kae.refreshExecutiveBriefing();
+        setBriefing(fresh);
+      }
+    } finally {
+      setLoading(false);
+      setBackgroundRefreshing(false);
     }
   }, []);
 
@@ -31,19 +37,14 @@ export function KaydExecutiveBriefingInline() {
     };
   }, [loadBriefing]);
 
-  const lines = useMemo(
-    () => buildSectionAwarenessBriefing(briefing, activeInvestigation),
-    [briefing, activeInvestigation],
-  );
-
-  if (!investigationActive || lines.length === 0) return null;
-
   return (
     <div className="kayd-briefing-inline kayd-briefing-inline--continued">
-      <KaydProgressiveBriefing
-        messages={lines}
-        statusLabel="Connecting awareness to your investigation"
-        showPresenceName={false}
+      <ExecutiveBriefingPanel
+        variant="inline"
+        briefing={briefing}
+        loading={loading}
+        backgroundRefreshing={backgroundRefreshing}
+        onRefresh={() => void loadBriefing()}
       />
     </div>
   );

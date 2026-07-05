@@ -1159,6 +1159,15 @@ select {
   margin-bottom: 6px;
 }
 
+.kayd-chat-panel__awareness {
+  margin: 8px 0 4px;
+  animation: kayd-briefing-continued 0.65s ease-out both;
+}
+
+.kayd-chat-panel--active-thread .kayd-chat-panel__display {
+  padding-top: 4px;
+}
+
 .kayd-chat-panel__composer {
   padding: 4px 8px 10px;
   border-top: none;
