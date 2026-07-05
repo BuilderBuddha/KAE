@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
 import { KaydInvestigationSpine } from './KaydInvestigationSpine';
-import { VigsyConversationThread } from './VigsyConversationThread';
+import { KaydConversationFlow } from './KaydConversationFlow';
+import { VigsyFollowUpChips } from './VigsyFollowUpChips';
 import { useNavigation } from '../../context/NavigationContext';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import type { ScreenId } from '../../types/navigation';
@@ -76,11 +77,19 @@ export function KaydChatPanel({
     prevTurnCountRef.current = turns.length;
   }, [hasConversation, turns.length, investigationActive]);
 
+  const latestAnswer = useMemo(() => {
+    for (let index = turns.length - 1; index >= 0; index -= 1) {
+      const turn = turns[index];
+      if (turn.role === 'assistant' && !turn.thinking && turn.answer) return turn.answer;
+    }
+    return null;
+  }, [turns]);
+
   const handleSubmit = async (text?: string) => {
     const question = (text ?? input).trim();
     if (!question) return;
     setInput('');
-    if (workspaceScreen && workspaceScreen !== 'vigsy') {
+    if (workspaceScreen && workspaceScreen !== 'vigsy' && !investigationActive) {
       navigate('vigsy');
     }
     await submitQuestion(question);
@@ -117,9 +126,9 @@ export function KaydChatPanel({
             onComplete={handleBriefingComplete}
           />
         ) : null}
-        {briefingDone && investigationActive ? <KaydInvestigationSpine /> : null}
+        {briefingDone && investigationActive && !hasConversation ? <KaydInvestigationSpine /> : null}
         {briefingDone && hasConversation ? (
-          <VigsyConversationThread turns={turns} busy={busy} onFollowUp={handleFollowUp} />
+          <KaydConversationFlow turns={turns} statusLabel="With you on this" />
         ) : null}
         {briefingDone && !hasConversation && contextWalkthrough && contextWalkthrough.length > 0 ? (
           <KaydProgressiveBriefing
@@ -131,7 +140,15 @@ export function KaydChatPanel({
         ) : null}
       </div>
 
-      {briefingDone ? <div className="kayd-chat-panel__below">{children}</div> : null}
+      {briefingDone ? (
+        <div className="kayd-chat-panel__below">
+          {hasConversation && latestAnswer ? (
+            <VigsyFollowUpChips answer={latestAnswer} onAction={handleFollowUp} busy={busy} />
+          ) : (
+            children
+          )}
+        </div>
+      ) : null}
 
       {briefingDone ? (
         <form

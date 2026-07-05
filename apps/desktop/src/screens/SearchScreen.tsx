@@ -21,7 +21,7 @@ function matchLabel(result: RepositorySearchResult): string {
 
 export function SearchScreen() {
   const { navigate } = useNavigation();
-  const { submitQuestion, activeInvestigation, busy } = useVigsyConversation();
+  const { submitQuestion, activeInvestigation, investigationActive, busy } = useVigsyConversation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<RepositorySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -75,7 +75,7 @@ export function SearchScreen() {
   const runSearch = async () => {
     const q = query.trim();
     if (!q || busy) return;
-    navigate('vigsy');
+    if (!investigationActive) navigate('vigsy');
     await submitQuestion(q);
   };
 

@@ -1,6 +1,7 @@
 import type { VigsyKnowledgeAnswer } from '@scooper/core';
 import {
   investigationViewQuestion,
+  extractInvestigationTopic,
   type InvestigationView,
 } from '../../utils/investigation-workflow';
 
@@ -24,6 +25,7 @@ const CHIPS: Array<{ label: string; view: InvestigationView }> = [
 ];
 
 export function VigsyFollowUpChips({ answer, onAction, busy }: VigsyFollowUpChipsProps) {
+  const topic = extractInvestigationTopic(answer.searchQuery);
   return (
     <div className="vigsy-chips" role="group" aria-label="Suggested follow-up actions">
       {CHIPS.map((chip) => (
@@ -35,7 +37,7 @@ export function VigsyFollowUpChips({ answer, onAction, busy }: VigsyFollowUpChip
           onClick={() =>
             onAction({
               type: 'ask',
-              question: investigationViewQuestion(chip.view, answer.searchQuery),
+              question: investigationViewQuestion(chip.view, topic),
             })
           }
         >

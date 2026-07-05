@@ -1,7 +1,11 @@
 import type { AssembledEvidenceContext, VigsyConfidence } from '@scooper/core';
 
 function gist(text: string, max = 220): string {
-  const normalized = text.trim().replace(/\s+/g, ' ');
+  const normalized = text
+    .trim()
+    .replace(/^#+\s*/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\s+/g, ' ');
   if (!normalized) return '';
   if (normalized.length <= max) return normalized;
   const sentence = normalized.match(/^[^.!?]+[.!?]/)?.[0]?.trim();
@@ -128,16 +132,39 @@ function recommendNext(context: AssembledEvidenceContext, confidence: VigsyConfi
   return `Ask me to go deeper on "${context.searchQuery}" or name the campaign you want to steer toward.`;
 }
 
-/** Executive steering envelope — change, significance, recommended next step. */
+/** Executive steering envelope — conversational, guided delivery. */
 export function buildSteeringDirectAnswer(
   context: AssembledEvidenceContext,
   confidence: VigsyConfidence,
 ): string {
+  const topic = context.searchQuery;
+  const changed = sanitizeGist(whatChanged(context, confidence));
+  const matters = sanitizeGist(whyItMatters(context, confidence));
+  const next = sanitizeGist(recommendNext(context, confidence));
+
+  if (confidence.level === 'insufficient') {
+    return [
+      `I looked through what we have on "${topic}", but the evidence is thin.`,
+      changed,
+      matters,
+      'If you want, we can rephrase with a campaign or KRC name — or I can scan Search with you.',
+    ].join('\n\n');
+  }
+
   return [
-    `What changed — ${whatChanged(context, confidence)}`,
-    `Why it matters — ${whyItMatters(context, confidence)}`,
-    `What I recommend next — ${recommendNext(context, confidence)}`,
+    `On "${topic}" — ${changed}`,
+    matters,
+    `I would start here: ${next}`,
+    'Use the options below — timeline, sources, conversation — and I will stay with you on this thread.',
   ].join('\n\n');
+}
+
+function sanitizeGist(text: string): string {
+  return text
+    .replace(/^#+\s*/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /** Brief pointer to expandable evidence — not a report dump. */
@@ -159,7 +186,7 @@ export function buildSteeringSupportingSummary(
           ? 'Lower confidence'
           : 'Limited confidence';
 
-  return `${confidenceNote} (${confidence.score}/100). Expand Supporting Evidence below for ${context.items.length} indexed record(s)${krc ? ` — ${krc}` : ''}.`;
+  return `${confidenceNote} — I am drawing on ${context.items.length} indexed record(s)${krc ? ` across ${krc}` : ''}. Say the word if you want me to open any of them with you.`;
 }
 
 export function isSteeringFormattedAnswer(text: string): boolean {

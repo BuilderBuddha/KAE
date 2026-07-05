@@ -947,6 +947,38 @@ select {
   margin-bottom: 0;
 }
 
+.kayd-conversation-flow {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+  transition: opacity 0.28s ease;
+}
+
+.kayd-conversation-flow--fading {
+  opacity: 0;
+}
+
+.kayd-conversation-flow--empty {
+  min-height: 0;
+}
+
+.kayd-conversation-flow__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kayd-conversation-flow__thinking {
+  padding: 8px 0 4px;
+}
+
+.kayd-chat-panel__below .vigsy-chips {
+  padding: 4px 2px 8px;
+  justify-content: flex-start;
+}
+
 .kayd-seq-briefing {
   min-height: 44px;
   display: flex;
