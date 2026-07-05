@@ -3,6 +3,7 @@ import {
   useVigsyConversationState,
   type VigsyConversationTurn,
 } from '../hooks/useVigsyConversation';
+import { useNavigation } from './NavigationContext';
 
 export type { VigsyConversationTurn };
 
@@ -11,7 +12,8 @@ type VigsyConversationValue = ReturnType<typeof useVigsyConversationState>;
 const VigsyConversationContext = createContext<VigsyConversationValue | null>(null);
 
 export function VigsyConversationProvider({ children }: { children: ReactNode }) {
-  const value = useVigsyConversationState();
+  const { navigate } = useNavigation();
+  const value = useVigsyConversationState(navigate);
   return (
     <VigsyConversationContext.Provider value={value}>{children}</VigsyConversationContext.Provider>
   );

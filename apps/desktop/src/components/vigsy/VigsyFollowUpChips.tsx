@@ -1,71 +1,47 @@
 import type { VigsyKnowledgeAnswer } from '@scooper/core';
+import {
+  investigationViewQuestion,
+  type InvestigationView,
+} from '../../utils/investigation-workflow';
 
-export type FollowUpAction =
-  | { type: 'ask'; question: string }
-  | { type: 'expand'; section: string }
-  | { type: 'explorer'; path: string };
+export type FollowUpAction = { type: 'ask'; question: string };
 
 interface VigsyFollowUpChipsProps {
   answer: VigsyKnowledgeAnswer;
   onAction: (action: FollowUpAction) => void;
+  busy?: boolean;
 }
 
-const CHIPS: Array<{
-  label: string;
-  resolve: (answer: VigsyKnowledgeAnswer) => FollowUpAction;
-}> = [
-  { label: 'Show Timeline', resolve: () => ({ type: 'expand', section: 'timeline' }) },
-  {
-    label: 'Why?',
-    resolve: (answer) => ({ type: 'ask', question: `Why? (about ${answer.searchQuery})` }),
-  },
-  { label: 'Show Sources', resolve: () => ({ type: 'expand', section: 'evidence' }) },
-  {
-    label: 'Open Conversation',
-    resolve: (answer) => ({
-      type: 'explorer',
-      path: answer.explorerLinks[0]?.path ?? answer.evidenceUsed[0]?.explorerPath ?? '',
-    }),
-  },
-  {
-    label: 'Show Images',
-    resolve: (answer) => ({
-      type: 'ask',
-      question: `Show images related to ${answer.searchQuery}`,
-    }),
-  },
-  {
-    label: 'Show Videos',
-    resolve: (answer) => ({
-      type: 'ask',
-      question: `Show me the videos related to ${answer.searchQuery}`,
-    }),
-  },
-  { label: 'Related Knowledge', resolve: () => ({ type: 'expand', section: 'related' }) },
-  {
-    label: 'Summarize More',
-    resolve: (answer) => ({ type: 'ask', question: `Summarize more about ${answer.searchQuery}` }),
-  },
+const CHIPS: Array<{ label: string; view: InvestigationView }> = [
+  { label: 'Show Timeline', view: 'timeline' },
+  { label: 'Why?', view: 'why' },
+  { label: 'Show Sources', view: 'sources' },
+  { label: 'Open Conversation', view: 'conversation' },
+  { label: 'Show Images', view: 'images' },
+  { label: 'Show Videos', view: 'videos' },
+  { label: 'Related Knowledge', view: 'related' },
+  { label: 'Summarize More', view: 'summarize' },
 ];
 
-export function VigsyFollowUpChips({ answer, onAction }: VigsyFollowUpChipsProps) {
+export function VigsyFollowUpChips({ answer, onAction, busy }: VigsyFollowUpChipsProps) {
   return (
     <div className="vigsy-chips" role="group" aria-label="Suggested follow-up actions">
-      {CHIPS.map((chip) => {
-        const action = chip.resolve(answer);
-        const disabled = action.type === 'explorer' && !action.path;
-        return (
-          <button
-            key={chip.label}
-            type="button"
-            className="vigsy-chip"
-            disabled={disabled}
-            onClick={() => onAction(action)}
-          >
-            {chip.label}
-          </button>
-        );
-      })}
+      {CHIPS.map((chip) => (
+        <button
+          key={chip.label}
+          type="button"
+          className="vigsy-chip"
+          disabled={busy}
+          onClick={() =>
+            onAction({
+              type: 'ask',
+              question: investigationViewQuestion(chip.view, answer.searchQuery),
+            })
+          }
+        >
+          {chip.label}
+        </button>
+      ))}
     </div>
   );
 }

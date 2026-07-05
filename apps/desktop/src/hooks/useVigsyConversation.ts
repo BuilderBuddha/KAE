@@ -7,6 +7,14 @@ import {
 } from '../utils/vigsy-context';
 import { formatConversationalAnswer } from '../utils/vigsy-answer-format';
 import { presenceDelayMs, streamTextReveal } from '../utils/vigsy-stream';
+import {
+  investigationFromSession,
+  isNewInvestigationQuestion,
+  investigationViewQuestion,
+  type ActiveInvestigation,
+  type InvestigationView,
+} from '../utils/investigation-workflow';
+import type { ScreenId } from '../types/navigation';
 
 export interface VigsyConversationTurn {
   id: string;
@@ -33,17 +41,6 @@ function followUpFromSession(session: VigsySessionContext) {
   };
 }
 
-function toUiTurn(record: VigsyConversationTurnRecord): VigsyConversationTurn {
-  return {
-    id: record.turnId,
-    role: record.role,
-    text: record.displayText,
-    summary: record.supportingText,
-    answer: record.answer,
-    error: record.error,
-  };
-}
-
 function toPersistedTurns(turns: VigsyConversationTurn[], session: VigsySessionContext): VigsyConversationTurnRecord[] {
   const records: VigsyConversationTurnRecord[] = [];
   for (const turn of turns) {
@@ -65,7 +62,7 @@ function toPersistedTurns(turns: VigsyConversationTurn[], session: VigsySessionC
   return records;
 }
 
-export function useVigsyConversationState() {
+export function useVigsyConversationState(navigate?: (screen: ScreenId) => void) {
   const [turns, setTurns] = useState<VigsyConversationTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
@@ -74,6 +71,8 @@ export function useVigsyConversationState() {
   const sessionRef = useRef<VigsySessionContext>({});
   const abortRef = useRef(false);
   const [continuity, setContinuity] = useState<ExecutiveContinuity | null>(null);
+  const [activeInvestigation, setActiveInvestigation] = useState<ActiveInvestigation | null>(null);
+  const [investigationEpoch, setInvestigationEpoch] = useState(0);
 
   const refreshContinuity = useCallback(async () => {
     const next = await window.kae.getExecutiveContinuity();
@@ -102,26 +101,14 @@ export function useVigsyConversationState() {
     let cancelled = false;
     const load = async () => {
       try {
-        const record = await window.kae.loadActiveVigsyConversation();
+        // Fresh session on every app open — KayD home welcome sequence, not restored history.
+        const created = await window.kae.createVigsyConversation();
         if (cancelled) return;
-        if (record && record.turns.length > 0) {
-          recordRef.current = record;
-          setConversationId(record.conversationId);
-          setTurns(record.turns.map(toUiTurn));
-          const lastAssistant = [...record.turns].reverse().find((turn) => turn.role === 'assistant');
-          if (lastAssistant?.followUpContext) {
-            sessionRef.current = lastAssistant.followUpContext;
-          }
-        } else if (record) {
-          recordRef.current = record;
-          setConversationId(record.conversationId);
-        } else {
-          const created = await window.kae.createVigsyConversation();
-          if (!cancelled) {
-            recordRef.current = created;
-            setConversationId(created.conversationId);
-          }
-        }
+        recordRef.current = created;
+        setConversationId(created.conversationId);
+        setTurns([]);
+        sessionRef.current = {};
+        setActiveInvestigation(null);
         if (!cancelled) await refreshContinuity();
       } finally {
         if (!cancelled) setReady(true);
@@ -147,6 +134,12 @@ export function useVigsyConversationState() {
   }, [refreshContinuity]);
 
   const submitQuestion = useCallback(async (rawQuestion: string) => {
+    const startingNewInvestigation = isNewInvestigationQuestion(rawQuestion, sessionRef.current);
+    if (startingNewInvestigation) {
+      navigate?.('vigsy');
+      setInvestigationEpoch((epoch) => epoch + 1);
+    }
+
     const question = enrichFollowUpQuestion(rawQuestion, sessionRef.current);
     if (!question.trim() || busy) return;
 
@@ -232,6 +225,7 @@ export function useVigsyConversationState() {
       if (abortRef.current) return;
 
       sessionRef.current = sessionFromAnswer(question, answer);
+      setActiveInvestigation(investigationFromSession(sessionRef.current));
 
       const completedTurns = nextTurns.map((turn) =>
         turn.id === assistantId
@@ -265,11 +259,13 @@ export function useVigsyConversationState() {
     } finally {
       setBusy(false);
     }
-  }, [busy, conversationId, persistConversation, refreshContinuity, turns]);
+  }, [busy, conversationId, navigate, persistConversation, refreshContinuity, turns]);
 
   const startNewConversation = useCallback(async () => {
     abortRef.current = true;
     sessionRef.current = {};
+    setActiveInvestigation(null);
+    setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
     recordRef.current = created;
@@ -286,6 +282,8 @@ export function useVigsyConversationState() {
       await window.kae.deleteVigsyConversation(id);
     }
     sessionRef.current = {};
+    setActiveInvestigation(null);
+    setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
     recordRef.current = created;
@@ -296,6 +294,20 @@ export function useVigsyConversationState() {
   }, [conversationId, refreshContinuity]);
 
   const hasConversation = turns.length > 0;
+  const investigationSearchQuery =
+    activeInvestigation?.searchQuery ??
+    [...turns].reverse().find((turn) => turn.answer?.searchQuery)?.answer?.searchQuery ??
+    '';
+  const investigationActive = Boolean(investigationSearchQuery);
+
+  const continueInvestigationView = useCallback(
+    (view: InvestigationView) => {
+      const searchQuery = sessionRef.current.lastSearchQuery || investigationSearchQuery;
+      if (!searchQuery || busy) return;
+      void submitQuestion(investigationViewQuestion(view, searchQuery));
+    },
+    [busy, investigationSearchQuery, submitQuestion],
+  );
 
   return {
     turns,
@@ -303,7 +315,11 @@ export function useVigsyConversationState() {
     ready,
     conversationId,
     hasConversation,
+    investigationActive,
+    activeInvestigation,
+    investigationEpoch,
     submitQuestion,
+    continueInvestigationView,
     startNewConversation,
     clearConversation,
     continuity,

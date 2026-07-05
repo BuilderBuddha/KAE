@@ -1138,6 +1138,11 @@ select {
   margin: 0;
 }
 
+.vigsy-unified__investigation {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
 .kayd-chat-panel__action-zone {
   display: flex;
   flex-direction: column;
@@ -2626,8 +2631,10 @@ select {
 }
 .vigsy-evidence-panel { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; opacity: 0.92; }
 .vigsy-evidence-card { border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; }
+.vigsy-evidence-card--trigger .vigsy-evidence-card__toggle { color: var(--color-text); }
 .vigsy-evidence-card__toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: transparent; border: none; color: var(--color-text-muted); font-size: 12px; font-weight: 500; cursor: pointer; text-align: left; }
-.vigsy-evidence-card__toggle:hover { background: rgba(99, 102, 241, 0.08); }
+.vigsy-evidence-card__toggle:hover:not(:disabled) { background: rgba(99, 102, 241, 0.08); }
+.vigsy-evidence-card__toggle:disabled { opacity: 0.55; cursor: not-allowed; }
 .vigsy-evidence-card__body { padding: 10px 12px 12px; border-top: 1px solid var(--color-border); }
 .vigsy-relationship-group { margin-bottom: 12px; }
 .vigsy-relationship-group__title { margin: 0 0 8px; font-size: 12px; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }

@@ -1,250 +1,92 @@
-import { useState, type ReactNode } from 'react';
 import type { VigsyKnowledgeAnswer } from '@scooper/core';
-import { useNavigation } from '../../context/NavigationContext';
-
-function confidenceClass(level: VigsyKnowledgeAnswer['confidence']['level']): string {
-  return `vigsy-confidence vigsy-confidence--${level}`;
-}
+import type { InvestigationView } from '../../utils/investigation-workflow';
 
 interface VigsyEvidencePanelProps {
   answer: VigsyKnowledgeAnswer;
-  expandedSections?: Set<string>;
+  onContinueView: (view: InvestigationView) => void;
+  busy?: boolean;
 }
 
-function ExpandableCard({
-  id,
+function CapabilityTrigger({
   title,
-  expanded,
-  onToggle,
-  children,
+  disabled,
+  onContinue,
 }: {
-  id: string;
   title: string;
-  expanded: boolean;
-  onToggle: (id: string) => void;
-  children: ReactNode;
+  disabled?: boolean;
+  onContinue: () => void;
 }) {
   return (
-    <section className={`vigsy-evidence-card${expanded ? ' vigsy-evidence-card--open' : ''}`}>
-      <button type="button" className="vigsy-evidence-card__toggle" onClick={() => onToggle(id)}>
+    <section className="vigsy-evidence-card vigsy-evidence-card--trigger">
+      <button
+        type="button"
+        className="vigsy-evidence-card__toggle"
+        onClick={onContinue}
+        disabled={disabled}
+        aria-label={`${title} — continue in chat`}
+      >
         <span>{title}</span>
-        <span aria-hidden>{expanded ? '−' : '+'}</span>
+        <span aria-hidden>→</span>
       </button>
-      {expanded ? <div className="vigsy-evidence-card__body">{children}</div> : null}
     </section>
   );
 }
 
-export function VigsyEvidencePanel({ answer, expandedSections }: VigsyEvidencePanelProps) {
-  const { openInExplorer } = useNavigation();
-  const [localExpanded, setLocalExpanded] = useState<Set<string>>(new Set());
-
-  const expanded = expandedSections ?? localExpanded;
-  const toggle = (id: string) => {
-    if (expandedSections) return;
-    setLocalExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const relatedItems: Array<{
-    recordId: string;
-    label: string;
-    excerpt?: string;
-    explorerPath: string;
-    reason?: string;
-  }> = [
-    ...answer.relatedSources.map((item) => ({
-      recordId: item.recordId,
-      label: item.label,
-      excerpt: item.excerpt,
-      explorerPath: item.explorerPath,
-    })),
-    ...(answer.relationshipInsights?.relatedDecisions ?? []).map((item) => ({
-      recordId: item.recordId,
-      label: item.label,
-      excerpt: item.excerpt,
-      explorerPath: item.explorerPath,
-      reason: item.reason,
-    })),
-    ...(answer.relationshipInsights?.relatedConversations ?? []).map((item) => ({
-      recordId: item.recordId,
-      label: item.label,
-      excerpt: item.excerpt,
-      explorerPath: item.explorerPath,
-      reason: item.reason,
-    })),
-    ...(answer.relationshipInsights?.relatedCampaigns ?? []).map((item) => ({
-      recordId: item.recordId,
-      label: item.label,
-      excerpt: item.excerpt,
-      explorerPath: item.explorerPath,
-      reason: item.reason,
-    })),
-    ...(answer.relationshipInsights?.relatedAttachments ?? []).map((item) => ({
-      recordId: item.recordId,
-      label: item.label,
-      excerpt: item.excerpt,
-      explorerPath: item.explorerPath,
-      reason: item.reason,
-    })),
-    ...(answer.relationshipInsights?.relatedExecutiveSessions ?? []).map((item) => ({
-      recordId: item.recordId,
-      label: item.label,
-      excerpt: item.excerpt,
-      explorerPath: item.explorerPath,
-      reason: item.reason,
-    })),
+function countRelatedKnowledge(answer: VigsyKnowledgeAnswer): number {
+  const relatedItems = [
+    ...answer.relatedSources,
+    ...(answer.relationshipInsights?.relatedDecisions ?? []),
+    ...(answer.relationshipInsights?.relatedConversations ?? []),
+    ...(answer.relationshipInsights?.relatedCampaigns ?? []),
+    ...(answer.relationshipInsights?.relatedAttachments ?? []),
+    ...(answer.relationshipInsights?.relatedExecutiveSessions ?? []),
   ];
-
-  const seenRelated = new Set<string>();
-  const uniqueRelated = relatedItems.filter((item) => {
-    if (seenRelated.has(item.recordId)) return false;
-    seenRelated.add(item.recordId);
+  const seen = new Set<string>();
+  return relatedItems.filter((item) => {
+    if (seen.has(item.recordId)) return false;
+    seen.add(item.recordId);
     return true;
-  });
+  }).length;
+}
 
-  const conversationLinks = answer.explorerLinks.length
-    ? answer.explorerLinks
-    : answer.evidenceUsed
-        .filter((item) => item.kind === 'conversation' || item.kind === 'source')
-        .map((item) => ({
-          label: item.label,
-          path: item.explorerPath,
-          krcId: item.krcId,
-        }));
+function countConversationLinks(answer: VigsyKnowledgeAnswer): number {
+  if (answer.explorerLinks.length) return answer.explorerLinks.length;
+  return answer.evidenceUsed.filter((item) => item.kind === 'conversation' || item.kind === 'source')
+    .length;
+}
+
+/** Supporting capability rows — each click continues the investigation in chat. */
+export function VigsyEvidencePanel({ answer, onContinueView, busy }: VigsyEvidencePanelProps) {
+  const relatedCount = countRelatedKnowledge(answer);
+  const conversationCount = countConversationLinks(answer);
 
   return (
-    <div className="vigsy-evidence-panel">
-      <ExpandableCard
-        id="confidence"
+    <div className="vigsy-evidence-panel" role="group" aria-label="Investigation capabilities">
+      <CapabilityTrigger
         title={`Confidence — ${answer.confidence.level} (${answer.confidence.score}/100)`}
-        expanded={expanded.has('confidence')}
-        onToggle={toggle}
-      >
-        <div className={confidenceClass(answer.confidence.level)}>{answer.confidence.rationale}</div>
-      </ExpandableCard>
-
-      <ExpandableCard
-        id="evidence"
+        disabled={busy}
+        onContinue={() => onContinueView('confidence')}
+      />
+      <CapabilityTrigger
         title={`Supporting Evidence (${answer.evidenceUsed.length})`}
-        expanded={expanded.has('evidence')}
-        onToggle={toggle}
-      >
-        <ul className="vigsy-evidence-list">
-          {answer.evidenceUsed.map((item) => (
-            <li key={item.recordId} className="vigsy-evidence-item">
-              <div className="vigsy-evidence-item__head">
-                <span className="vigsy-evidence-item__label">{item.label}</span>
-                {item.krcId ? <span className="vigsy-evidence-item__krc">{item.krcId}</span> : null}
-              </div>
-              <p className="vigsy-evidence-item__excerpt">{item.excerpt}</p>
-              <button
-                type="button"
-                className="btn btn--secondary btn--small"
-                onClick={() => openInExplorer(item.explorerPath)}
-              >
-                Open in Explorer
-              </button>
-            </li>
-          ))}
-        </ul>
-        {answer.attachments.length > 0 ? (
-          <ul className="vigsy-evidence-list">
-            {answer.attachments.map((item) => (
-              <li key={item.recordId} className="vigsy-evidence-item">
-                <span className="vigsy-evidence-item__label">{item.label}</span>
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--small"
-                  onClick={() => openInExplorer(item.explorerPath)}
-                >
-                  Open in Explorer
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </ExpandableCard>
-
-      <ExpandableCard
-        id="timeline"
+        disabled={busy}
+        onContinue={() => onContinueView('sources')}
+      />
+      <CapabilityTrigger
         title={`Timeline (${answer.timeline.length})`}
-        expanded={expanded.has('timeline')}
-        onToggle={toggle}
-      >
-        {answer.timeline.length === 0 ? (
-          <p className="muted">No timeline steps.</p>
-        ) : (
-          <div className="evidence-timeline">
-            {answer.timeline.map((step, index) => (
-              <div key={`${step.kind}-${step.label}`} className="evidence-timeline__step">
-                {index > 0 ? <div className="evidence-timeline__arrow" aria-hidden>↓</div> : null}
-                <button
-                  type="button"
-                  className="evidence-timeline__card"
-                  onClick={() => openInExplorer(step.explorerPath)}
-                >
-                  <span className="evidence-timeline__kind">{step.kind.replace(/_/g, ' ')}</span>
-                  <span className="evidence-timeline__label">{step.label}</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </ExpandableCard>
-
-      <ExpandableCard
-        id="related"
-        title={`Related Knowledge (${uniqueRelated.length})`}
-        expanded={expanded.has('related')}
-        onToggle={toggle}
-      >
-        {uniqueRelated.length === 0 ? (
-          <p className="muted">No related knowledge surfaced for this answer.</p>
-        ) : (
-          <ul className="vigsy-evidence-list">
-            {uniqueRelated.map((item) => (
-              <li key={item.recordId} className="vigsy-evidence-item">
-                <span className="vigsy-evidence-item__label">{item.label}</span>
-                {item.reason ? (
-                  <p className="vigsy-evidence-item__excerpt">{item.reason}</p>
-                ) : null}
-                <button
-                  type="button"
-                  className="btn btn--secondary btn--small"
-                  onClick={() => openInExplorer(item.explorerPath)}
-                >
-                  Open in Explorer
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </ExpandableCard>
-
-      <ExpandableCard
-        id="conversation"
-        title={`Open Conversation (${conversationLinks.length})`}
-        expanded={expanded.has('conversation')}
-        onToggle={toggle}
-      >
-        <div className="vigsy-explorer-links">
-          {conversationLinks.map((link) => (
-            <button
-              key={link.path}
-              type="button"
-              className="btn btn--primary btn--small"
-              onClick={() => openInExplorer(link.path)}
-            >
-              {link.label}
-            </button>
-          ))}
-        </div>
-      </ExpandableCard>
+        disabled={busy}
+        onContinue={() => onContinueView('timeline')}
+      />
+      <CapabilityTrigger
+        title={`Related Knowledge (${relatedCount})`}
+        disabled={busy}
+        onContinue={() => onContinueView('related')}
+      />
+      <CapabilityTrigger
+        title={`Open Conversation (${conversationCount})`}
+        disabled={busy}
+        onContinue={() => onContinueView('conversation')}
+      />
     </div>
   );
 }

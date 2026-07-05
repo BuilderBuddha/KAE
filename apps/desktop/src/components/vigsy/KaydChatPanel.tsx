@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
-import { KaydContextWalkthrough } from './KaydContextWalkthrough';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
 import { VigsyConversationThread } from './VigsyConversationThread';
+import { useNavigation } from '../../context/NavigationContext';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import type { ScreenId } from '../../types/navigation';
 import { resetWorkspaceScroll } from '../../utils/workspace-scroll';
@@ -12,23 +12,17 @@ interface KaydChatPanelProps {
   composerId: string;
   briefingStatus?: string;
   workspaceScreen?: ScreenId;
-  /** Bumps when the opener should replay (KayD home only). */
   openerKey?: string | number;
-  /** Hide duplicate KayD label when the page header already shows it. */
   hidePresenceName?: boolean;
-  /** Instant guidance when workspace context changes (e.g. selected connector). */
   contextWalkthrough?: string[];
   contextWalkthroughKey?: string;
   contextWalkthroughTitle?: string;
-  /** Chips / quick actions — rendered above composer, below thread. */
   actionSlot?: ReactNode;
   onBriefingComplete?: () => void;
   children?: ReactNode;
 }
 
-/**
- * Unified chatbot shell — guided opener on workspace entry, then follow-up thread.
- */
+/** Unified chatbot shell — one continuous investigation across workspaces. */
 export function KaydChatPanel({
   briefing,
   composerId,
@@ -43,7 +37,9 @@ export function KaydChatPanel({
   onBriefingComplete,
   children,
 }: KaydChatPanelProps) {
-  const { turns, busy, ready, hasConversation, submitQuestion } = useVigsyConversation();
+  const { navigate } = useNavigation();
+  const { turns, busy, ready, hasConversation, submitQuestion, continueInvestigationView } =
+    useVigsyConversation();
 
   const [input, setInput] = useState('');
   const [briefingDone, setBriefingDone] = useState(() => briefing.length === 0);
@@ -59,13 +55,14 @@ export function KaydChatPanel({
     const question = (text ?? input).trim();
     if (!question) return;
     setInput('');
+    if (workspaceScreen && workspaceScreen !== 'vigsy') {
+      navigate('vigsy');
+    }
     await submitQuestion(question);
   };
 
   const handleFollowUp = (action: FollowUpAction) => {
-    if (action.type === 'ask') {
-      void handleSubmit(action.question);
-    }
+    void handleSubmit(action.question);
   };
 
   const handleBriefingComplete = () => {
@@ -81,12 +78,14 @@ export function KaydChatPanel({
         ? 'What would you like to work on today?'
         : 'Listening…';
 
+  const showOpener = !briefingDone && briefing.length > 0;
+
   return (
     <section
       className={`kayd-chat-panel kayd-conversation-shell${briefingDone ? ' kayd-chat-panel--ready' : ' kayd-chat-panel--opener'}`}
     >
       <div className="kayd-chat-panel__display" ref={displayRef}>
-        {!briefingDone && briefing.length > 0 ? (
+        {showOpener ? (
           <KaydProgressiveBriefing
             messages={briefing}
             statusLabel={briefingStatus}
@@ -95,13 +94,19 @@ export function KaydChatPanel({
           />
         ) : null}
         {briefingDone && hasConversation ? (
-          <VigsyConversationThread turns={turns} onFollowUp={handleFollowUp} />
+          <VigsyConversationThread
+            turns={turns}
+            busy={busy}
+            onFollowUp={handleFollowUp}
+            onContinueView={continueInvestigationView}
+          />
         ) : null}
-        {briefingDone && contextWalkthrough && contextWalkthrough.length > 0 ? (
-          <KaydContextWalkthrough
+        {briefingDone && !hasConversation && contextWalkthrough && contextWalkthrough.length > 0 ? (
+          <KaydProgressiveBriefing
             key={contextWalkthroughKey}
-            lines={contextWalkthrough}
-            title={contextWalkthroughTitle}
+            messages={contextWalkthrough}
+            statusLabel={contextWalkthroughTitle ?? 'Walkthrough'}
+            showPresenceName={false}
           />
         ) : null}
       </div>

@@ -9,7 +9,7 @@ export function enrichFollowUpQuestion(question: string, session: VigsySessionCo
   if (!q || !session.lastSearchQuery) return q;
 
   const needsContext =
-    /^(show me the videos|show videos|show me videos|show images|show me the images|what decision|why\??|summarize more)/i.test(
+    /^(show me the videos|show videos|show me videos|show images|show me the images|what decision|why\??|summarize more|walk me through the timeline|show me the supporting sources|what related knowledge|continue the open conversation|show me repository evidence|explain the confidence|why does)/i.test(
       q,
     ) || q.split(/\s+/).length <= 6;
 

@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { VigsyKnowledgeAnswer } from '@scooper/core';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { VigsyEvidencePanel } from './VigsyEvidencePanel';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
 import { ThinkingIndicator } from './CognitionPulse';
+import type { InvestigationView } from '../../utils/investigation-workflow';
 import type { VigsyConversationTurn } from '../../hooks/useVigsyConversation';
-import { useNavigation } from '../../context/NavigationContext';
 
 function UserBubble({ text }: { text: string }) {
   return (
@@ -33,15 +33,19 @@ function AssistantBubble({
   summary,
   streaming,
   answer,
-  expandedSections,
+  showCapabilities,
+  busy,
   onFollowUp,
+  onContinueView,
 }: {
   text: string;
   summary?: string;
   streaming?: boolean;
   answer?: VigsyKnowledgeAnswer;
-  expandedSections?: Set<string>;
+  showCapabilities?: boolean;
+  busy?: boolean;
   onFollowUp: (action: FollowUpAction) => void;
+  onContinueView: (view: InvestigationView) => void;
 }) {
   return (
     <div className={`vigsy-msg vigsy-msg--assistant vigsy-msg--enter${streaming ? ' vigsy-msg--alive' : ''}`}>
@@ -54,10 +58,10 @@ function AssistantBubble({
           {streaming ? <span className="vigsy-cursor" aria-hidden /> : null}
         </div>
         {!streaming && summary && !answer ? <p className="vigsy-msg__summary muted">{summary}</p> : null}
-        {answer && !streaming ? (
+        {answer && !streaming && showCapabilities ? (
           <>
-            <VigsyEvidencePanel answer={answer} expandedSections={expandedSections} />
-            <VigsyFollowUpChips answer={answer} onAction={onFollowUp} />
+            <VigsyEvidencePanel answer={answer} onContinueView={onContinueView} busy={busy} />
+            <VigsyFollowUpChips answer={answer} onAction={onFollowUp} busy={busy} />
           </>
         ) : null}
       </div>
@@ -67,35 +71,31 @@ function AssistantBubble({
 
 interface VigsyConversationThreadProps {
   turns: VigsyConversationTurn[];
+  busy?: boolean;
   onFollowUp: (action: FollowUpAction) => void;
+  onContinueView: (view: InvestigationView) => void;
 }
 
-export function VigsyConversationThread({ turns, onFollowUp }: VigsyConversationThreadProps) {
+function latestAssistantTurnId(turns: VigsyConversationTurn[]): string | null {
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    if (turn.role === 'assistant' && !turn.thinking) return turn.id;
+  }
+  return null;
+}
+
+export function VigsyConversationThread({
+  turns,
+  busy,
+  onFollowUp,
+  onContinueView,
+}: VigsyConversationThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [expandedByTurn, setExpandedByTurn] = useState<Map<string, Set<string>>>(new Map());
-  const { openInExplorer } = useNavigation();
+  const latestAssistantId = useMemo(() => latestAssistantTurnId(turns), [turns]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [turns]);
-
-  const handleFollowUp = (turnId: string, action: FollowUpAction) => {
-    if (action.type === 'expand') {
-      setExpandedByTurn((prev) => {
-        const next = new Map(prev);
-        const sections = new Set(next.get(turnId) ?? []);
-        sections.add(action.section);
-        next.set(turnId, sections);
-        return next;
-      });
-      return;
-    }
-    if (action.type === 'explorer' && action.path) {
-      openInExplorer(action.path);
-      return;
-    }
-    onFollowUp(action);
-  };
 
   return (
     <div className="vigsy-thread">
@@ -113,8 +113,10 @@ export function VigsyConversationThread({ turns, onFollowUp }: VigsyConversation
             summary={turn.error ? undefined : turn.summary}
             streaming={turn.streaming}
             answer={turn.error ? undefined : turn.answer}
-            expandedSections={expandedByTurn.get(turn.id)}
-            onFollowUp={(action) => handleFollowUp(turn.id, action)}
+            showCapabilities={turn.id === latestAssistantId}
+            busy={busy}
+            onFollowUp={onFollowUp}
+            onContinueView={onContinueView}
           />
         );
       })}

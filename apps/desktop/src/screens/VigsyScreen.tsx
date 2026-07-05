@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { KaydChatPanel } from '../components/vigsy/KaydChatPanel';
 import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBriefingInline';
@@ -23,6 +23,9 @@ export function VigsyScreen() {
     busy,
     ready,
     hasConversation,
+    investigationActive,
+    investigationEpoch,
+    activeInvestigation,
     submitQuestion,
     startNewConversation,
     clearConversation,
@@ -31,6 +34,10 @@ export function VigsyScreen() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [briefingComplete, setBriefingComplete] = useState(false);
   const [openerKey, setOpenerKey] = useState(0);
+
+  useEffect(() => {
+    if (investigationActive) setBriefingComplete(true);
+  }, [investigationActive]);
 
   const briefing = useMemo(
     () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors, executiveBriefing),
@@ -73,6 +80,11 @@ export function VigsyScreen() {
       <header className="vigsy-unified__header">
         <div className="vigsy-unified__brand-block">
           <h1 className="vigsy-unified__brand">KayD</h1>
+          {activeInvestigation ? (
+            <p className="vigsy-unified__investigation muted">
+              Active investigation — {activeInvestigation.searchQuery}
+            </p>
+          ) : null}
           <div className="vigsy-home__luminous-line" aria-hidden="true" />
         </div>
         <div className="vigsy-unified__actions">
@@ -91,7 +103,7 @@ export function VigsyScreen() {
 
       <div className="vigsy-unified__body vigsy-unified__body--chat">
         <KaydChatPanel
-          briefing={openerBriefing}
+          briefing={investigationActive ? [] : openerBriefing}
           composerId="vigsy-unified-composer"
           openerKey={openerKey}
           briefingStatus={KAYD_BRIEFING_STATUS.home}
@@ -108,7 +120,7 @@ export function VigsyScreen() {
             ) : null
           }
         >
-          {briefingComplete ? <KaydExecutiveBriefingInline /> : null}
+          {briefingComplete ? <KaydExecutiveBriefingInline key={`awareness-${investigationEpoch}`} /> : null}
         </KaydChatPanel>
       </div>
     </div>
