@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { RepositoryFileEntry } from '@scooper/core';
 import { isChatGptImportSourceFileName } from '../utils/chatgpt-import';
+import {
+  ensurePinnedEntryVisible,
+  filterChatGptImportEntries,
+  filterForOpenedPath,
+  filterRepositoryEntries,
+  investigationSuggestsChatGptImport,
+  resolveExplorerFilenameSearch,
+  repoPathsEqual,
+} from '../utils/explorer-browse';
 import { ChatGptSourcePreview } from '../components/ChatGptSourcePreview';
 import { KaydWorkspaceLayout } from '../components/vigsy/KaydWorkspaceLayout';
 import { LoadingIndicator } from '../components/LoadingIndicator';
@@ -54,8 +63,11 @@ export function ExplorerScreen() {
   const [chatGptEntries, setChatGptEntries] = useState<ChatGptImportListEntry[]>([]);
   const [filter, setFilter] = useState<string>('all');
   const [defaultFilterApplied, setDefaultFilterApplied] = useState(false);
-  const [search, setSearch] = useState('');
+  /** User-typed filename filter only — never auto-filled from investigation topic. */
+  const [userSearch, setUserSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+  const [pinnedPath, setPinnedPath] = useState<string | null>(null);
+  const [targetUnavailable, setTargetUnavailable] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [chatGptPreview, setChatGptPreview] = useState<ChatGptSourcePreviewData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -63,6 +75,10 @@ export function ExplorerScreen() {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   const chatGptImportCount = chatGptEntries.length;
+  const filenameSearch = resolveExplorerFilenameSearch({
+    userEnteredSearch: userSearch,
+    investigationSearchQuery: activeInvestigation?.searchQuery,
+  });
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -84,22 +100,26 @@ export function ExplorerScreen() {
   }, [loadFiles]);
 
   useInvestigationSync((ctx) => {
-    setSearch(ctx.searchQuery);
+    // Structured investigation context: category / lens — not a filename substring.
+    if (investigationSuggestsChatGptImport(ctx.searchQuery) || investigationSuggestsChatGptImport(ctx.topic)) {
+      setFilter('chatgpt-import');
+    }
     void loadFiles();
   });
 
   useEffect(() => {
     if (loading || defaultFilterApplied) return;
-    if (chatGptImportCount > 0) {
+    if (chatGptImportCount > 0 && !pinnedPath) {
       setFilter('chatgpt-import');
     }
     setDefaultFilterApplied(true);
-  }, [loading, chatGptImportCount, defaultFilterApplied]);
+  }, [loading, chatGptImportCount, defaultFilterApplied, pinnedPath]);
 
   const showChatGptImport = filter === 'chatgpt-import';
 
   const openFile = useCallback(async (relativePath: string) => {
     setSelected(relativePath);
+    setTargetUnavailable(false);
     setPreviewLoading(true);
     setPreview(null);
     setChatGptPreview(null);
@@ -121,46 +141,58 @@ export function ExplorerScreen() {
     }
   }, []);
 
+  // Capture open-in-Explorer target without treating investigation text as a search.
   useEffect(() => {
-    if (explorerTargetPath) {
-      openFile(explorerTargetPath);
-      clearExplorerTarget();
+    if (!explorerTargetPath) return;
+    const path = explorerTargetPath;
+    clearExplorerTarget();
+    setPinnedPath(path);
+    setUserSearch('');
+    setFilter(filterForOpenedPath(path));
+    setTargetUnavailable(false);
+  }, [explorerTargetPath, clearExplorerTarget]);
+
+  // Resolve pin against loaded catalog: select + preview, or honest unavailable.
+  useEffect(() => {
+    if (!pinnedPath || loading) return;
+    const inChat = chatGptEntries.some((entry) => repoPathsEqual(entry.relativePath, pinnedPath));
+    const inFiles = files.some((file) => repoPathsEqual(file.relativePath, pinnedPath));
+    if (!inChat && !inFiles) {
+      setTargetUnavailable(true);
+      setSelected(pinnedPath);
+      setPreview(null);
+      setChatGptPreview(null);
+      setPreviewLoading(false);
+      return;
     }
-  }, [explorerTargetPath, openFile, clearExplorerTarget]);
+    void openFile(pinnedPath);
+  }, [pinnedPath, loading, files, chatGptEntries, openFile]);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-
     if (filter === 'chatgpt-import') {
-      const list = chatGptEntries;
-      if (!q) return list;
-      return list.filter(
-        (entry) =>
-          entry.relativePath.toLowerCase().includes(q) ||
-          entry.name.toLowerCase().includes(q) ||
-          entry.title.toLowerCase().includes(q) ||
-          entry.krcId.toLowerCase().includes(q),
-      );
+      const base = filterChatGptImportEntries(chatGptEntries, filenameSearch);
+      const ensured = ensurePinnedEntryVisible(base, chatGptEntries, pinnedPath);
+      return ensured.list;
     }
 
-    return files.filter((f) => {
-      if (filter !== 'all' && f.category !== filter) return false;
-      if (!q) return true;
-      return f.relativePath.toLowerCase().includes(q) || f.name.toLowerCase().includes(q);
-    });
-  }, [files, chatGptEntries, filter, search]);
+    const base = filterRepositoryEntries(files, filter, filenameSearch);
+    const ensured = ensurePinnedEntryVisible(base, files, pinnedPath);
+    return ensured.list;
+  }, [files, chatGptEntries, filter, filenameSearch, pinnedPath]);
 
-  const selectedFile = files.find((f) => f.relativePath === selected);
-  const selectedChatGpt = chatGptEntries.find((entry) => entry.relativePath === selected);
+  const selectedFile = files.find((f) => selected != null && repoPathsEqual(f.relativePath, selected));
+  const selectedChatGpt = chatGptEntries.find(
+    (entry) => selected != null && repoPathsEqual(entry.relativePath, selected),
+  );
   const selectedEntry = showChatGptImport ? selectedChatGpt : selectedFile;
 
   const handleOpen = async () => {
-    if (!selected) return;
+    if (!selected || targetUnavailable) return;
     await window.kae.openRepositoryFile(selected);
   };
 
   const handleReveal = async () => {
-    if (!selected) return;
+    if (!selected || targetUnavailable) return;
     await window.kae.revealRepositoryFile(selected);
   };
 
@@ -189,6 +221,8 @@ export function ExplorerScreen() {
     () => buildKaydExplorerBriefing(files.length, chatGptImportCount),
     [files.length, chatGptImportCount],
   );
+
+  const showEmptyState = !loading && filtered.length === 0 && !targetUnavailable;
 
   return (
     <KaydWorkspaceLayout
@@ -225,7 +259,11 @@ export function ExplorerScreen() {
           <header className="screen-evidence__header screen-evidence__header--compact">
             <h3 className="screen-evidence__title">Repository</h3>
             <p className="screen-evidence__meta muted">
-              {filtered.length} record(s) matching &ldquo;{activeInvestigation.searchQuery}&rdquo;
+              Active investigation: &ldquo;{activeInvestigation.topic}&rdquo;
+              {showChatGptImport
+                ? ` · ${filtered.length} ChatGPT Import record(s)`
+                : ` · ${filtered.length} visible record(s)`}
+              {filenameSearch ? ` · filtered by “${filenameSearch}”` : null}
             </p>
           </header>
         ) : null}
@@ -271,8 +309,8 @@ export function ExplorerScreen() {
           type="search"
           className="form__input explorer-search"
           placeholder="Filter files…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={userSearch}
+          onChange={(e) => setUserSearch(e.target.value)}
         />
         <select className="form__input explorer-filter" value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="all">All categories</option>
@@ -285,25 +323,37 @@ export function ExplorerScreen() {
             </option>
           ))}
         </select>
-        <button type="button" className="btn btn--secondary" onClick={loadFiles} disabled={loading}>
+        <button type="button" className="btn btn--secondary" onClick={() => void loadFiles()} disabled={loading}>
           Refresh
         </button>
       </div>
 
       {actionMsg && <p className="explorer-action-msg muted">{actionMsg}</p>}
 
+      {targetUnavailable && pinnedPath ? (
+        <section className="card empty-state" role="status">
+          <p className="empty-state__title">Source unavailable</p>
+          <p className="empty-state__hint">
+            No repository record was found for <code>{pinnedPath}</code>. The path may have moved or is not
+            registered.
+          </p>
+        </section>
+      ) : null}
+
       {loading ? (
         <LoadingIndicator label="Loading repository…" />
-      ) : filtered.length === 0 ? (
+      ) : showEmptyState ? (
         <section className="card empty-state">
           <p className="empty-state__title">No files found</p>
           <p className="empty-state__hint">
-            {files.length === 0
+            {files.length === 0 && chatGptImportCount === 0
               ? 'The repository is empty or not configured. Import knowledge to populate it.'
-              : 'No files match your filter. Try a different category or search term.'}
+              : filenameSearch
+                ? 'No files match your filter. Try a different category or search term.'
+                : 'No files match the selected category.'}
           </p>
         </section>
-      ) : (
+      ) : filtered.length > 0 ? (
         <div className="explorer-layout">
           <ul className="explorer-list card">
             {showChatGptImport
@@ -311,8 +361,11 @@ export function ExplorerScreen() {
                   <li key={entry.relativePath}>
                     <button
                       type="button"
-                      className={`explorer-list__item${selected === entry.relativePath ? ' explorer-list__item--active' : ''}`}
-                      onClick={() => openFile(entry.relativePath)}
+                      className={`explorer-list__item${selected != null && repoPathsEqual(selected, entry.relativePath) ? ' explorer-list__item--active' : ''}`}
+                      onClick={() => {
+                        setPinnedPath(entry.relativePath);
+                        void openFile(entry.relativePath);
+                      }}
                     >
                       <span className="explorer-list__name">{entry.krcId} — {entry.title}</span>
                       <span className="explorer-list__meta">{formatListDate(entry)}</span>
@@ -327,8 +380,11 @@ export function ExplorerScreen() {
                         <li key={file.relativePath}>
                           <button
                             type="button"
-                            className={`explorer-list__item${selected === file.relativePath ? ' explorer-list__item--active' : ''}`}
-                            onClick={() => openFile(file.relativePath)}
+                            className={`explorer-list__item${selected != null && repoPathsEqual(selected, file.relativePath) ? ' explorer-list__item--active' : ''}`}
+                            onClick={() => {
+                              setPinnedPath(file.relativePath);
+                              void openFile(file.relativePath);
+                            }}
                           >
                             <span className="explorer-list__name">{file.name}</span>
                             <span className="explorer-list__meta">
@@ -383,13 +439,13 @@ export function ExplorerScreen() {
                   </div>
                 </dl>
                 <div className="form__actions explorer-meta__actions">
-                  <button type="button" className="btn btn--secondary btn--sm" onClick={handleOpen}>
+                  <button type="button" className="btn btn--secondary btn--sm" onClick={() => void handleOpen()}>
                     Open
                   </button>
-                  <button type="button" className="btn btn--secondary btn--sm" onClick={handleReveal}>
+                  <button type="button" className="btn btn--secondary btn--sm" onClick={() => void handleReveal()}>
                     Reveal in Folder
                   </button>
-                  <button type="button" className="btn btn--secondary btn--sm" onClick={handleCopyPath}>
+                  <button type="button" className="btn btn--secondary btn--sm" onClick={() => void handleCopyPath()}>
                     Copy Path
                   </button>
                 </div>
@@ -409,7 +465,7 @@ export function ExplorerScreen() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
           </>
         )}
       </section>

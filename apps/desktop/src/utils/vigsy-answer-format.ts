@@ -10,6 +10,15 @@ export interface ConversationalAnswerDisplay {
   supportingText: string;
 }
 
+export interface FormatConversationalOptions {
+  /** Stable investigation topic (ChatGPT Import), never a fragment. */
+  stableTopic?: string;
+  /** Only true for explicit capability-chip origin. */
+  capabilityOrigin?: boolean;
+  /** Raw user question for intent routing. */
+  rawQuestion?: string;
+}
+
 function isFlowingExecutiveBrief(text: string): boolean {
   return /i'd move next on this/i.test(text);
 }
@@ -23,6 +32,16 @@ export function sanitizeFlowText(text: string): string {
     .replace(/\s+/g, ' ')
     .replace(/\s+([,.!?;:])/g, '$1')
     .trim();
+}
+
+/** Drop incomplete evidence fragments that should never become the recommendation. */
+export function isIncompleteActionFragment(text: string): boolean {
+  const t = sanitizeFlowText(text);
+  if (!t) return true;
+  if (/…$|\.\.\.$/.test(t) && t.split(/\s+/).length < 8) return true;
+  if (/^git working\b/i.test(t)) return true;
+  if (/^(continue exploring|review more information|keep investigating)\.?$/i.test(t)) return true;
+  return false;
 }
 
 export function splitFlowParagraphs(text: string): string[] {
@@ -58,10 +77,68 @@ function humanizeSteeringEnvelope(text: string, topic: string): string {
   if (whyMatters) {
     parts.push(sanitizeFlowText(whyMatters));
   }
-  if (recommend) {
+  if (recommend && !isIncompleteActionFragment(recommend)) {
     parts.push(`I'd move next on this: ${sanitizeFlowText(recommend)}`);
+  } else if (recommend && isIncompleteActionFragment(recommend)) {
+    parts.push(
+      `I'd move next on this: Decide the single outcome you need on "${topic}", then open the strongest supporting source to confirm it.`,
+    );
   }
   return parts.length > 0 ? parts.join('\n\n') : text;
+}
+
+function executiveWhyBrief(answer: VigsyKnowledgeAnswer, topic: string): string {
+  const insufficient = answer.confidence.level === 'insufficient' || answer.confidence.level === 'low';
+  const significance =
+    sanitizeFlowText(answer.reasonedSummary).slice(0, 280) ||
+    sanitizeFlowText(answer.directAnswer).split(/(?<=[.!?])\s+/)[0] ||
+    '';
+
+  if (insufficient) {
+    return [
+      `"${topic}" matters only if we can ground the consequence — and the indexed evidence is still thin.`,
+      answer.confidence.rationale
+        ? `Uncertainty: ${sanitizeFlowText(answer.confidence.rationale)}`
+        : 'I would not act on this until we have a clearer corroborating record.',
+    ].join('\n\n');
+  }
+
+  const consequence =
+    answer.confidence.level === 'high'
+      ? `Acting now keeps the decision loop tight; waiting leaves the same open thread unresolved.`
+      : `The cost of delay is continued ambiguity on "${topic}"; the cost of acting without a check is a false sense of closure.`;
+
+  return [
+    `"${topic}" matters because it changes what you can responsibly decide next.`,
+    significance
+      ? `The underlying significance: ${significance}`
+      : `It sits on the critical path for the current investigation.`,
+    consequence,
+  ].join('\n\n');
+}
+
+function executiveNextActionBrief(answer: VigsyKnowledgeAnswer, topic: string): string {
+  const fromDraft =
+    answer.directAnswer.match(/i'd move next on this:\s*(.+)$/is)?.[1]?.trim() ||
+    answer.directAnswer.match(/what i recommend next\s*[—-]\s*(.+)$/is)?.[1]?.trim() ||
+    '';
+
+  let action = sanitizeFlowText(fromDraft);
+  if (!action || isIncompleteActionFragment(action)) {
+    if (answer.confidence.level === 'insufficient') {
+      action = `Do not advance a decision on "${topic}" yet — name the outcome you need, then re-ask with that target.`;
+    } else if (answer.explorerLinks[0]) {
+      action = `Open "${answer.explorerLinks[0].label}" and confirm whether the recorded outcome still stands for "${topic}".`;
+    } else {
+      action = `Pick one outcome for "${topic}" (ship, repair, or defer), then ask me to verify it against the strongest indexed source.`;
+    }
+  }
+
+  if (/^(continue exploring|review more|keep investigating)/i.test(action)) {
+    action = `Review the top corroborating source for "${topic}" and decide whether to ship, repair, or defer — then stop.`;
+  }
+
+  return `Next on "${topic}": ${action}`;
 }
 
 function capabilityLensBrief(
@@ -99,6 +176,8 @@ function capabilityLensBrief(
         : `Related threads on "${topic}" are below — tell me which connection to follow.`;
     case 'Confidence':
       return `Confidence on "${topic}" is ${answer.confidence.level} (${answer.confidence.score}%) — ${sanitizeFlowText(answer.confidence.rationale)}.`;
+    case 'Why':
+      return executiveWhyBrief(answer, topic);
     case 'Summary':
       return gist
         ? `Broader read on "${topic}" — ${gist}`
@@ -108,22 +187,49 @@ function capabilityLensBrief(
   }
 }
 
+function isNaturalWhyQuestion(question: string): boolean {
+  return /^(why does that matter|why does this matter|why does it matter|why is that important|why is this important|why\??)\??$/i.test(
+    question.trim(),
+  );
+}
+
+function isNaturalNextQuestion(question: string): boolean {
+  return /^(what should we do next|what do we do next|what'?s next|what next|next step|next action)\??$/i.test(
+    question.trim(),
+  );
+}
+
 /** Conversational delivery — one voice, no stacked intros. */
 export function formatConversationalAnswer(
   answer: VigsyKnowledgeAnswer,
   question?: string,
   topicSearchQuery?: string,
+  options?: FormatConversationalOptions,
 ): ConversationalAnswerDisplay {
+  const rawQuestion = (options?.rawQuestion ?? question ?? '').trim();
   const topic =
+    options?.stableTopic?.trim() ||
     topicSearchQuery?.trim() ||
     (question ? extractInvestigationTopic(question) : '') ||
     extractInvestigationTopic(answer.searchQuery);
 
-  const lens = question ? investigationViewLabel(question) : null;
-  const body =
-    question && isInvestigationCapabilityQuestion(question) && lens
-      ? capabilityLensBrief(answer, lens, topic || answer.searchQuery)
-      : humanizeSteeringEnvelope(answer.directAnswer.trim(), topic || 'this');
+  const safeTopic = topic || 'this investigation';
+  const capabilityOrigin = Boolean(options?.capabilityOrigin);
+  const lens =
+    capabilityOrigin && question && isInvestigationCapabilityQuestion(question)
+      ? investigationViewLabel(question)
+      : null;
+
+  let body: string;
+  if (lens) {
+    body = capabilityLensBrief(answer, lens, safeTopic);
+  } else if (isNaturalWhyQuestion(rawQuestion)) {
+    body = executiveWhyBrief(answer, safeTopic);
+  } else if (isNaturalNextQuestion(rawQuestion)) {
+    body = executiveNextActionBrief(answer, safeTopic);
+  } else {
+    body = humanizeSteeringEnvelope(answer.directAnswer.trim(), safeTopic);
+  }
 
   const supporting = answer.reasonedSummary.trim();
   const supportingText = supporting ? sanitizeFlowText(supporting) : '';

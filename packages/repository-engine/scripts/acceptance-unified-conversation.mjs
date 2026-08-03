@@ -26,9 +26,11 @@ async function main() {
   const q1 = 'What happened with ChatGPT import media?';
   const answer1 = await answerKnowledgeQuestion(repositoryPath, q1);
   const display1 = formatConversationalAnswer(answer1);
-  assert(display1.streamText.toLowerCase().includes('here'), 'conversational opener');
+  assert(display1.streamText.trim().length > 40, 'conversational answer body');
   assert(!display1.streamText.includes('Direct Answer'), 'not report headings');
+  assert(!display1.streamText.includes('OpenAI summary:'), 'no cosmetic live provider branding');
   assert(answer1.evidenceUsed.length > 0, 'evidence available');
+  assert(answer1.reasoningProviderId === 'mock' || answer1.reasoningProviderId, 'provider metadata present');
 
   record = buildConversationRecord(record, [
     {

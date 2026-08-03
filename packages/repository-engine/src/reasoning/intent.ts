@@ -53,6 +53,20 @@ export function classifyQuestionIntent(question: string): VigsyQuestionIntent {
 /** Extracts a search query from a natural-language question. */
 export function extractSearchQuery(question: string): string {
   let query = question.trim();
+
+  const followUp = query.match(/\(following up on:\s*([^)]+)\)/i)?.[1]?.trim();
+  if (followUp) return followUp;
+
+  const whyQuoted = query.match(/^why does\s+"([^"]+)"\s+matter\??$/i)?.[1]?.trim();
+  if (whyQuoted) return whyQuoted;
+
+  const aboutTopic = query.match(
+    /^(?:why does|what should we do next about|tell me more about|summarize more about)\s+(.+?)\??$/i,
+  )?.[1]?.trim();
+  if (aboutTopic && !/^(that|this|it)$/i.test(aboutTopic)) {
+    return aboutTopic.replace(/^["']|["']$/g, '').trim();
+  }
+
   for (const prefix of QUESTION_PREFIXES) {
     query = query.replace(prefix, '');
   }

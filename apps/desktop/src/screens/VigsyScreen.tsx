@@ -30,7 +30,8 @@ export function VigsyScreen() {
     continuity: sessionContinuity,
   } = useVigsyConversation();
   const [confirmClear, setConfirmClear] = useState(false);
-  const [briefingComplete, setBriefingComplete] = useState(false);
+  // Returning from Explorer/Search remounts this screen — keep briefing sealed when conversation exists.
+  const [briefingComplete, setBriefingComplete] = useState(hasConversation);
   const [openerKey, setOpenerKey] = useState(0);
 
   const briefing = useMemo(
@@ -106,7 +107,7 @@ export function VigsyScreen() {
         >
           {briefingComplete ? (
             <>
-              <KaydExecutiveBriefingInline />
+              <KaydExecutiveBriefingInline demoted={hasConversation} />
               {!hasConversation ? (
                 <KaydGuidedChips
                   chips={STARTER_CHIPS}

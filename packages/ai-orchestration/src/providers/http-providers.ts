@@ -23,10 +23,11 @@ function createHttpProvider(
     async reason(request: ReasoningRequest, credentials?: AIProviderCredentials): Promise<ReasoningResponse> {
       const model = credentials?.model ?? defaultModel;
       if (!credentials?.apiKey && requiresApiKey) {
-        return offlineStyledResponse(request, id, model);
+        return offlineStyledResponse(request, id, model, true);
       }
 
       const prompt = buildCuratedPrompt(request);
+
       try {
         const headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (id === 'claude' && credentials?.apiKey) {
@@ -43,14 +44,14 @@ function createHttpProvider(
         });
 
         if (!response.ok) {
-          return { ...offlineStyledResponse(request, id, model), usedOfflineFallback: true };
+          return offlineStyledResponse(request, id, model, true);
         }
 
         const payload = (await response.json()) as unknown;
         const text = extractText(payload);
         const parsed = text ? await parseJsonAnswer(text) : null;
         if (!parsed) {
-          return { ...offlineStyledResponse(request, id, model), usedOfflineFallback: true };
+          return offlineStyledResponse(request, id, model, true);
         }
 
         return {
@@ -58,9 +59,10 @@ function createHttpProvider(
           model,
           directAnswer: parsed.directAnswer,
           reasonedSummary: parsed.reasonedSummary,
+          usedOfflineFallback: false,
         };
       } catch {
-        return { ...offlineStyledResponse(request, id, model), usedOfflineFallback: true };
+        return offlineStyledResponse(request, id, model, true);
       }
     },
   };

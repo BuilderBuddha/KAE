@@ -16,6 +16,7 @@ export function createDeterministicProvider(): AIProvider {
         model: 'deterministic',
         directAnswer: request.groundedAnswer.directAnswer,
         reasonedSummary: request.groundedAnswer.reasonedSummary,
+        usedOfflineFallback: false,
       };
     },
   };

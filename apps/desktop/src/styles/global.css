@@ -3090,3 +3090,82 @@ select {
   border-color: rgba(120, 180, 255, 0.45);
   background: rgba(80, 140, 220, 0.12);
 }
+
+/* Campaign — conversation continuity + seamless executive workspace */
+.kayd-chat-panel--in-conversation .kayd-chat-panel__display {
+  padding-bottom: 4px;
+}
+
+.kayd-chat-panel__conversation-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.kayd-chat-panel__action-row {
+  padding: 0 2px;
+}
+
+.kayd-chat-panel__composer--adjacent {
+  padding-top: 4px;
+  padding-bottom: 8px;
+  margin-top: 0;
+}
+
+.kayd-chat-panel__below--supporting {
+  margin-top: 8px;
+  padding-top: 4px;
+  animation: none;
+  order: 3;
+}
+
+.kayd-chat-panel--in-conversation .kayd-conversation-flow {
+  min-height: 0;
+}
+
+.kayd-chat-panel--in-conversation .kayd-conversation-flow--thinking {
+  min-height: 48px;
+}
+
+.kayd-briefing-inline--demoted {
+  margin: 8px 0 0;
+  padding: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.kayd-supporting-drawer__summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 10px 2px 8px;
+  list-style: none;
+  user-select: none;
+}
+
+.kayd-supporting-drawer__summary::-webkit-details-marker {
+  display: none;
+}
+
+.kayd-supporting-drawer__summary::before {
+  content: '▸ ';
+  display: inline-block;
+  width: 1em;
+}
+
+.kayd-briefing-inline--demoted[open] .kayd-supporting-drawer__summary::before {
+  content: '▾ ';
+}
+
+.kayd-briefing-inline--demoted .kayd-briefing-inline__body {
+  padding: 4px 0 8px;
+}
+
+.vigsy-chips--compact {
+  gap: 6px;
+}
+
+.vigsy-chips--compact .vigsy-chip {
+  font-size: 11px;
+  padding: 5px 10px;
+}

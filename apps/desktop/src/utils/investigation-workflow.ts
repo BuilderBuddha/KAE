@@ -19,24 +19,24 @@ export type InvestigationView =
   | 'summarize';
 
 const VIEW_QUESTION_PATTERNS =
-  /^(walk me through the timeline|show me the supporting sources|show me the images|show me the videos|what related knowledge|continue the open conversation|show me repository evidence|explain the confidence|why does|summarize more about)/i;
+  /^(walk me through the timeline for\s+"|show me the supporting sources for\s+"|show me the images related to\s+"|show me the videos related to\s+"|what related knowledge connects to\s+"|continue the open conversation for\s+"|show me repository evidence for\s+"|explain the confidence level for\s+"|why does\s+"[^"]+"\s+matter|summarize more about\s+")/i;
 
-/** True when the user is continuing the same investigation via a capability lens. */
+/** True when the question is an explicit capability-chip style prompt (quoted topic). */
 export function isInvestigationCapabilityQuestion(question: string): boolean {
   return VIEW_QUESTION_PATTERNS.test(question.trim());
 }
 
 const VIEW_LABELS: Array<{ pattern: RegExp; label: string }> = [
-  { pattern: /^walk me through the timeline/i, label: 'Timeline' },
-  { pattern: /^show me the supporting sources/i, label: 'Sources' },
-  { pattern: /^show me the images|^show images/i, label: 'Images' },
-  { pattern: /^show me the videos|^show videos/i, label: 'Videos' },
-  { pattern: /^what related knowledge/i, label: 'Related Knowledge' },
-  { pattern: /^continue the open conversation/i, label: 'Open Conversation' },
-  { pattern: /^show me repository evidence/i, label: 'Repository' },
-  { pattern: /^explain the confidence/i, label: 'Confidence' },
-  { pattern: /^why does/i, label: 'Why' },
-  { pattern: /^summarize more/i, label: 'Summary' },
+  { pattern: /^walk me through the timeline for\s+"/i, label: 'Timeline' },
+  { pattern: /^show me the supporting sources for\s+"/i, label: 'Sources' },
+  { pattern: /^show me the images related to\s+"/i, label: 'Images' },
+  { pattern: /^show me the videos related to\s+"/i, label: 'Videos' },
+  { pattern: /^what related knowledge connects to\s+"/i, label: 'Related Knowledge' },
+  { pattern: /^continue the open conversation for\s+"/i, label: 'Open Conversation' },
+  { pattern: /^show me repository evidence for\s+"/i, label: 'Repository' },
+  { pattern: /^explain the confidence level for\s+"/i, label: 'Confidence' },
+  { pattern: /^why does\s+"[^"]+"\s+matter/i, label: 'Why' },
+  { pattern: /^summarize more about\s+"/i, label: 'Summary' },
 ];
 
 /** Human-readable capability lens for the active investigation thread. */
@@ -61,8 +61,20 @@ export function extractInvestigationTopic(text: string): string {
   const trimmed = text.trim();
   const followUp = trimmed.match(/\(following up on:\s*([^)]+)\)/i)?.[1]?.trim();
   if (followUp) return followUp;
-  const quoted = trimmed.match(/for ['"]([^'"]+)['"]/i)?.[1]?.trim();
+  const whyQuoted = trimmed.match(/^why does\s+"([^"]+)"\s+matter\??$/i)?.[1]?.trim();
+  if (whyQuoted) return whyQuoted;
+  const aboutQuoted = trimmed.match(
+    /^(?:summarize more about|tell me more about|what should we do next about)\s+(.+?)\??$/i,
+  )?.[1]?.trim();
+  if (aboutQuoted) {
+    return aboutQuoted.replace(/^["']|["']$/g, '').trim();
+  }
+  const quoted = trimmed.match(/for ["']([^"']+)["']/i)?.[1]?.trim();
   if (quoted) return quoted;
+  const related = trimmed.match(/connects to ["']([^"']+)["']/i)?.[1]?.trim();
+  if (related) return related;
+  const relatedTo = trimmed.match(/related to ["']([^"']+)["']/i)?.[1]?.trim();
+  if (relatedTo) return relatedTo;
   return trimmed;
 }
 
@@ -147,6 +159,9 @@ export function isNewInvestigationQuestion(question: string, session: VigsySessi
   if (FOLLOW_UP_MARKERS.test(q)) return false;
   if (VIEW_QUESTION_PATTERNS.test(q)) return false;
   if (/^why\??$/i.test(q)) return false;
+  if (/^(why does that matter|why does this matter|why does it matter|what should we do next)\??$/i.test(q)) {
+    return false;
+  }
   if (topicsOverlap(q, session.lastSearchQuery)) return false;
   if (topicsOverlap(q, session.lastQuestion ?? '')) return false;
   return q.split(/\s+/).length >= 3;

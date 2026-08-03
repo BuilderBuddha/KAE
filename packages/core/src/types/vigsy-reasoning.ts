@@ -69,6 +69,10 @@ export interface VigsyKnowledgeAnswer {
   attachments: VigsyEvidenceCitation[];
   explorerLinks: VigsyExplorerLink[];
   relationshipInsights?: VigsyRelationshipInsights;
+  /** Provider that produced prose (evidence remains KAE-owned). */
+  reasoningProviderId?: import('./ai-orchestration.js').AIProviderId;
+  /** True when a live provider was requested but offline grounded draft was used instead. */
+  usedOfflineFallback?: boolean;
 }
 
 /** Pluggable answer composer — swap for LLM provider in future. */

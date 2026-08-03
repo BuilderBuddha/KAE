@@ -16,7 +16,9 @@ export interface BuildReasoningContextInput {
   executiveBriefing?: ExecutiveBriefing | null;
 }
 
-/** Builds curated provider context — KAE-owned, no repository file access for AI. */
+/** Builds curated provider context — KAE-owned, no repository file access for AI.
+ * Includes conversation turns, executive memory, and briefing for live prompt assembly.
+ */
 export function buildReasoningContext(input: BuildReasoningContextInput): ReasoningContext {
   const memory = input.executiveMemory ?? null;
   const conversation = input.conversation ?? { turns: [] };
@@ -24,7 +26,11 @@ export function buildReasoningContext(input: BuildReasoningContextInput): Reason
   return {
     question: input.question,
     repositoryPath: input.repositoryPath,
-    conversation,
+    conversation: {
+      conversationId: conversation.conversationId,
+      turns: conversation.turns ?? [],
+      followUpContext: conversation.followUpContext,
+    },
     executiveMemory: memory,
     evidence: input.evidence,
     executiveBriefing: input.executiveBriefing ?? null,

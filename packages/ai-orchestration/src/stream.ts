@@ -23,11 +23,11 @@ export function createStreamingMockProvider(base: AIProvider): AIProvider {
     ...base,
     capabilities: { ...base.capabilities, supportsStreaming: true },
     async reasonStream(request, _credentials, onChunk) {
-      const response = offlineStyledResponse(request, 'mock');
+      const response = offlineStyledResponse(request, 'mock', 'mock-v1', false);
       streamTextAsTokens('mock', 'direct_answer', response.directAnswer, onChunk);
       streamTextAsTokens('mock', 'summary', response.reasonedSummary, onChunk);
       onChunk({ kind: 'done', text: '', providerId: 'mock' });
-      return finalizeStreamResponse('mock', response.directAnswer, response.reasonedSummary, true);
+      return finalizeStreamResponse('mock', response.directAnswer, response.reasonedSummary, false);
     },
   };
 }

@@ -5,7 +5,12 @@ import {
   type InvestigationView,
 } from '../../utils/investigation-workflow';
 
-export type FollowUpAction = { type: 'ask'; question: string };
+export type FollowUpAction = {
+  type: 'ask';
+  question: string;
+  /** Explicit capability-chip origin — never inferred from free-typed text alone. */
+  origin?: 'capability' | 'user';
+};
 
 interface VigsyFollowUpChipsProps {
   answer: VigsyKnowledgeAnswer;
@@ -27,7 +32,7 @@ const CHIPS: Array<{ label: string; view: InvestigationView }> = [
 export function VigsyFollowUpChips({ answer, onAction, busy }: VigsyFollowUpChipsProps) {
   const topic = extractInvestigationTopic(answer.searchQuery);
   return (
-    <div className="vigsy-chips" role="group" aria-label="Suggested follow-up actions">
+    <div className="vigsy-chips vigsy-chips--compact" role="group" aria-label="Suggested follow-up actions">
       {CHIPS.map((chip) => (
         <button
           key={chip.label}
@@ -38,6 +43,7 @@ export function VigsyFollowUpChips({ answer, onAction, busy }: VigsyFollowUpChip
             onAction({
               type: 'ask',
               question: investigationViewQuestion(chip.view, topic),
+              origin: 'capability',
             })
           }
         >

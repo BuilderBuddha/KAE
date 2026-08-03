@@ -1,16 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { VigsyConversationRecord, VigsyConversationTurnRecord, VigsyKnowledgeAnswer, ExecutiveContinuity } from '@scooper/core';
 import {
-  enrichFollowUpQuestion,
+  resolveFollowUp,
   sessionFromAnswer,
   type VigsySessionContext,
 } from '../utils/vigsy-context';
 import { formatConversationalAnswer } from '../utils/vigsy-answer-format';
+import {
+  initialThinkingPresentation,
+  presentationAfterTransportToken,
+  presentationComplete,
+  presentationReadyToReveal,
+  presentationRevealChunk,
+} from '../utils/kayd-answer-presentation';
 import { presenceDelayMs, streamTextReveal } from '../utils/vigsy-stream';
 import {
   investigationFromSession,
   investigationViewLabel,
-  extractInvestigationTopic,
   isNewInvestigationQuestion,
   investigationViewQuestion,
   type ActiveInvestigation,
@@ -29,6 +35,13 @@ export interface VigsyConversationTurn {
   streaming?: boolean;
   error?: string;
 }
+
+export interface SubmitQuestionOptions {
+  /** True only when the question comes from an explicit capability chip / continue-view. */
+  capabilityOrigin?: boolean;
+}
+
+const CONTEXT_TURN_WINDOW = 4;
 
 let turnCounter = 0;
 function nextId(): string {
@@ -63,6 +76,24 @@ function toPersistedTurns(turns: VigsyConversationTurn[], session: VigsySessionC
     });
   }
   return records;
+}
+
+function completedContextTurns(
+  priorTurns: VigsyConversationTurn[],
+  currentRawQuestion: string,
+): Array<{ role: 'user' | 'assistant'; text: string }> {
+  const completed = priorTurns
+    .filter((turn) => !turn.thinking && !turn.streaming && turn.text.trim())
+    .map((turn) => ({ role: turn.role, text: turn.text }));
+
+  const withoutDupCurrent =
+    completed.length > 0 &&
+    completed[completed.length - 1]?.role === 'user' &&
+    completed[completed.length - 1]?.text === currentRawQuestion
+      ? completed
+      : [...completed, { role: 'user' as const, text: currentRawQuestion }];
+
+  return withoutDupCurrent.slice(-CONTEXT_TURN_WINDOW);
 }
 
 export function useVigsyConversationState(navigate?: (screen: ScreenId) => void) {
@@ -138,163 +169,169 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     };
   }, [refreshContinuity]);
 
-  const submitQuestion = useCallback(async (rawQuestion: string) => {
-    const startingNewInvestigation = isNewInvestigationQuestion(rawQuestion, sessionRef.current);
-    if (startingNewInvestigation) {
-      navigate?.('vigsy');
-      setInvestigationEpoch((epoch) => epoch + 1);
-      setInvestigationLens(null);
-    } else {
-      const lens = investigationViewLabel(rawQuestion);
-      if (lens) setInvestigationLens(lens);
-    }
+  const submitQuestion = useCallback(
+    async (rawInput: string, options?: SubmitQuestionOptions) => {
+      const capabilityOrigin = Boolean(options?.capabilityOrigin);
+      const resolved = resolveFollowUp(rawInput, sessionRef.current, { capabilityOrigin });
+      const rawQuestion = resolved.rawQuestion;
+      if (!rawQuestion || busy) return;
 
-    const question = enrichFollowUpQuestion(rawQuestion, sessionRef.current);
-    if (!question.trim() || busy) return;
-
-    abortRef.current = false;
-    setBusy(true);
-
-    const userTurn: VigsyConversationTurn = { id: nextId(), role: 'user', text: question };
-    const assistantId = nextId();
-    const assistantTurn: VigsyConversationTurn = {
-      id: assistantId,
-      role: 'assistant',
-      text: '',
-      thinking: true,
-    };
-
-    const nextTurns = [...turns, userTurn, assistantTurn];
-    setTurns(nextTurns);
-
-    try {
-      const settings = await window.kae.getSettings();
-      const conversationContext = {
-        conversationId: conversationId ?? recordRef.current?.conversationId,
-        turns: turns.map((turn) => ({ role: turn.role, text: turn.text })),
-        followUpContext: sessionRef.current,
-      };
-
-      let answer: VigsyKnowledgeAnswer;
-      let streamText = '';
-      let supportingText = '';
-
-      if (settings.aiStreaming) {
-        let visibleDirect = '';
-        const offStream = window.kae.onReasoningStreamChunk((chunk) => {
-          if (abortRef.current) return;
-          if (chunk.kind === 'token') {
-            visibleDirect += chunk.text;
-            setTurns((prev) =>
-              prev.map((turn) =>
-                turn.id === assistantId
-                  ? { ...turn, thinking: false, streaming: true, text: visibleDirect }
-                  : turn,
-              ),
-            );
-          }
-          if (chunk.kind === 'direct_answer') visibleDirect = chunk.text;
-          if (chunk.kind === 'summary') supportingText = chunk.text;
-        });
-        try {
-          answer = await window.kae.answerKnowledgeQuestionStream(question, { conversationContext });
-        } finally {
-          offStream();
-        }
-        if (abortRef.current) return;
-        const topicQuery =
-          sessionRef.current.lastSearchQuery ||
-          extractInvestigationTopic(question) ||
-          answer.searchQuery;
-        const formatted = formatConversationalAnswer(answer, question, topicQuery);
-        streamText = formatted.streamText;
-        supportingText = formatted.supportingText;
-
-        await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
-        if (abortRef.current) return;
-
-        setTurns((prev) =>
-          prev.map((turn) =>
-            turn.id === assistantId
-              ? { ...turn, thinking: false, streaming: true, answer, text: '', summary: supportingText }
-              : turn,
-          ),
-        );
-
-        await streamTextReveal(streamText, (visible) => {
-          if (abortRef.current) return;
-          setTurns((prev) =>
-            prev.map((turn) => (turn.id === assistantId ? { ...turn, text: visible } : turn)),
-          );
-        });
-      } else {
-        answer = await window.kae.answerKnowledgeQuestion(question, { conversationContext });
-        if (abortRef.current) return;
-        const topicQuery =
-          sessionRef.current.lastSearchQuery ||
-          extractInvestigationTopic(question) ||
-          answer.searchQuery;
-        const formatted = formatConversationalAnswer(answer, question, topicQuery);
-        streamText = formatted.streamText;
-        supportingText = formatted.supportingText;
-
-        await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
-        if (abortRef.current) return;
-
-        setTurns((prev) =>
-          prev.map((turn) =>
-            turn.id === assistantId
-              ? { ...turn, thinking: false, streaming: true, answer, text: '', summary: supportingText }
-              : turn,
-          ),
-        );
-
-        await streamTextReveal(streamText, (visible) => {
-          if (abortRef.current) return;
-          setTurns((prev) =>
-            prev.map((turn) => (turn.id === assistantId ? { ...turn, text: visible } : turn)),
-          );
-        });
+      const startingNewInvestigation = isNewInvestigationQuestion(rawQuestion, sessionRef.current);
+      if (startingNewInvestigation) {
+        navigate?.('vigsy');
+        setInvestigationEpoch((epoch) => epoch + 1);
+        setInvestigationLens(null);
+      } else if (capabilityOrigin) {
+        const lens = investigationViewLabel(resolved.retrievalQuestion);
+        if (lens) setInvestigationLens(lens);
       }
 
-      if (abortRef.current) return;
+      abortRef.current = false;
+      setBusy(true);
 
-      sessionRef.current = sessionFromAnswer(question, answer);
-      setActiveInvestigation(investigationFromSession(sessionRef.current));
+      // Display/store the raw executive question — never the internal enrichment.
+      const userTurn: VigsyConversationTurn = { id: nextId(), role: 'user', text: rawQuestion };
+      const assistantId = nextId();
+      const thinkingPresentation = initialThinkingPresentation();
+      const assistantTurn: VigsyConversationTurn = {
+        id: assistantId,
+        role: 'assistant',
+        text: thinkingPresentation.text,
+        thinking: thinkingPresentation.thinking,
+        streaming: thinkingPresentation.streaming,
+      };
 
-      const completedTurns = nextTurns.map((turn) =>
-        turn.id === assistantId
-          ? {
-              ...turn,
-              thinking: false,
-              streaming: false,
-              text: streamText,
-              summary: supportingText,
-              answer,
+      const priorTurns = turns;
+      const nextTurns = [...priorTurns, userTurn, assistantTurn];
+      setTurns(nextTurns);
+
+      const stableTopic = resolved.stableTopic || sessionRef.current.lastSearchQuery;
+      const conversationContext = {
+        conversationId: conversationId ?? recordRef.current?.conversationId,
+        turns: completedContextTurns(priorTurns, rawQuestion),
+        followUpContext: {
+          ...sessionRef.current,
+          lastSearchQuery: stableTopic || sessionRef.current.lastSearchQuery,
+          lastQuestion: rawQuestion,
+        },
+      };
+
+      try {
+        const settings = await window.kae.getSettings();
+        let answer: VigsyKnowledgeAnswer;
+        let streamText = '';
+        let supportingText = '';
+
+        if (settings.aiStreaming) {
+          // Transport chunks are ignored for visible prose — accumulate nothing into turn.text.
+          const offStream = window.kae.onReasoningStreamChunk((chunk) => {
+            if (abortRef.current) return;
+            if (chunk.kind === 'token') {
+              // Keep thinking presentation; never paint raw IPC tokens into turn.text.
+              presentationAfterTransportToken(thinkingPresentation, chunk.text);
             }
-          : turn,
-      );
-      setTurns(completedTurns);
-      await persistConversation(completedTurns);
-      await refreshContinuity();
-    } catch {
-      const failedTurns = nextTurns.map((turn) =>
-        turn.id === assistantId
-          ? {
-              ...turn,
-              thinking: false,
-              streaming: false,
-              error: 'Unable to answer from indexed evidence.',
-              text: "I couldn't ground an answer in the repository evidence index.",
-            }
-          : turn,
-      );
-      setTurns(failedTurns);
-      await persistConversation(failedTurns);
-    } finally {
-      setBusy(false);
-    }
-  }, [busy, conversationId, navigate, persistConversation, refreshContinuity, turns]);
+          });
+          try {
+            answer = await window.kae.answerKnowledgeQuestionStream(resolved.retrievalQuestion, {
+              conversationContext,
+            });
+          } finally {
+            offStream();
+          }
+          if (abortRef.current) return;
+        } else {
+          answer = await window.kae.answerKnowledgeQuestion(resolved.retrievalQuestion, {
+            conversationContext,
+          });
+          if (abortRef.current) return;
+        }
+
+        const formatted = formatConversationalAnswer(
+          answer,
+          resolved.retrievalQuestion,
+          stableTopic,
+          {
+            rawQuestion,
+            stableTopic,
+            capabilityOrigin,
+          },
+        );
+        streamText = formatted.streamText;
+        supportingText = formatted.supportingText;
+
+        // Thinking/presence stays until verify + format complete, then one reveal.
+        await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
+        if (abortRef.current) return;
+
+        const ready = presentationReadyToReveal();
+        setTurns((prev) =>
+          prev.map((turn) =>
+            turn.id === assistantId
+              ? {
+                  ...turn,
+                  thinking: ready.thinking,
+                  streaming: ready.streaming,
+                  answer,
+                  text: ready.text,
+                  summary: supportingText,
+                }
+              : turn,
+          ),
+        );
+
+        await streamTextReveal(streamText, (visible) => {
+          if (abortRef.current) return;
+          const chunk = presentationRevealChunk(visible);
+          setTurns((prev) =>
+            prev.map((turn) =>
+              turn.id === assistantId
+                ? { ...turn, thinking: chunk.thinking, streaming: chunk.streaming, text: chunk.text }
+                : turn,
+            ),
+          );
+        });
+
+        if (abortRef.current) return;
+
+        sessionRef.current = sessionFromAnswer(rawQuestion, answer, sessionRef.current);
+        setActiveInvestigation(investigationFromSession(sessionRef.current));
+
+        const settled = presentationComplete(streamText);
+        const completedTurns = nextTurns.map((turn) =>
+          turn.id === assistantId
+            ? {
+                ...turn,
+                thinking: settled.thinking,
+                streaming: settled.streaming,
+                text: settled.text,
+                summary: supportingText,
+                answer,
+              }
+            : turn,
+        );
+        setTurns(completedTurns);
+        await persistConversation(completedTurns);
+        await refreshContinuity();
+      } catch {
+        const failedTurns = nextTurns.map((turn) =>
+          turn.id === assistantId
+            ? {
+                ...turn,
+                thinking: false,
+                streaming: false,
+                error: 'Unable to answer from indexed evidence.',
+                text: "I couldn't ground an answer in the repository evidence index.",
+              }
+            : turn,
+        );
+        setTurns(failedTurns);
+        await persistConversation(failedTurns);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, conversationId, navigate, persistConversation, refreshContinuity, turns],
+  );
 
   const sealHomeOpener = useCallback((lines: string[]) => {
     const trimmed = lines.map((line) => line.trim()).filter(Boolean);
@@ -340,7 +377,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
   const hasConversation = turns.length > 0;
   const investigationSearchQuery =
     activeInvestigation?.searchQuery ??
-    [...turns].reverse().find((turn) => turn.answer?.searchQuery)?.answer?.searchQuery ??
+    sessionRef.current.lastSearchQuery ??
     '';
   const investigationActive = Boolean(investigationSearchQuery);
 
@@ -350,7 +387,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
       if (!searchQuery || busy) return;
       const screen = investigationScreenForView(view);
       if (screen && screen !== 'vigsy') navigate?.(screen);
-      void submitQuestion(investigationViewQuestion(view, searchQuery));
+      void submitQuestion(investigationViewQuestion(view, searchQuery), { capabilityOrigin: true });
     },
     [busy, investigationSearchQuery, navigate, submitQuestion],
   );

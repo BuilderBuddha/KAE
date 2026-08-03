@@ -13,7 +13,8 @@ export function createMockProvider(): AIProvider {
       defaultModel: 'mock-v1',
     },
     async reason(request: ReasoningRequest): Promise<ReasoningResponse> {
-      return offlineStyledResponse(request, 'mock');
+      // Intentional offline mock — grounded draft, not a failed live call.
+      return offlineStyledResponse(request, 'mock', 'mock-v1', false);
     },
   };
 }

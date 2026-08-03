@@ -5,7 +5,7 @@ import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import { filterExecutiveBriefingForInvestigation } from '../../utils/investigation-workflow';
 
 /** Full supporting awareness panel — cards, evidence links, refresh. */
-export function KaydExecutiveBriefingInline() {
+export function KaydExecutiveBriefingInline({ demoted = false }: { demoted?: boolean }) {
   const { investigationActive, activeInvestigation } = useVigsyConversation();
   const [briefing, setBriefing] = useState<ExecutiveBriefing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,15 +45,24 @@ export function KaydExecutiveBriefingInline() {
     return filterExecutiveBriefingForInvestigation(briefing, activeInvestigation?.searchQuery);
   }, [activeInvestigation?.searchQuery, briefing, investigationActive]);
 
-  return (
-    <div className="kayd-briefing-inline kayd-briefing-inline--continued">
-      <ExecutiveBriefingPanel
-        variant="inline"
-        briefing={displayBriefing}
-        loading={loading}
-        backgroundRefreshing={backgroundRefreshing}
-        onRefresh={() => void loadBriefing()}
-      />
-    </div>
+  const panel = (
+    <ExecutiveBriefingPanel
+      variant="inline"
+      briefing={displayBriefing}
+      loading={loading}
+      backgroundRefreshing={backgroundRefreshing}
+      onRefresh={() => void loadBriefing()}
+    />
   );
+
+  if (demoted) {
+    return (
+      <details className="kayd-briefing-inline kayd-briefing-inline--demoted">
+        <summary className="kayd-supporting-drawer__summary muted">Supporting evidence</summary>
+        <div className="kayd-briefing-inline__body">{panel}</div>
+      </details>
+    );
+  }
+
+  return <div className="kayd-briefing-inline kayd-briefing-inline--continued">{panel}</div>;
 }

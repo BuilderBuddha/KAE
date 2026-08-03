@@ -18,6 +18,8 @@ export function verifyGroundedAnswer(
     attachments: skeleton.attachments,
     explorerLinks: skeleton.explorerLinks,
     relationshipInsights: skeleton.relationshipInsights,
+    reasoningProviderId: response.providerId,
+    usedOfflineFallback: Boolean(response.usedOfflineFallback),
   };
 }
 

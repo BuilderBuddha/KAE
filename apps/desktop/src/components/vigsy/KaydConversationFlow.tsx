@@ -57,16 +57,35 @@ export function KaydConversationFlow({
   const paragraphs = splitFlowParagraphs(bodyText);
   const supporting = displayedTurn.summary?.trim();
   const showSupporting = !thinking && !streaming && Boolean(supporting);
+  const answer = displayedTurn.answer;
+  const statusFromAnswer = !thinking
+    ? answer?.usedOfflineFallback
+      ? answer.reasoningProviderId && answer.reasoningProviderId !== 'mock' && answer.reasoningProviderId !== 'deterministic'
+        ? 'Offline fallback'
+        : 'Offline grounded'
+      : answer?.reasoningProviderId === 'openai'
+        ? 'Live OpenAI'
+        : answer?.reasoningProviderId === 'mock' || answer?.reasoningProviderId === 'deterministic'
+          ? 'Offline grounded'
+          : statusLabel
+    : 'Thinking through your repository…';
 
   return (
     <div
-      className={`kayd-conversation-flow${fading ? ' kayd-conversation-flow--fading' : ''}${streaming ? ' kayd-conversation-flow--alive' : ''}`}
+      className={`kayd-conversation-flow${fading ? ' kayd-conversation-flow--fading' : ''}${streaming ? ' kayd-conversation-flow--alive' : ''}${thinking ? ' kayd-conversation-flow--thinking' : ''}`}
       aria-live="polite"
       data-presence={thinking ? 'thinking' : 'present'}
+      data-reasoning={
+        answer?.usedOfflineFallback
+          ? 'offline-fallback'
+          : answer?.reasoningProviderId === 'openai'
+            ? 'live'
+            : 'offline'
+      }
     >
       <KaydPresenceHeader
         thinking={thinking}
-        statusLabel={thinking ? 'Thinking through your repository…' : statusLabel}
+        statusLabel={statusFromAnswer}
         showName={false}
       />
       <div className="kayd-conversation-flow__body">
