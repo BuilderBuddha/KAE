@@ -12,10 +12,13 @@ import { CategorizedHealthPanel } from '../components/HealthIssuesPanel';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { RepositoryRepairPanel } from '../components/RepositoryRepairPanel';
 import { useInvestigationSync } from '../hooks/useInvestigationSync';
+import { useVigsyConversation } from '../context/VigsyConversationContext';
 import { buildKaydDashboardBriefing, buildKaydDashboardWalkthrough, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 import { KAYD_WORKSPACE_COMPOSER_ID } from '../utils/kayd-workspace';
 
-export function DashboardScreen() {  const [stats, setStats] = useState<RepositoryStats | null>(null);
+export function DashboardScreen() {
+  const { hasConversation, activeInvestigation } = useVigsyConversation();
+  const [stats, setStats] = useState<RepositoryStats | null>(null);
   const [health, setHealth] = useState<RepositoryHealthReport | null>(null);
   const [gitReadiness, setGitReadiness] = useState<GitReadinessReport | null>(null);
   const [connectors, setConnectors] = useState<ConnectorStatus[]>([]);
@@ -132,6 +135,16 @@ export function DashboardScreen() {  const [stats, setStats] = useState<Reposito
       contextWalkthroughTitle="Dashboard walkthrough"
     >
       <section className="screen-evidence" aria-label="Repository tools">
+        {hasConversation ? (
+          <header className="screen-evidence__header screen-evidence__header--compact">
+            <h3 className="screen-evidence__title">Dashboard</h3>
+            <p className="screen-evidence__meta muted">
+              {activeInvestigation
+                ? `Still on “${activeInvestigation.topic || activeInvestigation.searchQuery}” — health tools below support the same investigation.`
+                : 'Continuing your KayD conversation — health tools below support the same thread.'}
+            </p>
+          </header>
+        ) : null}
         {health && healthIssueCount > 0 ? (
           <section className={`card dashboard-card--evidence health-diagnostics${healthDiagnosticsOpen ? ' health-diagnostics--open' : ''}`}>
             <button

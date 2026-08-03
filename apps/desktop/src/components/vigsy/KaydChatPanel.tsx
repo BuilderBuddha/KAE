@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { FollowUpAction } from './VigsyFollowUpChips';
 import { KaydProgressiveBriefing } from './KaydProgressiveBriefing';
 import { KaydInvestigationRail } from './KaydInvestigationRail';
+import { KaydInvestigationComposer } from './KaydInvestigationComposer';
 import { KaydConversationFlow } from './KaydConversationFlow';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
 import { useNavigation } from '../../context/NavigationContext';
@@ -10,6 +11,8 @@ import type { ScreenId } from '../../types/navigation';
 import { resetWorkspaceScroll } from '../../utils/workspace-scroll';
 import { investigationViewFromQuestion } from '../../utils/investigation-workflow';
 import { investigationScreenForView } from '../../utils/investigation-capability';
+import { shouldRenderInlineComposer } from '../../utils/kayd-persistent-composer';
+import { KAYD_INVESTIGATION_DOCK_SCREENS } from '../../utils/kayd-workspace';
 
 interface KaydChatPanelProps {
   briefing: string[];
@@ -22,12 +25,15 @@ interface KaydChatPanelProps {
   contextWalkthroughKey?: string;
   contextWalkthroughTitle?: string;
   onBriefingComplete?: () => void;
+  /** Cold-start suggestions — rendered after the composer, before Supporting context. */
+  primaryActions?: ReactNode;
+  /** Supporting context only (collapsed). Must not include the composer or primary prompts. */
   children?: ReactNode;
 }
 
 /**
- * KayD home — executive conversation flow.
- * Workspace — composer + spine only during investigation (capability body lives below).
+ * KayD home — conversation-first: opener/answer → choices → composer → collapsed supporting.
+ * Workspace dock screens — rail only; persistent dock owns the composer.
  */
 export function KaydChatPanel({
   briefing,
@@ -40,26 +46,34 @@ export function KaydChatPanel({
   contextWalkthroughKey,
   contextWalkthroughTitle,
   onBriefingComplete,
+  primaryActions,
   children,
 }: KaydChatPanelProps) {
   const { navigate } = useNavigation();
   const {
     turns,
     busy,
-    ready,
     hasConversation,
     investigationActive,
     submitQuestion,
   } = useVigsyConversation();
 
   const isKaydHome = !workspaceScreen || workspaceScreen === 'vigsy';
-  const workspaceSync = investigationActive && !isKaydHome;
+  const onDockScreen =
+    Boolean(workspaceScreen) &&
+    (KAYD_INVESTIGATION_DOCK_SCREENS as readonly string[]).includes(workspaceScreen as string);
+  const workspaceSync = Boolean(hasConversation && onDockScreen && !isKaydHome);
+  const showInlineComposer = shouldRenderInlineComposer({
+    hasConversation,
+    isKaydHome,
+    workspaceScreen,
+    dockScreens: KAYD_INVESTIGATION_DOCK_SCREENS,
+  });
 
-  const [input, setInput] = useState('');
   const [briefingDone, setBriefingDone] = useState(() => briefing.length === 0);
   const displayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  const unitRef = useRef<HTMLDivElement>(null);
+  const answerRef = useRef<HTMLDivElement>(null);
   const prevTurnCountRef = useRef(turns.length);
 
   useEffect(() => {
@@ -73,15 +87,16 @@ export function KaydChatPanel({
   }, [workspaceScreen, openerKey, briefing.length, investigationActive, hasConversation]);
 
   useEffect(() => {
-    if (!hasConversation || workspaceSync) {
+    if (!hasConversation || workspaceSync || !isKaydHome) {
       prevTurnCountRef.current = turns.length;
       return;
     }
     if (turns.length > prevTurnCountRef.current) {
-      unitRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Keep the answer in view without scrolling past the composer.
+      answerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     prevTurnCountRef.current = turns.length;
-  }, [hasConversation, turns.length, workspaceSync]);
+  }, [hasConversation, turns.length, workspaceSync, isKaydHome]);
 
   const latestAnswer = useMemo(() => {
     for (let index = turns.length - 1; index >= 0; index -= 1) {
@@ -90,16 +105,6 @@ export function KaydChatPanel({
     }
     return null;
   }, [turns]);
-
-  const handleSubmit = async (text?: string, capabilityOrigin = false) => {
-    const question = (text ?? input).trim();
-    if (!question) return;
-    setInput('');
-    if (workspaceScreen && workspaceScreen !== 'vigsy' && !investigationActive) {
-      navigate('vigsy');
-    }
-    await submitQuestion(question, { capabilityOrigin });
-  };
 
   const handleFollowUp = (action: FollowUpAction) => {
     const capabilityOrigin = action.origin === 'capability';
@@ -111,7 +116,7 @@ export function KaydChatPanel({
         if (screen && screen !== here) navigate(screen);
       }
     }
-    void handleSubmit(action.question, capabilityOrigin);
+    void submitQuestion(action.question, { capabilityOrigin });
   };
 
   const handleBriefingComplete = () => {
@@ -119,53 +124,38 @@ export function KaydChatPanel({
     onBriefingComplete?.();
   };
 
-  const placeholder = busy
-    ? 'KayD is thinking…'
-    : hasConversation
-      ? 'Continue the investigation…'
-      : briefingDone
-        ? 'What would you like to work on today?'
-        : 'Listening…';
+  const composerClass = [
+    'kayd-chat-panel__composer',
+    workspaceSync ? 'kayd-chat-panel__composer--top' : '',
+    isKaydHome ? 'kayd-chat-panel__composer--adjacent kayd-chat-panel__composer--sticky' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
-  const composer = (
-    <form
-      className={`kayd-chat-panel__composer${workspaceSync ? ' kayd-chat-panel__composer--top' : ''}${hasConversation && isKaydHome ? ' kayd-chat-panel__composer--adjacent' : ''}`}
-      onSubmit={(e) => {
-        e.preventDefault();
-        void handleSubmit();
-      }}
-    >
-      <label className="sr-only" htmlFor={composerId}>
-        Ask KayD
-      </label>
-      <textarea
-        id={composerId}
-        className="kayd-chat-panel__input"
-        rows={workspaceSync ? 1 : 2}
-        placeholder={ready ? placeholder : 'Loading conversation…'}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            void handleSubmit();
-          }
-        }}
-        disabled={busy || !ready}
-      />
-    </form>
-  );
+  const composer =
+    showInlineComposer && briefingDone ? (
+      <div className={composerClass}>
+        <KaydInvestigationComposer
+          composerId={composerId}
+          rows={workspaceSync ? 1 : 2}
+          workspaceScreen={workspaceScreen}
+        />
+      </div>
+    ) : null;
+
+  const composerBeforeSupporting = Boolean(isKaydHome && briefingDone);
 
   return (
     <section
       ref={panelRef}
-      className={`kayd-chat-panel kayd-conversation-shell${briefingDone ? ' kayd-chat-panel--ready' : ' kayd-chat-panel--opener'}${hasConversation && isKaydHome ? ' kayd-chat-panel--in-conversation' : ''}${workspaceSync ? ' kayd-chat-panel--workspace-sync' : ''}`}
-      data-composer-before-supporting={hasConversation && isKaydHome ? 'true' : 'false'}
+      className={`kayd-chat-panel kayd-conversation-shell${isKaydHome ? ' kayd-chat-panel--home' : ''}${briefingDone ? ' kayd-chat-panel--ready' : ' kayd-chat-panel--opener'}${hasConversation && isKaydHome ? ' kayd-chat-panel--in-conversation' : ''}${workspaceSync ? ' kayd-chat-panel--workspace-sync' : ''}`}
+      data-composer-before-supporting={composerBeforeSupporting ? 'true' : 'false'}
+      data-inline-composer={showInlineComposer ? 'true' : 'false'}
     >
       {briefingDone && workspaceSync ? (
         <>
           <KaydInvestigationRail workspaceScreen={workspaceScreen} />
-          {composer}
+          {showInlineComposer ? composer : null}
         </>
       ) : null}
 
@@ -182,9 +172,13 @@ export function KaydChatPanel({
           {briefingDone && investigationActive && !hasConversation ? (
             <KaydInvestigationRail workspaceScreen={workspaceScreen} />
           ) : null}
+
+          {/* Active conversation: answer → ≤3 choices → composer */}
           {briefingDone && hasConversation && isKaydHome ? (
-            <div className="kayd-chat-panel__conversation-unit" ref={unitRef}>
-              <KaydConversationFlow turns={turns} statusLabel="With you on this" />
+            <div className="kayd-chat-panel__conversation-unit" data-hierarchy="active">
+              <div ref={answerRef} className="kayd-chat-panel__answer">
+                <KaydConversationFlow turns={turns} statusLabel="With you on this" />
+              </div>
               {latestAnswer && !busy ? (
                 <div className="kayd-chat-panel__action-row">
                   <VigsyFollowUpChips answer={latestAnswer} onAction={handleFollowUp} busy={busy} />
@@ -193,6 +187,17 @@ export function KaydChatPanel({
               {composer}
             </div>
           ) : null}
+
+          {/* Cold opener complete: composer immediately, then ≤3 starters */}
+          {briefingDone && !hasConversation && isKaydHome ? (
+            <div className="kayd-chat-panel__conversation-unit kayd-chat-panel__conversation-unit--cold" data-hierarchy="cold">
+              {composer}
+              {primaryActions ? (
+                <div className="kayd-chat-panel__primary-actions">{primaryActions}</div>
+              ) : null}
+            </div>
+          ) : null}
+
           {briefingDone && !hasConversation && contextWalkthrough && contextWalkthrough.length > 0 ? (
             <KaydProgressiveBriefing
               key={contextWalkthroughKey}
@@ -204,15 +209,18 @@ export function KaydChatPanel({
         </div>
       ) : null}
 
+      {/* Supporting context only — always after composer on KayD */}
       {briefingDone && isKaydHome ? (
         <div
-          className={`kayd-chat-panel__below${hasConversation ? ' kayd-chat-panel__below--supporting' : ''}`}
+          className={`kayd-chat-panel__below kayd-chat-panel__below--supporting`}
+          data-region="supporting-context"
         >
           {children}
         </div>
       ) : null}
 
-      {briefingDone && !workspaceSync && !(hasConversation && isKaydHome) ? composer : null}
+      {/* Non-home idle workspace: composer after lead content */}
+      {briefingDone && !workspaceSync && !isKaydHome ? composer : null}
     </section>
   );
 }

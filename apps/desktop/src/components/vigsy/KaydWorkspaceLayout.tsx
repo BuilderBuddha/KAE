@@ -30,31 +30,36 @@ export function KaydWorkspaceLayout({
   contextWalkthroughTitle,
   children,
 }: KaydWorkspaceLayoutProps) {
-  const { investigationActive, investigationEpoch } = useVigsyConversation();
+  const { investigationActive, investigationEpoch, hasConversation } = useVigsyConversation();
   const [frozenBriefing] = useState(() => briefing);
   const [briefingComplete, setBriefingComplete] = useState(() => briefing.length === 0);
   const [sectionKey, setSectionKey] = useState(0);
 
+  // Once a real exchange exists, never play cold workspace openers (e.g. health-desk).
   const effectiveBriefing = useMemo(() => {
-    if (investigationActive) return [];
+    if (hasConversation) return [];
     return frozenBriefing;
-  }, [investigationActive, frozenBriefing]);
+  }, [hasConversation, frozenBriefing]);
 
   useEffect(() => {
-    if (investigationActive) {
+    if (hasConversation) {
       setBriefingComplete(true);
       return;
     }
     setBriefingComplete(effectiveBriefing.length === 0);
     setSectionKey((key) => key + 1);
-  }, [workspaceScreen, effectiveBriefing.length, investigationActive]);
+  }, [workspaceScreen, effectiveBriefing.length, hasConversation]);
 
   const walkthrough =
-    investigationActive || !contextWalkthrough?.length ? undefined : contextWalkthrough;
+    hasConversation || investigationActive || !contextWalkthrough?.length
+      ? undefined
+      : contextWalkthrough;
+
+  const investigationMode = hasConversation || investigationActive;
 
   return (
     <div
-      className={`screen screen--conversation-first workspace${investigationActive ? ' workspace--investigation' : ''} ${workspaceClassName}`.trim()}
+      className={`screen screen--conversation-first workspace${investigationMode ? ' workspace--investigation' : ''} ${workspaceClassName}`.trim()}
     >
       <KaydConversationLead
         briefing={effectiveBriefing}
@@ -68,7 +73,7 @@ export function KaydWorkspaceLayout({
         onBriefingComplete={() => setBriefingComplete(true)}
       />
       {briefingComplete ? (
-        <div className="workspace__body" key={investigationActive ? investigationEpoch : 'idle'}>
+        <div className="workspace__body" key={investigationMode ? investigationEpoch : 'idle'}>
           <KaydInvestigationCapabilityFocus workspaceScreen={workspaceScreen} />
           {children}
         </div>

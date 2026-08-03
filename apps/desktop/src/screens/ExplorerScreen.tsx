@@ -56,7 +56,7 @@ function formatListDate(entry: ChatGptImportListEntry): string {
 
 export function ExplorerScreen() {
   const { explorerTargetPath, clearExplorerTarget } = useNavigation();
-  const { investigationActive, investigationLens, latestInvestigationAnswer, activeInvestigation } =
+  const { investigationActive, investigationLens, latestInvestigationAnswer, activeInvestigation, selectedEvidencePath, setSelectedEvidencePath } =
     useVigsyConversation();
   const lensView = investigationViewFromLens(investigationLens);
   const [files, setFiles] = useState<RepositoryFileEntry[]>([]);
@@ -119,6 +119,7 @@ export function ExplorerScreen() {
 
   const openFile = useCallback(async (relativePath: string) => {
     setSelected(relativePath);
+    setSelectedEvidencePath(relativePath);
     setTargetUnavailable(false);
     setPreviewLoading(true);
     setPreview(null);
@@ -139,7 +140,7 @@ export function ExplorerScreen() {
     } finally {
       setPreviewLoading(false);
     }
-  }, []);
+  }, [setSelectedEvidencePath]);
 
   // Capture open-in-Explorer target without treating investigation text as a search.
   useEffect(() => {
@@ -147,10 +148,23 @@ export function ExplorerScreen() {
     const path = explorerTargetPath;
     clearExplorerTarget();
     setPinnedPath(path);
+    setSelectedEvidencePath(path);
     setUserSearch('');
     setFilter(filterForOpenedPath(path));
     setTargetUnavailable(false);
-  }, [explorerTargetPath, clearExplorerTarget]);
+  }, [explorerTargetPath, clearExplorerTarget, setSelectedEvidencePath]);
+
+  // Restore investigation evidence selection after screen remount.
+  useEffect(() => {
+    if (pinnedPath || loading) return;
+    if (!selectedEvidencePath) return;
+    if (selected && repoPathsEqual(selected, selectedEvidencePath)) return;
+    const inChat = chatGptEntries.some((entry) => repoPathsEqual(entry.relativePath, selectedEvidencePath));
+    const inFiles = files.some((file) => repoPathsEqual(file.relativePath, selectedEvidencePath));
+    if (inChat || inFiles) {
+      setPinnedPath(selectedEvidencePath);
+    }
+  }, [selectedEvidencePath, pinnedPath, loading, selected, chatGptEntries, files]);
 
   // Resolve pin against loaded catalog: select + preview, or honest unavailable.
   useEffect(() => {

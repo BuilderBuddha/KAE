@@ -109,6 +109,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
   const [investigationEpoch, setInvestigationEpoch] = useState(0);
   const [investigationLens, setInvestigationLens] = useState<string | null>(null);
   const [sealedOpenerLines, setSealedOpenerLines] = useState<string[]>([]);
+  /** Shared composer draft — survives screen remounts; never filled from searchQuery. */
+  const [composerDraft, setComposerDraft] = useState('');
+  /** Explorer selection that survives navigation within an investigation. */
+  const [selectedEvidencePath, setSelectedEvidencePath] = useState<string | null>(null);
 
   const refreshContinuity = useCallback(async () => {
     const next = await window.kae.getExecutiveContinuity();
@@ -181,6 +185,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
         navigate?.('vigsy');
         setInvestigationEpoch((epoch) => epoch + 1);
         setInvestigationLens(null);
+        setSelectedEvidencePath(null);
       } else if (capabilityOrigin) {
         const lens = investigationViewLabel(resolved.retrievalQuestion);
         if (lens) setInvestigationLens(lens);
@@ -344,6 +349,8 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     setActiveInvestigation(null);
     setInvestigationLens(null);
     setSealedOpenerLines([]);
+    setComposerDraft('');
+    setSelectedEvidencePath(null);
     setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
@@ -364,6 +371,8 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     setActiveInvestigation(null);
     setInvestigationLens(null);
     setSealedOpenerLines([]);
+    setComposerDraft('');
+    setSelectedEvidencePath(null);
     setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
@@ -412,6 +421,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     investigationEpoch,
     latestInvestigationAnswer,
     sealedOpenerLines,
+    composerDraft,
+    setComposerDraft,
+    selectedEvidencePath,
+    setSelectedEvidencePath,
     submitQuestion,
     continueInvestigationView,
     sealHomeOpener,

@@ -1,8 +1,11 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import { Navigation } from './Navigation';
+import { KaydInvestigationDock } from './vigsy/KaydInvestigationDock';
+import { useVigsyConversation } from '../context/VigsyConversationContext';
 
 import type { ScreenId } from '../types/navigation';
+import { showsInvestigationDock } from '../utils/kayd-workspace';
 import { resetWorkspaceScroll } from '../utils/workspace-scroll';
 
 interface ShellProps {
@@ -14,6 +17,8 @@ interface ShellProps {
 export function Shell({ activeScreen, onNavigate, children }: ShellProps) {
   const vigsyFocus = activeScreen === 'vigsy';
   const contentRef = useRef<HTMLElement>(null);
+  const { hasConversation } = useVigsyConversation();
+  const dockVisible = showsInvestigationDock(activeScreen, hasConversation);
 
   useEffect(() => {
     const runReset = () => resetWorkspaceScroll(contentRef.current);
@@ -25,7 +30,7 @@ export function Shell({ activeScreen, onNavigate, children }: ShellProps) {
   }, [activeScreen]);
 
   return (
-    <div className={`shell${vigsyFocus ? ' shell--vigsy-focus' : ''}`}>
+    <div className={`shell${vigsyFocus ? ' shell--vigsy-focus' : ''}${dockVisible ? ' shell--investigation-dock' : ''}`}>
       <aside className="shell__sidebar">
         <header className="shell__brand">
           <div className="shell__logo shell__logo--vigsy">✦</div>
@@ -36,13 +41,16 @@ export function Shell({ activeScreen, onNavigate, children }: ShellProps) {
         </header>
         <Navigation activeScreen={activeScreen} onNavigate={onNavigate} />
       </aside>
-      <main
-        ref={contentRef}
-        key={activeScreen}
-        className="shell__content shell__content--vigsy workspace-transition"
-      >
-        {children}
-      </main>
+      <div className="shell__main">
+        <main
+          ref={contentRef}
+          key={activeScreen}
+          className={`shell__content shell__content--vigsy workspace-transition${dockVisible ? ' shell__content--with-dock' : ''}`}
+        >
+          {children}
+        </main>
+        {dockVisible ? <KaydInvestigationDock activeScreen={activeScreen} /> : null}
+      </div>
     </div>
   );
 }

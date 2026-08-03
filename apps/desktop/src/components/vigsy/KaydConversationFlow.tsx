@@ -3,6 +3,7 @@ import { CognitionPulse } from './CognitionPulse';
 import { KaydPresenceHeader } from './KaydPresenceHeader';
 import type { VigsyConversationTurn } from '../../hooks/useVigsyConversation';
 import { splitFlowParagraphs } from '../../utils/vigsy-answer-format';
+import { kaydReasoningStatusLabel } from '../../utils/kayd-provider-status';
 
 interface KaydConversationFlowProps {
   turns: VigsyConversationTurn[];
@@ -58,17 +59,7 @@ export function KaydConversationFlow({
   const supporting = displayedTurn.summary?.trim();
   const showSupporting = !thinking && !streaming && Boolean(supporting);
   const answer = displayedTurn.answer;
-  const statusFromAnswer = !thinking
-    ? answer?.usedOfflineFallback
-      ? answer.reasoningProviderId && answer.reasoningProviderId !== 'mock' && answer.reasoningProviderId !== 'deterministic'
-        ? 'Offline fallback'
-        : 'Offline grounded'
-      : answer?.reasoningProviderId === 'openai'
-        ? 'Live OpenAI'
-        : answer?.reasoningProviderId === 'mock' || answer?.reasoningProviderId === 'deterministic'
-          ? 'Offline grounded'
-          : statusLabel
-    : 'Thinking through your repository…';
+  const statusFromAnswer = kaydReasoningStatusLabel(displayedTurn, statusLabel);
 
   return (
     <div

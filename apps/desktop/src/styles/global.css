@@ -53,6 +53,15 @@ select {
   overflow: hidden;
 }
 
+.shell__main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .shell__sidebar {
   width: var(--sidebar-width);
   flex-shrink: 0;
@@ -3168,4 +3177,181 @@ select {
 .vigsy-chips--compact .vigsy-chip {
   font-size: 11px;
   padding: 5px 10px;
+}
+
+/* Phase 2.2 — KayD conversation-first hierarchy */
+.kayd-chat-panel--home {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.kayd-chat-panel--home .kayd-chat-panel__display {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.kayd-chat-panel__composer--sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 4px;
+  padding-top: 8px;
+  padding-bottom: 10px;
+  background: linear-gradient(180deg, rgba(12, 13, 16, 0) 0%, rgba(12, 13, 16, 0.92) 28%, rgba(12, 13, 16, 0.98) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.kayd-chat-panel__conversation-unit--cold {
+  gap: 12px;
+}
+
+.kayd-chat-panel__primary-actions {
+  order: 2;
+}
+
+.kayd-chat-panel__below--supporting {
+  order: 3;
+  margin-top: 12px;
+  padding-top: 8px;
+  padding-bottom: 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.kayd-supporting-drawer__summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.kayd-supporting-drawer__title {
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.kayd-supporting-drawer__meta {
+  font-weight: 400;
+}
+
+.kayd-supporting-drawer__hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  opacity: 0.9;
+  max-width: 62ch;
+}
+
+/* Phase 2 — persistent investigation dock (viewport-anchored, outside screen remount) */
+.shell__content--with-dock {
+  padding-bottom: 28px;
+}
+
+.shell--investigation-dock .workspace--investigation.screen--conversation-first {
+  min-height: 0;
+}
+
+.kayd-investigation-dock {
+  flex-shrink: 0;
+  z-index: 4;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(14, 15, 18, 0.97);
+  padding: 10px 40px 14px;
+  padding-left: 120px;
+  padding-right: 48px;
+}
+
+.shell--vigsy-focus .kayd-investigation-dock {
+  padding-left: 32px;
+  padding-right: 32px;
+}
+
+.kayd-investigation-dock__bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: var(--kayd-read-width, 740px);
+  margin-bottom: 8px;
+}
+
+.kayd-investigation-dock__meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.kayd-investigation-dock__brand {
+  color: var(--color-accent);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.kayd-investigation-dock__meta-text {
+  min-width: 0;
+}
+
+.kayd-investigation-dock__topic {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cf-text, var(--color-text));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42ch;
+}
+
+.kayd-investigation-dock__status {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.kayd-investigation-dock__thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kayd-investigation-dock__open {
+  flex-shrink: 0;
+}
+
+.kayd-investigation-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: var(--kayd-read-width, 740px);
+}
+
+.kayd-investigation-composer__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.kayd-investigation-composer__send {
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.kayd-investigation-composer--dock .kayd-investigation-composer__input {
+  min-height: 38px;
+}
+
+.kayd-chat-panel__composer .kayd-investigation-composer {
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .kayd-investigation-dock {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+
+  .kayd-investigation-dock__topic {
+    max-width: 28ch;
+  }
 }

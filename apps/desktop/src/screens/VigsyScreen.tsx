@@ -6,6 +6,8 @@ import { KaydGuidedChips } from '../components/vigsy/KaydGuidedChips';
 import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { useKaydHomeBriefingData } from '../hooks/useKaydHomeBriefingData';
 import { useVigsyConversation } from '../context/VigsyConversationContext';
+import { KAYD_HOME_COMPOSER_ID } from '../utils/kayd-workspace';
+import { selectStarterPrompts } from '../utils/kayd-prompt-suggestions';
 import { buildKaydHomeBriefing, KAYD_BRIEFING_STATUS } from '../utils/kayd-briefings';
 
 const STARTER_CHIPS = [
@@ -44,6 +46,8 @@ export function VigsyScreen() {
     frozenBriefingRef.current = { key: openerKey, lines: briefing };
   }
   const openerBriefing = frozenBriefingRef.current.lines;
+
+  const starterPrompts = useMemo(() => selectStarterPrompts(STARTER_CHIPS, 3), []);
 
   const handleAsk = async (text: string) => {
     await submitQuestion(text);
@@ -94,7 +98,7 @@ export function VigsyScreen() {
       <div className="vigsy-unified__body vigsy-unified__body--chat">
         <KaydChatPanel
           briefing={openerBriefing}
-          composerId="vigsy-unified-composer"
+          composerId={KAYD_HOME_COMPOSER_ID}
           openerKey={openerKey}
           briefingStatus={KAYD_BRIEFING_STATUS.home}
           hidePresenceName
@@ -104,20 +108,19 @@ export function VigsyScreen() {
               openerBriefing.filter((line) => !/^what would you like/i.test(line.trim())),
             );
           }}
+          primaryActions={
+            briefingComplete && !hasConversation ? (
+              <KaydGuidedChips
+                chips={starterPrompts}
+                busy={busy}
+                continuity={sessionContinuity ?? continuity}
+                onAsk={(q) => void handleAsk(q)}
+                maxVisible={3}
+              />
+            ) : null
+          }
         >
-          {briefingComplete ? (
-            <>
-              <KaydExecutiveBriefingInline demoted={hasConversation} />
-              {!hasConversation ? (
-                <KaydGuidedChips
-                  chips={STARTER_CHIPS}
-                  busy={busy}
-                  continuity={sessionContinuity ?? continuity}
-                  onAsk={(q) => void handleAsk(q)}
-                />
-              ) : null}
-            </>
-          ) : null}
+          {briefingComplete ? <KaydExecutiveBriefingInline demoted /> : null}
         </KaydChatPanel>
       </div>
     </div>
