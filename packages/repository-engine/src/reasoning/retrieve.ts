@@ -68,7 +68,7 @@ function intentBoost(record: EvidenceRecord, intent: VigsyQuestionIntent, queryT
     if (recencyBoost(record) > 0) reasons.push('recent evidence');
   }
 
-  if (intent === 'summarize') {
+  if (intent === 'summarize' || intent === 'executive_brief') {
     if (record.kind === 'conversation' || record.kind === 'source') {
       boost += 30;
       reasons.push('conversation source');

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { VigsyConversationRecord, VigsyConversationTurnRecord, VigsyKnowledgeAnswer, ExecutiveContinuity } from '@scooper/core';
+import type {
+  ExecutiveBriefTask,
+  VigsyConversationRecord,
+  VigsyConversationTurnRecord,
+  VigsyKnowledgeAnswer,
+  ExecutiveContinuity,
+} from '@scooper/core';
 import {
   resolveFollowUp,
   sessionFromAnswer,
@@ -13,6 +19,13 @@ import {
   presentationReadyToReveal,
   presentationRevealChunk,
 } from '../utils/kayd-answer-presentation';
+import {
+  EXECUTIVE_BRIEF_ALREADY_READY_MESSAGE,
+  executiveBriefNeedsEvidenceText,
+  executiveBriefTransitionMessage,
+  shouldUseExecutiveBriefTaskResponse,
+} from '../utils/kayd-executive-brief-presentation';
+import { resolveExecutiveBriefSourceAnswer } from '../utils/kayd-executive-brief-evidence';
 import { presenceDelayMs, streamTextReveal } from '../utils/vigsy-stream';
 import {
   investigationFromSession,
@@ -24,6 +37,14 @@ import {
 } from '../utils/investigation-workflow';
 import { investigationScreenForView } from '../utils/investigation-capability';
 import type { ScreenId } from '../types/navigation';
+
+function latestAnswerFromTurns(turns: VigsyConversationTurn[]): VigsyKnowledgeAnswer | null {
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    if (turn.role === 'assistant' && !turn.thinking && turn.answer) return turn.answer;
+  }
+  return null;
+}
 
 export interface VigsyConversationTurn {
   id: string;
@@ -113,6 +134,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
   const [composerDraft, setComposerDraft] = useState('');
   /** Explorer selection that survives navigation within an investigation. */
   const [selectedEvidencePath, setSelectedEvidencePath] = useState<string | null>(null);
+  /** Active governed Executive Brief task (preview → approve → write). */
+  const [executiveBriefTask, setExecutiveBriefTask] = useState<ExecutiveBriefTask | null>(null);
+  const executiveBriefTaskRef = useRef<ExecutiveBriefTask | null>(null);
+  executiveBriefTaskRef.current = executiveBriefTask;
 
   const refreshContinuity = useCallback(async () => {
     const next = await window.kae.getExecutiveContinuity();
@@ -227,6 +252,23 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
         let streamText = '';
         let supportingText = '';
 
+        const rawBrief = executiveBriefTaskRef.current;
+        // Cancelled/saved tasks are terminal — never treat them as the active preview.
+        const activeBrief =
+          rawBrief &&
+          (rawBrief.state === 'preview-ready' || rawBrief.state === 'revision-requested')
+            ? rawBrief
+            : null;
+        const revising = activeBrief?.state === 'revision-requested';
+        const questionIsBriefRequest = await window.kae.isExecutiveBriefRequest(rawQuestion);
+        const reviseRequested =
+          /\brevise\b/i.test(rawQuestion) &&
+          /\bexecutive\s+brief(?:ing)?\b/i.test(rawQuestion) &&
+          !/\b(prepare|create|make|write|give|turn)\b/i.test(rawQuestion);
+        const reviseWithActivePreview = Boolean(reviseRequested && activeBrief);
+
+        const investigationAnswer = latestAnswerFromTurns(priorTurns);
+
         if (settings.aiStreaming) {
           // Transport chunks are ignored for visible prose — accumulate nothing into turn.text.
           const offStream = window.kae.onReasoningStreamChunk((chunk) => {
@@ -251,18 +293,73 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
           if (abortRef.current) return;
         }
 
-        const formatted = formatConversationalAnswer(
-          answer,
-          resolved.retrievalQuestion,
-          stableTopic,
-          {
-            rawQuestion,
+        const briefTaskResponse = shouldUseExecutiveBriefTaskResponse({
+          revising,
+          intent: answer.intent,
+          questionIsBriefRequest,
+          reviseWithActivePreview,
+        });
+
+        // Preview already active — do not create a parallel task or replace the preview.
+        const alreadyReadyBrief =
+          Boolean(briefTaskResponse) &&
+          !revising &&
+          activeBrief?.state === 'preview-ready' &&
+          (questionIsBriefRequest || answer.intent === 'executive_brief');
+
+        // Brief request without governed evidence — honest guidance, not an ordinary answer.
+        if (briefTaskResponse && !revising && !alreadyReadyBrief) {
+          const source = resolveExecutiveBriefSourceAnswer({
+            briefAnswer: answer,
+            investigationAnswer,
+            selectedEvidencePath,
+          });
+          if (!source.ok) {
+            const needsEvidenceText = executiveBriefNeedsEvidenceText();
+            const settledNeeds = presentationComplete(needsEvidenceText);
+            const needsTurns = nextTurns.map((turn) =>
+              turn.id === assistantId
+                ? {
+                    ...turn,
+                    thinking: settledNeeds.thinking,
+                    streaming: settledNeeds.streaming,
+                    text: settledNeeds.text,
+                    summary: undefined,
+                    answer: undefined,
+                    error: undefined,
+                  }
+                : turn,
+            );
+            setTurns(needsTurns);
+            await persistConversation(needsTurns);
+            await refreshContinuity();
+            return;
+          }
+        }
+
+        if (alreadyReadyBrief) {
+          streamText = EXECUTIVE_BRIEF_ALREADY_READY_MESSAGE;
+          supportingText = '';
+        } else if (briefTaskResponse) {
+          // One task response: concise transition only — preview carries the brief content.
+          streamText = executiveBriefTransitionMessage(revising ? 'revise' : 'prepare');
+          supportingText = '';
+        } else {
+          const formatted = formatConversationalAnswer(
+            answer,
+            resolved.retrievalQuestion,
             stableTopic,
-            capabilityOrigin,
-          },
-        );
-        streamText = formatted.streamText;
-        supportingText = formatted.supportingText;
+            {
+              rawQuestion,
+              stableTopic,
+              capabilityOrigin,
+            },
+          );
+          streamText = formatted.streamText;
+          supportingText = formatted.supportingText;
+        }
+
+        const taskTurnOnly = briefTaskResponse || alreadyReadyBrief;
 
         // Thinking/presence stays until verify + format complete, then one reveal.
         await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
@@ -276,9 +373,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
                   ...turn,
                   thinking: ready.thinking,
                   streaming: ready.streaming,
-                  answer,
+                  answer: taskTurnOnly ? undefined : answer,
                   text: ready.text,
-                  summary: supportingText,
+                  summary: supportingText || undefined,
+                  error: undefined,
                 }
               : turn,
           ),
@@ -290,7 +388,13 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
           setTurns((prev) =>
             prev.map((turn) =>
               turn.id === assistantId
-                ? { ...turn, thinking: chunk.thinking, streaming: chunk.streaming, text: chunk.text }
+                ? {
+                    ...turn,
+                    thinking: chunk.thinking,
+                    streaming: chunk.streaming,
+                    text: chunk.text,
+                    error: undefined,
+                  }
                 : turn,
             ),
           );
@@ -301,6 +405,62 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
         sessionRef.current = sessionFromAnswer(rawQuestion, answer, sessionRef.current);
         setActiveInvestigation(investigationFromSession(sessionRef.current));
 
+        // Governed Executive Brief: prepare or revise preview without writing.
+        // Already-ready: keep existing preview — no parallel prepare.
+        if (briefTaskResponse && !alreadyReadyBrief) {
+          try {
+            if (revising && activeBrief) {
+              const revised = await window.kae.reviseExecutiveBrief({
+                taskId: activeBrief.taskId,
+                answer,
+              });
+              setExecutiveBriefTask(revised);
+            } else {
+              const source = resolveExecutiveBriefSourceAnswer({
+                briefAnswer: answer,
+                investigationAnswer,
+                selectedEvidencePath,
+              });
+              if (!source.ok) {
+                // Guarded above; keep honest failure if race clears evidence.
+                throw new Error('no-evidence');
+              }
+              const conversationKey =
+                conversationId ?? recordRef.current?.conversationId ?? 'unknown-conversation';
+              const topic =
+                sessionRef.current.lastSearchQuery ||
+                source.answer.searchQuery ||
+                rawQuestion;
+              const prepared = await window.kae.prepareExecutiveBrief({
+                conversationId: conversationKey,
+                topic,
+                answer: source.answer,
+              });
+              setExecutiveBriefTask(prepared);
+            }
+          } catch {
+            // Genuine prepare/revise failure — no successful preview; one honest message.
+            // Do not clear an existing active preview on a failed parallel attempt.
+            if (!revising && !activeBrief) setExecutiveBriefTask(null);
+            const failedBriefTurns = nextTurns.map((turn) =>
+              turn.id === assistantId
+                ? {
+                    ...turn,
+                    thinking: false,
+                    streaming: false,
+                    answer: undefined,
+                    summary: undefined,
+                    error: 'Unable to prepare the Executive Brief from indexed evidence.',
+                    text: 'I could not prepare the Executive Brief from the repository evidence index.',
+                  }
+                : turn,
+            );
+            setTurns(failedBriefTurns);
+            await persistConversation(failedBriefTurns);
+            return;
+          }
+        }
+
         const settled = presentationComplete(streamText);
         const completedTurns = nextTurns.map((turn) =>
           turn.id === assistantId
@@ -309,8 +469,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
                 thinking: settled.thinking,
                 streaming: settled.streaming,
                 text: settled.text,
-                summary: supportingText,
-                answer,
+                summary: supportingText || undefined,
+                // Brief turns keep transition text only; ordinary turns keep the grounded answer.
+                answer: taskTurnOnly ? undefined : answer,
+                error: undefined,
               }
             : turn,
         );
@@ -335,7 +497,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
         setBusy(false);
       }
     },
-    [busy, conversationId, navigate, persistConversation, refreshContinuity, turns],
+    [busy, conversationId, navigate, persistConversation, refreshContinuity, selectedEvidencePath, turns],
   );
 
   const sealHomeOpener = useCallback((lines: string[]) => {
@@ -351,6 +513,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     setSealedOpenerLines([]);
     setComposerDraft('');
     setSelectedEvidencePath(null);
+    setExecutiveBriefTask(null);
     setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
@@ -373,6 +536,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     setSealedOpenerLines([]);
     setComposerDraft('');
     setSelectedEvidencePath(null);
+    setExecutiveBriefTask(null);
     setInvestigationEpoch((epoch) => epoch + 1);
     setBusy(false);
     const created = await window.kae.createVigsyConversation();
@@ -401,6 +565,53 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     [busy, investigationSearchQuery, navigate, submitQuestion],
   );
 
+  const approveExecutiveBrief = useCallback(async () => {
+    const task = executiveBriefTaskRef.current;
+    if (!task || busy) return;
+    setBusy(true);
+    try {
+      const next = await window.kae.approveExecutiveBrief({
+        taskId: task.taskId,
+        approvalToken: task.taskId,
+      });
+      setExecutiveBriefTask(next);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy]);
+
+  const cancelExecutiveBrief = useCallback(async () => {
+    const task = executiveBriefTaskRef.current;
+    if (!task || busy) return;
+    if (task.state === 'cancelled' || task.state === 'saved-and-registered') return;
+    setBusy(true);
+    try {
+      await window.kae.cancelExecutiveBrief(task.taskId);
+      // Keep cancelled terminal in main; clear renderer so a later request can prepare a new task.
+      setExecutiveBriefTask(null);
+      setComposerDraft((draft) =>
+        /\bexecutive\s+brief\b/i.test(draft) && /\brevise\b/i.test(draft) ? '' : draft,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [busy]);
+
+  const requestExecutiveBriefRevision = useCallback(async () => {
+    const task = executiveBriefTaskRef.current;
+    if (!task || busy) return;
+    setBusy(true);
+    try {
+      const next = await window.kae.requestExecutiveBriefRevision(task.taskId);
+      setExecutiveBriefTask(next);
+      setComposerDraft(
+        `Please revise the executive brief on "${task.evidence.topic}" — keep the same frozen evidence.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }, [busy]);
+
   const latestInvestigationAnswer = useMemo(() => {
     for (let index = turns.length - 1; index >= 0; index -= 1) {
       const turn = turns[index];
@@ -425,6 +636,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     setComposerDraft,
     selectedEvidencePath,
     setSelectedEvidencePath,
+    executiveBriefTask,
+    approveExecutiveBrief,
+    cancelExecutiveBrief,
+    requestExecutiveBriefRevision,
     submitQuestion,
     continueInvestigationView,
     sealHomeOpener,

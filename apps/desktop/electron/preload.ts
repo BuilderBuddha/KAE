@@ -11,6 +11,9 @@ import type {
   ValidationProgress,
   RepairPlan,
   RepairResult,
+  ExecutiveBriefTask,
+  PrepareExecutiveBriefInput,
+  ReviseExecutiveBriefInput,
   RepositoryFileEntry,
   RepositoryHealthReport,
   RepositorySearchResult,
@@ -108,6 +111,16 @@ export interface KaeAPI {
   executeRepositoryRepair: (plan: RepairPlan) => Promise<RepairResult>;
   getLastRepairPlan: () => Promise<RepairPlan | null>;
   getLastRepairResult: () => Promise<RepairResult | null>;
+  prepareExecutiveBrief: (input: PrepareExecutiveBriefInput) => Promise<ExecutiveBriefTask>;
+  getExecutiveBriefTask: (taskId: string) => Promise<ExecutiveBriefTask | null>;
+  requestExecutiveBriefRevision: (taskId: string) => Promise<ExecutiveBriefTask>;
+  reviseExecutiveBrief: (input: ReviseExecutiveBriefInput) => Promise<ExecutiveBriefTask>;
+  cancelExecutiveBrief: (taskId: string) => Promise<ExecutiveBriefTask>;
+  approveExecutiveBrief: (input: {
+    taskId: string;
+    approvalToken: string;
+  }) => Promise<ExecutiveBriefTask>;
+  isExecutiveBriefRequest: (question: string) => Promise<boolean>;
   importChatGptZip: (filePath: string) => Promise<ImportSummary>;
   getConnectorStatuses: () => Promise<ConnectorStatus[]>;
   connectConnector: (connectorId: ConnectorId, config: Partial<ConnectorConfig>) => Promise<unknown>;
@@ -188,6 +201,14 @@ const kaeAPI: KaeAPI = {
   executeRepositoryRepair: (plan) => ipcRenderer.invoke('kae:execute-repository-repair', plan),
   getLastRepairPlan: () => ipcRenderer.invoke('kae:get-last-repair-plan'),
   getLastRepairResult: () => ipcRenderer.invoke('kae:get-last-repair-result'),
+  prepareExecutiveBrief: (input) => ipcRenderer.invoke('kae:prepare-executive-brief', input),
+  getExecutiveBriefTask: (taskId) => ipcRenderer.invoke('kae:get-executive-brief-task', taskId),
+  requestExecutiveBriefRevision: (taskId) =>
+    ipcRenderer.invoke('kae:request-executive-brief-revision', taskId),
+  reviseExecutiveBrief: (input) => ipcRenderer.invoke('kae:revise-executive-brief', input),
+  cancelExecutiveBrief: (taskId) => ipcRenderer.invoke('kae:cancel-executive-brief', taskId),
+  approveExecutiveBrief: (input) => ipcRenderer.invoke('kae:approve-executive-brief', input),
+  isExecutiveBriefRequest: (question) => ipcRenderer.invoke('kae:is-executive-brief-request', question),
   importChatGptZip: (filePath) => ipcRenderer.invoke('kae:import-chatgpt-zip', filePath),
   getConnectorStatuses: () => ipcRenderer.invoke('kae:get-connector-statuses'),
   connectConnector: (connectorId, config) =>

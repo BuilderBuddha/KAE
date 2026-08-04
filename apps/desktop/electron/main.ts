@@ -19,6 +19,9 @@ import {
   type ValidationProgress,
   type RepairPlan,
   type RepairResult,
+  type ExecutiveBriefTask,
+  type PrepareExecutiveBriefInput,
+  type ReviseExecutiveBriefInput,
   type VigsyConversationRecord,
   type AnswerKnowledgeOptions,
   type LiveCaptureInput,
@@ -71,6 +74,13 @@ import {
   captureLiveSession,
   writeSessionManifest,
   writeImportReport,
+  prepareExecutiveBriefTask,
+  reviseExecutiveBriefTask,
+  markExecutiveBriefRevisionRequested,
+  cancelExecutiveBriefTask,
+  writeApprovedExecutiveBrief,
+  assertExecutiveBriefOnly,
+  isExecutiveBriefRequest,
 } from '@scooper/repository-engine';
 import {
   hasProviderApiKey,
@@ -127,6 +137,10 @@ let lastValidatedFilePath: string | null = null;
 let lastImportSummary: ImportSummary | null = null;
 let activeValidationAbort: AbortController | null = null;
 let lastRepairPlan: RepairPlan | null = null;
+/** In-memory governed Executive Brief tasks — renderer cannot force saved state. */
+const executiveBriefTasks = new Map<string, ExecutiveBriefTask>();
+/** Idempotent registration index: registrationKey → writeResult */
+const executiveBriefWritesByKey = new Map<string, NonNullable<ExecutiveBriefTask['writeResult']>>();
 let lastRepairResult: RepairResult | null = null;
 
 const config = createDefaultConfig();
@@ -826,6 +840,71 @@ function setupIpc(): void {
       ready: result.healthAfter.ready,
     });
     return result;
+  });
+
+  ipcMain.handle('kae:prepare-executive-brief', async (_event, input: PrepareExecutiveBriefInput) => {
+    assertExecutiveBriefOnly('executive-brief');
+    addLog('info', 'executive-brief', 'Preparing Executive Brief preview (no write)');
+    const task = prepareExecutiveBriefTask(input);
+    executiveBriefTasks.set(task.taskId, task);
+    return task;
+  });
+
+  ipcMain.handle('kae:get-executive-brief-task', (_event, taskId: string) => {
+    return executiveBriefTasks.get(taskId) ?? null;
+  });
+
+  ipcMain.handle('kae:request-executive-brief-revision', (_event, taskId: string) => {
+    const existing = executiveBriefTasks.get(taskId);
+    if (!existing) throw new Error('Executive Brief task not found.');
+    const next = markExecutiveBriefRevisionRequested(existing);
+    executiveBriefTasks.set(taskId, next);
+    return next;
+  });
+
+  ipcMain.handle('kae:revise-executive-brief', async (_event, input: ReviseExecutiveBriefInput) => {
+    const existing = executiveBriefTasks.get(input.taskId);
+    if (!existing) throw new Error('Executive Brief task not found.');
+    const next = reviseExecutiveBriefTask(existing, input);
+    executiveBriefTasks.set(input.taskId, next);
+    addLog('info', 'executive-brief', `Executive Brief revised (revision ${next.revisionCount}) — still not saved`);
+    return next;
+  });
+
+  ipcMain.handle('kae:cancel-executive-brief', (_event, taskId: string) => {
+    const existing = executiveBriefTasks.get(taskId);
+    if (!existing) throw new Error('Executive Brief task not found.');
+    const next = cancelExecutiveBriefTask(existing);
+    executiveBriefTasks.set(taskId, next);
+    addLog('info', 'executive-brief', 'Executive Brief cancelled — repository unchanged');
+    return next;
+  });
+
+  ipcMain.handle(
+    'kae:approve-executive-brief',
+    async (_event, input: { taskId: string; approvalToken: string }) => {
+      const existing = executiveBriefTasks.get(input.taskId);
+      if (!existing) throw new Error('Executive Brief task not found.');
+      assertExecutiveBriefOnly(existing.taskType);
+      addLog('info', 'executive-brief', `Executive Brief approval received for ${input.taskId}`);
+      const prior = executiveBriefWritesByKey.get(existing.registrationKey);
+      const next = await writeApprovedExecutiveBrief(existing, input, {
+        repositoryPath: repoPath(),
+        priorSuccessfulWrite: prior,
+      });
+      executiveBriefTasks.set(input.taskId, next);
+      if (next.writeResult?.saved) {
+        executiveBriefWritesByKey.set(existing.registrationKey, next.writeResult);
+        addLog('info', 'executive-brief', `Executive Brief saved: ${next.writeResult.relativePath}`);
+      } else if (next.failure) {
+        addLog('error', 'executive-brief', next.failure.message);
+      }
+      return next;
+    },
+  );
+
+  ipcMain.handle('kae:is-executive-brief-request', (_event, question: string) => {
+    return isExecutiveBriefRequest(question);
   });
 
   ipcMain.handle('kae:validate-chatgpt-zip', async (_event, filePath: string) => {

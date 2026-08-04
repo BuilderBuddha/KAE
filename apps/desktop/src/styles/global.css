@@ -3114,6 +3114,14 @@ select {
 
 .kayd-chat-panel__action-row {
   padding: 0 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vigsy-chip--executive-brief {
+  border-color: rgba(180, 200, 255, 0.35);
 }
 
 .kayd-chat-panel__composer--adjacent {
@@ -3170,8 +3178,17 @@ select {
   padding: 4px 0 8px;
 }
 
-.vigsy-chips--compact {
-  gap: 6px;
+.kayd-conversation-flow--preserving .kayd-conversation-flow__turn--preserved {
+  opacity: 0.92;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kayd-briefing-line--user {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
 }
 
 .vigsy-chips--compact .vigsy-chip {
@@ -3242,6 +3259,88 @@ select {
   color: var(--color-text-muted);
   opacity: 0.9;
   max-width: 62ch;
+}
+
+/* Phase 3.1 — governed Executive Brief preview */
+.kayd-executive-brief-preview {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(20, 22, 28, 0.92);
+}
+
+.kayd-executive-brief-preview__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.kayd-executive-brief-preview__status {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.kayd-executive-brief-preview__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.kayd-executive-brief-preview__body h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.kayd-executive-brief-preview__pre {
+  white-space: pre-wrap;
+  font: inherit;
+  margin: 0;
+}
+
+.kayd-executive-brief-preview__links {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.kayd-executive-brief-preview__evidence {
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kayd-executive-brief-preview__evidence-summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  list-style: none;
+}
+
+.kayd-executive-brief-preview__evidence-summary::-webkit-details-marker {
+  display: none;
+}
+
+.kayd-executive-brief-preview__evidence[open] .kayd-executive-brief-preview__evidence-summary {
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+.kayd-executive-brief-preview__freeze {
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.kayd-executive-brief-preview__actions {
+  margin-top: 12px;
+  gap: 8px;
 }
 
 /* Phase 2 — persistent investigation dock (viewport-anchored, outside screen remount) */

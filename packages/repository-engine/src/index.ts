@@ -13,3 +13,4 @@ export * from './awareness/index.js';
 export * from './conversations/index.js';
 export * from './executive-memory/index.js';
 export * from './live-capture/index.js';
+export * from './tasks/index.js';

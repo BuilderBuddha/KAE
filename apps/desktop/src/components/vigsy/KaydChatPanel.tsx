@@ -5,6 +5,7 @@ import { KaydInvestigationRail } from './KaydInvestigationRail';
 import { KaydInvestigationComposer } from './KaydInvestigationComposer';
 import { KaydConversationFlow } from './KaydConversationFlow';
 import { VigsyFollowUpChips } from './VigsyFollowUpChips';
+import { KaydExecutiveBriefPreview } from './KaydExecutiveBriefPreview';
 import { useNavigation } from '../../context/NavigationContext';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import type { ScreenId } from '../../types/navigation';
@@ -13,6 +14,13 @@ import { investigationViewFromQuestion } from '../../utils/investigation-workflo
 import { investigationScreenForView } from '../../utils/investigation-capability';
 import { shouldRenderInlineComposer } from '../../utils/kayd-persistent-composer';
 import { KAYD_INVESTIGATION_DOCK_SCREENS } from '../../utils/kayd-workspace';
+import {
+  EXECUTIVE_BRIEF_SUGGESTED_ACTION_LABEL,
+  EXECUTIVE_BRIEF_SUGGESTED_ACTION_QUESTION,
+  isActiveExecutiveBriefTask,
+  shouldShowPrepareExecutiveBriefAction,
+} from '../../utils/kayd-executive-brief-presentation';
+import { hasGovernedInvestigationEvidence } from '../../utils/kayd-executive-brief-evidence';
 
 interface KaydChatPanelProps {
   briefing: string[];
@@ -56,6 +64,10 @@ export function KaydChatPanel({
     hasConversation,
     investigationActive,
     submitQuestion,
+    executiveBriefTask,
+    approveExecutiveBrief,
+    cancelExecutiveBrief,
+    requestExecutiveBriefRevision,
   } = useVigsyConversation();
 
   const isKaydHome = !workspaceScreen || workspaceScreen === 'vigsy';
@@ -106,6 +118,11 @@ export function KaydChatPanel({
     return null;
   }, [turns]);
 
+  const showPrepareExecutiveBrief = shouldShowPrepareExecutiveBriefAction({
+    hasInvestigationEvidence: hasGovernedInvestigationEvidence(latestAnswer),
+    previewActive: isActiveExecutiveBriefTask(executiveBriefTask?.state),
+  });
+
   const handleFollowUp = (action: FollowUpAction) => {
     const capabilityOrigin = action.origin === 'capability';
     if (capabilityOrigin) {
@@ -117,6 +134,10 @@ export function KaydChatPanel({
       }
     }
     void submitQuestion(action.question, { capabilityOrigin });
+  };
+
+  const handlePrepareExecutiveBrief = () => {
+    void submitQuestion(EXECUTIVE_BRIEF_SUGGESTED_ACTION_QUESTION);
   };
 
   const handleBriefingComplete = () => {
@@ -179,12 +200,39 @@ export function KaydChatPanel({
               <div ref={answerRef} className="kayd-chat-panel__answer">
                 <KaydConversationFlow turns={turns} statusLabel="With you on this" />
               </div>
-              {latestAnswer && !busy ? (
+              {(latestAnswer && !busy) || showPrepareExecutiveBrief ? (
                 <div className="kayd-chat-panel__action-row">
-                  <VigsyFollowUpChips answer={latestAnswer} onAction={handleFollowUp} busy={busy} />
+                  {showPrepareExecutiveBrief && !busy ? (
+                    <button
+                      type="button"
+                      className="vigsy-chip vigsy-chip--executive-brief"
+                      disabled={busy}
+                      data-action="prepare-executive-brief"
+                      onClick={handlePrepareExecutiveBrief}
+                    >
+                      {EXECUTIVE_BRIEF_SUGGESTED_ACTION_LABEL}
+                    </button>
+                  ) : null}
+                  {latestAnswer && !busy ? (
+                    <VigsyFollowUpChips
+                      answer={latestAnswer}
+                      onAction={handleFollowUp}
+                      busy={busy}
+                      maxVisible={showPrepareExecutiveBrief ? 2 : 3}
+                    />
+                  ) : null}
                 </div>
               ) : null}
               {composer}
+              {executiveBriefTask && executiveBriefTask.state !== 'cancelled' ? (
+                <KaydExecutiveBriefPreview
+                  task={executiveBriefTask}
+                  busy={busy}
+                  onApprove={() => void approveExecutiveBrief()}
+                  onRequestRevision={() => void requestExecutiveBriefRevision()}
+                  onCancel={() => void cancelExecutiveBrief()}
+                />
+              ) : null}
             </div>
           ) : null}
 

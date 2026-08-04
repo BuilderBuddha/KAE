@@ -2,7 +2,13 @@ import type { EvidenceRecordKind } from './evidence-index.js';
 import type { EvidenceTimelineStep } from './evidence-drilldown.js';
 import type { VigsyRelationshipInsights } from './knowledge-relationship.js';
 
-export type VigsyQuestionIntent = 'decision' | 'summarize' | 'show_evidence' | 'blockers' | 'general';
+export type VigsyQuestionIntent =
+  | 'decision'
+  | 'summarize'
+  | 'show_evidence'
+  | 'blockers'
+  | 'executive_brief'
+  | 'general';
 
 export interface RetrievedEvidenceItem {
   recordId: string;

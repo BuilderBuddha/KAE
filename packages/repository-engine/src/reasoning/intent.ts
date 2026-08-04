@@ -1,4 +1,5 @@
 import type { VigsyQuestionIntent } from '@scooper/core';
+import { isExecutiveBriefRequest } from '../tasks/executive-brief-request.js';
 
 const DECISION_PATTERNS = [
   /\bwhat did we decide\b/i,
@@ -43,6 +44,7 @@ const QUESTION_PREFIXES = [
 /** Classifies question intent for retrieval ranking and answer composition. */
 export function classifyQuestionIntent(question: string): VigsyQuestionIntent {
   const q = question.trim();
+  if (isExecutiveBriefRequest(q)) return 'executive_brief';
   if (DECISION_PATTERNS.some((pattern) => pattern.test(q))) return 'decision';
   if (SUMMARIZE_PATTERNS.some((pattern) => pattern.test(q))) return 'summarize';
   if (SHOW_EVIDENCE_PATTERNS.some((pattern) => pattern.test(q))) return 'show_evidence';

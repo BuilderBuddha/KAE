@@ -10,6 +10,9 @@ import type {
   ValidationProgress,
   RepairPlan,
   RepairResult,
+  ExecutiveBriefTask,
+  PrepareExecutiveBriefInput,
+  ReviseExecutiveBriefInput,
   RepositoryFileEntry,
   RepositoryHealthReport,
   RepositorySearchResult,
@@ -148,6 +151,16 @@ export interface KaeAPI {
   executeRepositoryRepair: (plan: RepairPlan) => Promise<RepairResult>;
   getLastRepairPlan: () => Promise<RepairPlan | null>;
   getLastRepairResult: () => Promise<RepairResult | null>;
+  prepareExecutiveBrief: (input: PrepareExecutiveBriefInput) => Promise<ExecutiveBriefTask>;
+  getExecutiveBriefTask: (taskId: string) => Promise<ExecutiveBriefTask | null>;
+  requestExecutiveBriefRevision: (taskId: string) => Promise<ExecutiveBriefTask>;
+  reviseExecutiveBrief: (input: ReviseExecutiveBriefInput) => Promise<ExecutiveBriefTask>;
+  cancelExecutiveBrief: (taskId: string) => Promise<ExecutiveBriefTask>;
+  approveExecutiveBrief: (input: {
+    taskId: string;
+    approvalToken: string;
+  }) => Promise<ExecutiveBriefTask>;
+  isExecutiveBriefRequest: (question: string) => Promise<boolean>;
   importChatGptZip: (filePath: string) => Promise<ImportSummary>;
   getConnectorStatuses: () => Promise<ConnectorStatus[]>;
   connectConnector: (connectorId: ConnectorId, config: Partial<ConnectorConfig>) => Promise<unknown>;
