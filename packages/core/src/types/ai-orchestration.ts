@@ -116,4 +116,9 @@ export interface AnswerKnowledgeOptions {
   temperature?: number;
   streaming?: boolean;
   conversationContext?: ConversationContext;
+  /**
+   * Explicit UI-selected source KRC IDs (e.g. from explorer selection).
+   * Selection authority lives outside the model; may be narrowed by named KRCs in the question.
+   */
+  selectedSourceIds?: string[];
 }

@@ -1,8 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ExecutiveBriefing } from '@scooper/core';
+import type { ExecutiveBriefing, ExecutiveAwarenessCard } from '@scooper/core';
 import { ExecutiveBriefingPanel } from './ExecutiveBriefingPanel';
 import { useVigsyConversation } from '../../context/VigsyConversationContext';
 import { filterExecutiveBriefingForInvestigation } from '../../utils/investigation-workflow';
+
+function isVigsyConversationLocalLink(pathOrId: string | undefined): boolean {
+  if (!pathOrId) return false;
+  return /ExecutiveSessions[/\\]KAE[/\\]VIGSY-/i.test(pathOrId) || /VIGSY-[0-9A-F]{8}/i.test(pathOrId);
+}
+
+/** Drop prior conversation-local Vigsy Recent Decisions from a blank conversation's supporting drawer. */
+function filterBriefingForFreshConversation(briefing: ExecutiveBriefing | null): ExecutiveBriefing | null {
+  if (!briefing) return briefing;
+  const cards: ExecutiveAwarenessCard[] = briefing.cards
+    .map((card) => {
+      if (card.category !== 'recent_decision') return card;
+      const links = (card.evidenceLinks ?? []).filter(
+        (link) =>
+          !isVigsyConversationLocalLink(link.explorerPath) &&
+          !isVigsyConversationLocalLink(link.recordId),
+      );
+      if (links.length === 0) return null;
+      return {
+        ...card,
+        evidenceLinks: links,
+        summary: links[0]
+          ? `${links[0].label} — ${(card.summary.split('—')[1] ?? card.summary).trim()}`.slice(0, 180)
+          : card.summary,
+      };
+    })
+    .filter((card): card is ExecutiveAwarenessCard => card != null);
+  return { ...briefing, cards };
+}
 
 function supportingSummary(briefing: ExecutiveBriefing | null): {
   sourceCount: number;
@@ -38,7 +67,7 @@ function supportingSummary(briefing: ExecutiveBriefing | null): {
  * Full cards and Open-in-Explorer remain available when expanded.
  */
 export function KaydExecutiveBriefingInline({ demoted = true }: { demoted?: boolean }) {
-  const { investigationActive, activeInvestigation } = useVigsyConversation();
+  const { investigationActive, activeInvestigation, turns } = useVigsyConversation();
   const [briefing, setBriefing] = useState<ExecutiveBriefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
@@ -73,9 +102,15 @@ export function KaydExecutiveBriefingInline({ demoted = true }: { demoted?: bool
   }, [loadBriefing]);
 
   const displayBriefing = useMemo(() => {
-    if (!investigationActive) return briefing;
-    return filterExecutiveBriefingForInvestigation(briefing, activeInvestigation?.searchQuery);
-  }, [activeInvestigation?.searchQuery, briefing, investigationActive]);
+    if (investigationActive) {
+      return filterExecutiveBriefingForInvestigation(briefing, activeInvestigation?.searchQuery);
+    }
+    // New / blank conversation: keep durable awareness, exclude prior conversation-local Vigsy decisions.
+    if ((turns?.length ?? 0) === 0) {
+      return filterBriefingForFreshConversation(briefing);
+    }
+    return briefing;
+  }, [activeInvestigation?.searchQuery, briefing, investigationActive, turns]);
 
   const summary = useMemo(() => supportingSummary(displayBriefing), [displayBriefing]);
 

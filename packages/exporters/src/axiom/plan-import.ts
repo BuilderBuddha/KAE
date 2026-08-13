@@ -8,7 +8,7 @@ import {
   loadExistingConversationMap,
 } from './krc-utils.js';
 import { buildExecutiveSessionFilename } from './executive-session.js';
-import { buildSourceFilename, resolveCategoryFolder } from './source-markdown.js';
+import { buildSourceFilename, isYouTubeSourceDocument, resolveCategoryFolder } from './source-markdown.js';
 import { buildImportDiffPreview } from './build-diff-preview.js';
 
 interface ZipAssetMeta {
@@ -75,8 +75,11 @@ export async function planAxiomImport(
     const filename = buildSourceFilename(krcId, doc);
     const sourcePath = path.join(sourcesRoot, categoryFolder, filename);
     const sourceRelativePath = `Sources/${categoryFolder}/${filename}`;
+    const youtubeSource = isYouTubeSourceDocument(doc);
     const sessionFilename = buildExecutiveSessionFilename(krcId, doc);
-    const sessionRelativePath = `ExecutiveSessions/${categoryFolder}/${sessionFilename}`;
+    const sessionRelativePath = youtubeSource
+      ? ''
+      : `ExecutiveSessions/${categoryFolder}/${sessionFilename}`;
 
     if (action === 'create') {
       try {

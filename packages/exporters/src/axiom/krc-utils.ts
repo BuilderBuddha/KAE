@@ -2,7 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const KRC_ID_PATTERN = /KRC-(\d{4})/gi;
+/** ChatGPT Import identity heading (preserved). */
 const CONVERSATION_ID_PATTERN = /## ChatGPT Conversation ID\s*\n([^\n]+)/;
+/** YouTube / connector internal identity (Checkpoint B). */
+const SOURCE_KEY_PATTERN = /## Source Key\s*\n([^\n]+)/;
 
 const CATEGORY_SUBDIRS = [
   'VIGS',
@@ -90,9 +93,11 @@ export async function loadExistingConversationMap(
     if (!krcMatch) continue;
 
     const content = await fs.readFile(filePath, 'utf8');
+    const sourceKeyMatch = content.match(SOURCE_KEY_PATTERN);
     const convMatch = content.match(CONVERSATION_ID_PATTERN);
-    if (convMatch) {
-      map.set(convMatch[1].trim(), krcMatch[1].toUpperCase());
+    const identity = (sourceKeyMatch?.[1] ?? convMatch?.[1])?.trim();
+    if (identity) {
+      map.set(identity, krcMatch[1].toUpperCase());
     }
   }
 

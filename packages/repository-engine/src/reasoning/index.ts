@@ -3,4 +3,8 @@ export * from './assemble.js';
 export * from './compose.js';
 export * from './context-builder.js';
 export * from './intent.js';
+export * from './krc-ids.js';
 export * from './retrieve.js';
+export * from './source-lookup-compose.js';
+export * from './source-scope.js';
+export * from './source-status.js';

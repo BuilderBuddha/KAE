@@ -30,6 +30,20 @@ const STOP_WORDS = new Set([
   'who',
   'why',
   'which',
+  'to',
+  'of',
+  'in',
+  'on',
+  'at',
+  'by',
+  'as',
+  'is',
+  'it',
+  'or',
+  'an',
+  'be',
+  'into',
+  'about',
 ]);
 
 /** Tokenizes text into normalized search terms for the evidence index. */

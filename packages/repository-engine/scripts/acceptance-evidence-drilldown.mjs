@@ -24,18 +24,49 @@ function messageLabels(drilldown) {
   return drilldown.sections.messages.items.map((item) => item.label.toLowerCase());
 }
 
-async function drilldownForQuery(query) {
-  const hits = evidenceResultsToRepositoryResults(await searchEvidence(repositoryPath, query, 5));
+async function drilldownForQuery(query, { requireAttachments = false } = {}) {
+  const hits = evidenceResultsToRepositoryResults(await searchEvidence(repositoryPath, query, 30));
   assert(hits.length > 0, `Expected search hits for "${query}"`);
-  const hit = hits[0];
-  assert(hit.recordId, `Expected recordId on top search hit for "${query}"`);
-  const drilldown = await getEvidenceDrilldown(repositoryPath, hit.recordId, query);
-  assert(drilldown, `Expected drilldown for "${query}"`);
-  return drilldown;
+
+  // Prefer a durable source/conversation-bearing hit. Live repos may rank recent Vigsy
+  // executive sessions above the ChatGPT source for the same query terms.
+  const candidates = [];
+  for (const hit of hits) {
+    assert(hit.recordId, `Expected recordId on search hit for "${query}"`);
+    if (/ExecutiveSessions[/\\]KAE[/\\]VIGSY-/i.test(hit.recordId) || /VIGSY-[0-9A-F]{8}/i.test(hit.recordId)) {
+      continue;
+    }
+    const drilldown = await getEvidenceDrilldown(repositoryPath, hit.recordId, query);
+    if (!drilldown) continue;
+    if (drilldown.sections.conversation.items.length === 0) continue;
+    candidates.push(drilldown);
+    if (
+      requireAttachments &&
+      drilldown.sections.attachments.items.length > 0 &&
+      drilldown.sections.messages.items.length > 0 &&
+      drilldown.sections.executiveSession.items.length > 0
+    ) {
+      return drilldown;
+    }
+    if (!requireAttachments) return drilldown;
+  }
+
+  if (requireAttachments) {
+    const full = candidates.find(
+      (d) =>
+        d.sections.attachments.items.length > 0 &&
+        d.sections.messages.items.length > 0 &&
+        d.sections.executiveSession.items.length > 0,
+    );
+    if (full) return full;
+  }
+
+  assert(candidates[0], `Expected conversation-bearing drilldown for "${query}"`);
+  return candidates[0];
 }
 
 async function testRepositoryRepair() {
-  const drilldown = await drilldownForQuery('repository repair');
+  const drilldown = await drilldownForQuery('repository repair', { requireAttachments: true });
 
   assert(sectionHasItems(drilldown, 'sourceFile'), 'source section');
   assert(sectionHasItems(drilldown, 'conversation'), 'conversation section');

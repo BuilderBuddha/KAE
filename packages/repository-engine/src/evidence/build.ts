@@ -9,6 +9,12 @@ import {
   resolveUploadRef,
 } from '../chatgpt-source.js';
 import { parseExecutiveSessionMarkdown } from './parse-session.js';
+import {
+  firstTranscriptTimestampSeconds,
+  isYouTubeSourceMarkdown,
+  parseYouTubeSourceMarkdown,
+  youtubeFieldsFromParsed,
+} from './parse-youtube.js';
 import { EVIDENCE_INDEX_VERSION, saveEvidenceIndex } from './persist.js';
 import { tokenizeSearchTerms } from './tokenize.js';
 
@@ -16,7 +22,8 @@ function excerpt(text: string, max = 160): string {
   return text.replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-function inferSourceType(fileName: string): string {
+function inferSourceType(fileName: string, content?: string): string {
+  if (content && isYouTubeSourceMarkdown(content)) return 'youtube';
   if (isChatGptImportSourceFileName(fileName)) return 'chatgpt-import';
   if (fileName.startsWith('KRC-')) return 'krc-source';
   return 'markdown';
@@ -56,6 +63,69 @@ function countByKind(records: EvidenceRecord[]): EvidenceIndexStats {
   return stats;
 }
 
+/**
+ * Index YouTube KRC sources.
+ * Transcript/message evidence only when Captions are Acquired with real transcript text.
+ * Description is never indexed as spoken transcript evidence.
+ */
+function indexYouTubeSource(relativePath: string, content: string, records: EvidenceRecord[]): boolean {
+  const parsed = parseYouTubeSourceMarkdown(content);
+  if (!parsed) return false;
+
+  const repository = {
+    krcId: parsed.krcId,
+    repositoryPath: relativePath,
+    category: 'sources',
+    sourceType: 'youtube',
+  };
+  const conversation = {
+    conversationId: parsed.sourceKey,
+    title: parsed.title,
+  };
+  const metaYoutube = youtubeFieldsFromParsed(parsed, {
+    provenanceKind: 'youtube_metadata',
+  });
+
+  // Metadata discovery record — excerpt is title, never description-as-transcript.
+  records.push({
+    id: `${parsed.krcId}:source`,
+    kind: 'source',
+    repository,
+    conversation,
+    youtube: metaYoutube,
+    excerpt: excerpt(parsed.title),
+  });
+
+  const captionsAcquired = parsed.captionStatus.trim().toLowerCase() === 'acquired';
+  if (captionsAcquired && parsed.transcript) {
+    const timestampSeconds = firstTranscriptTimestampSeconds(parsed.transcript);
+    const transcriptYoutube = youtubeFieldsFromParsed(parsed, {
+      provenanceKind: 'youtube_creator_captions',
+      ...(typeof timestampSeconds === 'number' ? { timestampSeconds } : {}),
+    });
+    const messageId = `${parsed.krcId}:transcript:0`;
+    records.push({
+      id: messageId,
+      kind: 'message',
+      repository,
+      conversation,
+      youtube: transcriptYoutube,
+      message: {
+        messageId,
+        role: 'youtube_caption',
+        text: parsed.transcript,
+        searchTerms: tokenizeSearchTerms(parsed.transcript),
+        ...(typeof timestampSeconds === 'number'
+          ? { timestamp: String(timestampSeconds) }
+          : {}),
+      },
+      excerpt: excerpt(parsed.transcript),
+    });
+  }
+
+  return true;
+}
+
 function indexChatGptSource(
   relativePath: string,
   content: string,
@@ -65,7 +135,7 @@ function indexChatGptSource(
   const parsed = parseChatGptSourceMarkdown(content);
   if (!parsed) return;
 
-  const sourceType = inferSourceType(path.basename(relativePath));
+  const sourceType = inferSourceType(path.basename(relativePath), content);
   const repository = {
     krcId: parsed.krcId,
     repositoryPath: relativePath,
@@ -169,7 +239,7 @@ function indexGenericSource(
       krcId,
       repositoryPath: relativePath,
       category: 'sources',
-      sourceType: inferSourceType(fileName),
+      sourceType: inferSourceType(fileName, content),
     },
     conversation: { title },
     excerpt: excerpt(content),
@@ -231,6 +301,11 @@ export async function buildEvidenceIndex(repositoryPath: string): Promise<Eviden
 
     if (file.category === 'sessions') {
       indexExecutiveSession(file.relativePath, content, records);
+      continue;
+    }
+
+    // YouTube native sources before ChatGPT parser (which matches any KRC title).
+    if (indexYouTubeSource(file.relativePath, content, records)) {
       continue;
     }
 

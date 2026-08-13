@@ -3,7 +3,6 @@ import { LoadingIndicator } from '../components/LoadingIndicator';
 import { KaydChatPanel } from '../components/vigsy/KaydChatPanel';
 import { KaydExecutiveBriefingInline } from '../components/vigsy/KaydExecutiveBriefingInline';
 import { KaydGuidedChips } from '../components/vigsy/KaydGuidedChips';
-import { useExecutiveContinuity } from '../hooks/useExecutiveContinuity';
 import { useKaydHomeBriefingData } from '../hooks/useKaydHomeBriefingData';
 import { useVigsyConversation } from '../context/VigsyConversationContext';
 import { KAYD_HOME_COMPOSER_ID } from '../utils/kayd-workspace';
@@ -18,7 +17,6 @@ const STARTER_CHIPS = [
 ];
 
 export function VigsyScreen() {
-  const continuity = useExecutiveContinuity();
   const { stats, health, gitReadiness, connectors, executiveBriefing, loading: briefingLoading } =
     useKaydHomeBriefingData();
   const {
@@ -36,16 +34,28 @@ export function VigsyScreen() {
   const [briefingComplete, setBriefingComplete] = useState(hasConversation);
   const [openerKey, setOpenerKey] = useState(0);
 
+  // Active conversation continuity (refreshed after New Conversation) — never mount-only stale fetch.
   const briefing = useMemo(
-    () => buildKaydHomeBriefing(continuity, health, stats, gitReadiness, connectors, executiveBriefing),
-    [continuity, health, stats, gitReadiness, connectors, executiveBriefing],
+    () =>
+      buildKaydHomeBriefing(
+        sessionContinuity,
+        health,
+        stats,
+        gitReadiness,
+        connectors,
+        executiveBriefing,
+        { conversationHasTurns: hasConversation },
+      ),
+    [sessionContinuity, health, stats, gitReadiness, connectors, executiveBriefing, hasConversation],
   );
 
   const frozenBriefingRef = useRef<{ key: number; lines: string[] } | null>(null);
   if (frozenBriefingRef.current === null || frozenBriefingRef.current.key !== openerKey) {
     frozenBriefingRef.current = { key: openerKey, lines: briefing };
   }
-  const openerBriefing = frozenBriefingRef.current.lines;
+  // Zero-turn chats always use live cold briefing so New Conversation cannot keep a
+  // frozen prior-session snapshot between create and openerKey bump.
+  const openerBriefing = !hasConversation ? briefing : frozenBriefingRef.current.lines;
 
   const starterPrompts = useMemo(() => selectStarterPrompts(STARTER_CHIPS, 3), []);
 
@@ -59,15 +69,17 @@ export function VigsyScreen() {
       return;
     }
     setConfirmClear(false);
+    // Await empty conversation + refreshed continuity before freezing opener.
+    await clearConversation();
     setBriefingComplete(false);
     setOpenerKey((key) => key + 1);
-    await clearConversation();
   };
 
   const handleNewConversation = async () => {
+    // Await create + continuity refresh first so freeze cannot capture paused prior session.
+    await startNewConversation();
     setBriefingComplete(false);
     setOpenerKey((key) => key + 1);
-    await startNewConversation();
   };
 
   if (!ready || briefingLoading) {
@@ -113,7 +125,7 @@ export function VigsyScreen() {
               <KaydGuidedChips
                 chips={starterPrompts}
                 busy={busy}
-                continuity={sessionContinuity ?? continuity}
+                continuity={sessionContinuity}
                 onAsk={(q) => void handleAsk(q)}
                 maxVisible={3}
               />

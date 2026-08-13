@@ -20,3 +20,4 @@ export * from './health/status-labels.js';
 export * from './plugin/index.js';
 export * from './config/index.js';
 export * from './jobs/index.js';
+export * from './youtube/canonical.js';

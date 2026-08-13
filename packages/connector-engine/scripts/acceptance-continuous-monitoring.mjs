@@ -30,9 +30,12 @@ function youtubeVideo(videoId, title, marker) {
     duration: '1:00',
     channelTitle: 'KAE Mock Channel',
     captionsAvailable: true,
+    captionStatus: 'acquired',
+    hasTranscriptTimestamps: false,
     metadata: {
       watchUrl: `https://www.youtube.com/watch?v=${videoId}`,
       connectorId: 'youtube',
+      captionStatus: 'acquired',
     },
   };
 }

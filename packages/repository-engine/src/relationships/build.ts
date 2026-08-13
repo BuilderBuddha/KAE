@@ -100,7 +100,10 @@ function pairRecordsBySharedTokens(
     if (!a || !b) continue;
     if (options.skipSameKrc && a.repository.krcId === b.repository.krcId) continue;
 
-    const shared = sharedTokenCount(tokenSets.get(idA) ?? new Set(), tokenSets.get(idB) ?? new Set());
+    const shared = sharedTokenCount(tokenSets.get(idA) ?? new Set(), tokenSets.get(idB) ?? new Set()).filter(
+      (token) => token.length >= 3,
+    );
+    if (shared.length === 0) continue;
     addRelationship(relationships, seen, {
       fromId: a.id,
       toId: b.id,

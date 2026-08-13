@@ -44,6 +44,23 @@ export interface EvidenceSessionFields {
   transcriptReference?: string;
 }
 
+/** Additive YouTube provenance — optional; ChatGPT records omit this. */
+export interface EvidenceYouTubeFields {
+  sourceType: 'youtube';
+  sourceKey: string;
+  videoId: string;
+  originalSourceUrl: string;
+  captionStatus?: string;
+  /** Present only when a valid upstream caption segment supplies timing. */
+  timestampSeconds?: number;
+  /** Distinct caption provenance when known; metadata-only sources omit transcript use. */
+  provenanceKind?:
+    | 'youtube_creator_captions'
+    | 'youtube_machine_captions'
+    | 'kae_machine_transcription'
+    | 'youtube_metadata';
+}
+
 /** Canonical searchable evidence record consumed by search and future intelligence layers. */
 export interface EvidenceRecord {
   id: string;
@@ -53,6 +70,8 @@ export interface EvidenceRecord {
   message?: EvidenceMessageFields;
   attachment?: EvidenceAttachmentFields;
   session?: EvidenceSessionFields;
+  /** Additive Checkpoint C YouTube provenance. */
+  youtube?: EvidenceYouTubeFields;
   excerpt: string;
 }
 

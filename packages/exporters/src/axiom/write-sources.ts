@@ -20,6 +20,7 @@ import { appendSourceRegistry, buildRegistryEntry, updateKrcStatus } from './reg
 import {
   buildSourceFilename,
   buildSourceMarkdown,
+  isYouTubeSourceDocument,
   resolveCategoryFolder,
 } from './source-markdown.js';
 import { appendImportReview } from './write-import-review.js';
@@ -126,21 +127,7 @@ export async function writeAxiomSources(
     const sourcePath = path.join(repositoryPath, 'Sources', categoryFolder, filename);
     const sourceRelativePath = `Sources/${categoryFolder}/${filename}`;
     const markdown = buildSourceMarkdown(krcId, doc, classification);
-
-    const sessionFilename = buildExecutiveSessionFilename(krcId, doc);
-    const sessionPath = path.join(
-      repositoryPath,
-      'ExecutiveSessions',
-      categoryFolder,
-      sessionFilename,
-    );
-    const sessionRelativePath = `ExecutiveSessions/${categoryFolder}/${sessionFilename}`;
-    const sessionMarkdown = buildExecutiveSessionMarkdown(
-      krcId,
-      doc,
-      classification,
-      sourceRelativePath,
-    );
+    const youtubeSource = isYouTubeSourceDocument(doc);
 
     const reviewEntry: ImportReviewEntry = {
       krcId,
@@ -152,7 +139,6 @@ export async function writeAxiomSources(
       uncertain: classification.uncertain,
       status: 'classified',
       sourcePath: sourceRelativePath,
-      sessionPath: sessionRelativePath,
     };
 
     try {
@@ -184,9 +170,27 @@ export async function writeAxiomSources(
         reviewEntry.status = 'updated';
       }
 
-      await safeWriteFile(sessionPath, sessionMarkdown, overwrite);
-      sessionsCreated++;
-      context?.log?.('info', `Executive session: ${sessionRelativePath}`);
+      // YouTube sources inventory evidence only — no ChatGPT-shaped Executive Session twin.
+      if (!youtubeSource) {
+        const sessionFilename = buildExecutiveSessionFilename(krcId, doc);
+        const sessionPath = path.join(
+          repositoryPath,
+          'ExecutiveSessions',
+          categoryFolder,
+          sessionFilename,
+        );
+        const sessionRelativePath = `ExecutiveSessions/${categoryFolder}/${sessionFilename}`;
+        const sessionMarkdown = buildExecutiveSessionMarkdown(
+          krcId,
+          doc,
+          classification,
+          sourceRelativePath,
+        );
+        await safeWriteFile(sessionPath, sessionMarkdown, overwrite);
+        sessionsCreated++;
+        reviewEntry.sessionPath = sessionRelativePath;
+        context?.log?.('info', `Executive session: ${sessionRelativePath}`);
+      }
 
       if (classification.uncertain) {
         uncertain++;

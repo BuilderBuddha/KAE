@@ -125,6 +125,7 @@ export interface KaeAPI {
   getExecutiveBriefing: () => Promise<ExecutiveBriefingLoadResult>;
   refreshExecutiveBriefing: () => Promise<ExecutiveBriefing>;
   loadActiveVigsyConversation: () => Promise<VigsyConversationRecord | null>;
+  ensureActiveVigsyConversation: () => Promise<VigsyConversationRecord>;
   saveVigsyConversation: (record: VigsyConversationRecord) => Promise<string>;
   createVigsyConversation: () => Promise<VigsyConversationRecord>;
   deleteVigsyConversation: (conversationId: string) => Promise<void>;
@@ -141,6 +142,9 @@ export interface KaeAPI {
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
+  openTrustedYouTubeUrl: (
+    url: string,
+  ) => Promise<{ opened: true } | { opened: false; reason: 'rejected_untrusted_url' }>;
   copyText: (text: string) => Promise<boolean>;
   getLastValidation: () => Promise<ImportValidationReport | null>;
   getLastImportSummary: () => Promise<ImportSummary | null>;

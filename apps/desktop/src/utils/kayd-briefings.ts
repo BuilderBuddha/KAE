@@ -11,7 +11,13 @@ import {
   executiveSessionInvite,
   formatAttentionBrief,
   pushUniqueLine,
+  substantiallyOverlaps,
 } from './executive-brief-flow';
+
+export type KaydHomeBriefingOptions = {
+  /** When false/undefined, opener is cold — no conversation-local continuity replay. */
+  conversationHasTurns?: boolean;
+};
 
 /** Vigsy-style status subtitles shown during briefing thinking pulse. */
 export const KAYD_BRIEFING_STATUS = {
@@ -61,10 +67,28 @@ export function executiveBriefingLines(briefing: ExecutiveBriefing | null | unde
     });
 }
 
-/** Tasks needing executive attention — bullet list for the briefing. */
+function normalizeAttentionKey(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Append attention lines once — blockers and unfinished work often duplicate. */
+function pushAttentionTask(tasks: string[], line: string): void {
+  const trimmed = line.trim();
+  if (!trimmed) return;
+  const key = normalizeAttentionKey(trimmed);
+  if (tasks.some((existing) => normalizeAttentionKey(existing) === key || substantiallyOverlaps(existing, trimmed))) {
+    return;
+  }
+  tasks.push(trimmed);
+}
+
+/**
+ * Tasks needing executive attention — bullet list for the briefing.
+ * Repository health telemetry stays on dashboard/Supporting context — never as agenda bullets.
+ */
 function buildWhatNeedsAttention(
   continuity: ExecutiveContinuity | null | undefined,
-  health: RepositoryHealthReport | null,
+  _health: RepositoryHealthReport | null,
   executiveBriefing?: ExecutiveBriefing | null,
   connectors?: ConnectorStatus[],
 ): string {
@@ -73,45 +97,60 @@ function buildWhatNeedsAttention(
   if (continuity?.session?.currentBlockers?.length) {
     for (const blocker of continuity.session.currentBlockers.slice(0, 3)) {
       const line = blocker.detail?.trim() || blocker.label;
-      if (line) tasks.push(line);
+      if (line) pushAttentionTask(tasks, line);
     }
   }
 
   if (continuity?.session?.unfinishedWork?.length) {
     for (const item of continuity.session.unfinishedWork.slice(0, 3)) {
-      if (item.trim()) tasks.push(item.trim());
+      pushAttentionTask(tasks, item);
     }
-  }
-
-  if (health?.statusLevel === 'attention' || health?.statusLevel === 'critical') {
-    const detail = health.statusSubline?.trim();
-    tasks.push(detail ?? 'Repository health needs a look.');
   }
 
   const stale = staleConnectorCount(connectors);
   if (stale > 0) {
-    tasks.push(stale === 1 ? 'One knowledge source is waiting to sync.' : `${stale} knowledge sources are waiting to sync.`);
+    pushAttentionTask(
+      tasks,
+      stale === 1
+        ? 'One knowledge source is waiting to sync.'
+        : `${stale} knowledge sources are waiting to sync.`,
+    );
   }
 
   if (executiveBriefing?.cards.length) {
     for (const card of executiveBriefing.cards) {
       if (card.isPlaceholder) continue;
-      if (
-        card.category === 'recent_blocker' ||
-        card.category === 'repository_health' ||
-        card.category === 'suggested_next_action'
-      ) {
+      // Health-category awareness cards carry status telemetry — keep off the agenda.
+      if (card.category === 'recent_blocker' || card.category === 'suggested_next_action') {
         const line = card.summary.trim() ? `${card.title}: ${card.summary.trim()}` : card.title;
-        if (!tasks.some((t) => t.includes(card.title))) tasks.push(line);
+        pushAttentionTask(tasks, line);
       }
     }
   }
 
-  if (tasks.length === 0) {
-    return '• Nothing urgent is flagged right now.';
+  if (tasks.length === 0) return '';
+  return tasks.map((task) => `• ${task}`).join('\n');
+}
+
+/** Cold home opener — no prior-session title, changes, blockers, or unfinished work. */
+export function buildKaydColdHomeBriefing(
+  health: RepositoryHealthReport | null,
+  connectors?: ConnectorStatus[],
+): string[] {
+  const messages: string[] = [];
+
+  if (health?.statusLevel === 'healthy') {
+    pushUniqueLine(messages, 'Welcome back — the knowledge base is in good shape for a working session.');
+  } else {
+    pushUniqueLine(messages, 'Welcome back — ready when you are.');
   }
 
-  return tasks.map((task) => `• ${task}`).join('\n');
+  const attention = formatAttentionBrief(buildWhatNeedsAttention(null, null, null, connectors));
+  if (attention) pushUniqueLine(messages, attention);
+
+  pushUniqueLine(messages, "I'd start with tell me what you want to move forward today.");
+  pushUniqueLine(messages, executiveSessionInvite('home'));
+  return messages;
 }
 
 function buildWhereWeAre(
@@ -199,7 +238,13 @@ export function buildKaydHomeBriefing(
   _gitReadiness: GitReadinessReport | null,
   connectors?: ConnectorStatus[],
   executiveBriefing?: ExecutiveBriefing | null,
+  options?: KaydHomeBriefingOptions,
 ): string[] {
+  // Zero-turn / New Conversation — presentation isolation only; prior sessions untouched.
+  if (!options?.conversationHasTurns) {
+    return buildKaydColdHomeBriefing(health, connectors);
+  }
+
   const messages: string[] = [];
 
   pushUniqueLine(messages, buildWhereWeAre(continuity, health));

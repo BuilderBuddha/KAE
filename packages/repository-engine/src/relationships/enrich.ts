@@ -42,10 +42,17 @@ export async function enrichAnswerWithRelationships(
     relatedExecutiveSessions: grouped.relatedExecutiveSessions.slice(0, 6),
   };
 
+  // Avoid duplicate presentation when F0a already used relationship context during retrieval.
+  const alreadyPresented = new Set<string>([
+    ...answer.evidenceUsed.map((item) => item.recordId),
+    ...answer.relatedSources.map((item) => item.recordId),
+    ...(answer.relatedProjectTopics ?? []).map((item) => item.recordId),
+  ]);
+
   const mergedRelated = [...answer.relatedSources];
   const seen = new Set(mergedRelated.map((item) => item.recordId));
   for (const hit of grouped.relatedConversations.slice(0, 4)) {
-    if (seen.has(hit.recordId)) continue;
+    if (seen.has(hit.recordId) || alreadyPresented.has(hit.recordId)) continue;
     seen.add(hit.recordId);
     mergedRelated.push({
       recordId: hit.recordId,

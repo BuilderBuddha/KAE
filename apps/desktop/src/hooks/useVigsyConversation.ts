@@ -99,6 +99,31 @@ function toPersistedTurns(turns: VigsyConversationTurn[], session: VigsySessionC
   return records;
 }
 
+function fromPersistedTurns(records: VigsyConversationTurnRecord[]): VigsyConversationTurn[] {
+  return records.map((turn) => ({
+    id: turn.turnId,
+    role: turn.role,
+    text: turn.displayText || turn.question || '',
+    summary: turn.supportingText,
+    answer: turn.answer,
+    error: turn.error,
+  }));
+}
+
+function sessionFromPersistedRecord(record: VigsyConversationRecord): VigsySessionContext {
+  for (let index = record.turns.length - 1; index >= 0; index -= 1) {
+    const turn = record.turns[index];
+    if (turn.role === 'assistant' && turn.followUpContext) {
+      return {
+        lastQuestion: turn.followUpContext.lastQuestion,
+        lastSearchQuery: turn.followUpContext.lastSearchQuery,
+        lastKrcIds: turn.followUpContext.lastKrcIds,
+      };
+    }
+  }
+  return {};
+}
+
 function completedContextTurns(
   priorTurns: VigsyConversationTurn[],
   currentRawQuestion: string,
@@ -144,36 +169,18 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
     setContinuity(next);
   }, []);
 
-  const persistConversation = useCallback(async (nextTurns: VigsyConversationTurn[]) => {
-    if (!recordRef.current) return;
-    const persistedTurns = toPersistedTurns(nextTurns, sessionRef.current);
-    const record = {
-      ...recordRef.current,
-      updatedAt: new Date().toISOString(),
-      turns: persistedTurns,
-      title:
-        (recordRef.current.title === 'Vigsy conversation' ||
-          recordRef.current.title === 'KayD conversation') &&
-        persistedTurns[0]?.question
-          ? persistedTurns[0].question.slice(0, 72)
-          : recordRef.current.title,
-    };
-    recordRef.current = record;
-    await window.kae.saveVigsyConversation(record);
-  }, []);
-
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        // Fresh session on every app open — KayD home welcome sequence, not restored history.
-        const created = await window.kae.createVigsyConversation();
+        // Restore active conversation on remount; create only when none is valid.
+        const record = await window.kae.ensureActiveVigsyConversation();
         if (cancelled) return;
-        recordRef.current = created;
-        setConversationId(created.conversationId);
-        setTurns([]);
-        sessionRef.current = {};
-        setActiveInvestigation(null);
+        recordRef.current = record;
+        setConversationId(record.conversationId);
+        setTurns(fromPersistedTurns(record.turns));
+        sessionRef.current = sessionFromPersistedRecord(record);
+        setActiveInvestigation(investigationFromSession(sessionRef.current));
         if (!cancelled) await refreshContinuity();
       } finally {
         if (!cancelled) setReady(true);
@@ -204,6 +211,35 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
       const resolved = resolveFollowUp(rawInput, sessionRef.current, { capabilityOrigin });
       const rawQuestion = resolved.rawQuestion;
       if (!rawQuestion || busy) return;
+
+      // Pin conversation identity at submit start — later New Conversation must not redirect writes.
+      const pinnedRecord = recordRef.current;
+      const pinnedConversationId = pinnedRecord?.conversationId ?? conversationId;
+      if (!pinnedRecord || !pinnedConversationId) return;
+
+      const submissionDiscarded = () =>
+        abortRef.current || recordRef.current?.conversationId !== pinnedConversationId;
+
+      const persistPinnedConversation = async (nextTurns: VigsyConversationTurn[]) => {
+        if (submissionDiscarded()) return;
+        const persistedTurns = toPersistedTurns(nextTurns, sessionRef.current);
+        const record: VigsyConversationRecord = {
+          ...pinnedRecord,
+          conversationId: pinnedConversationId,
+          updatedAt: new Date().toISOString(),
+          turns: persistedTurns,
+          title:
+            (pinnedRecord.title === 'Vigsy conversation' ||
+              pinnedRecord.title === 'KayD conversation') &&
+            persistedTurns[0]?.question
+              ? persistedTurns[0].question.slice(0, 72)
+              : pinnedRecord.title,
+        };
+        if (recordRef.current?.conversationId === pinnedConversationId) {
+          recordRef.current = record;
+        }
+        await window.kae.saveVigsyConversation(record);
+      };
 
       const startingNewInvestigation = isNewInvestigationQuestion(rawQuestion, sessionRef.current);
       if (startingNewInvestigation) {
@@ -237,7 +273,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
 
       const stableTopic = resolved.stableTopic || sessionRef.current.lastSearchQuery;
       const conversationContext = {
-        conversationId: conversationId ?? recordRef.current?.conversationId,
+        conversationId: pinnedConversationId,
         turns: completedContextTurns(priorTurns, rawQuestion),
         followUpContext: {
           ...sessionRef.current,
@@ -281,16 +317,28 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
           try {
             answer = await window.kae.answerKnowledgeQuestionStream(resolved.retrievalQuestion, {
               conversationContext,
+              selectedSourceIds: selectedEvidencePath
+                ? [selectedEvidencePath].flatMap((path) => {
+                    const match = path.match(/\bKRC-(\d{4})\b/i);
+                    return match ? [`KRC-${match[1]}`] : [];
+                  })
+                : undefined,
             });
           } finally {
             offStream();
           }
-          if (abortRef.current) return;
+          if (abortRef.current || submissionDiscarded()) return;
         } else {
           answer = await window.kae.answerKnowledgeQuestion(resolved.retrievalQuestion, {
             conversationContext,
+            selectedSourceIds: selectedEvidencePath
+              ? [selectedEvidencePath].flatMap((path) => {
+                  const match = path.match(/\bKRC-(\d{4})\b/i);
+                  return match ? [`KRC-${match[1]}`] : [];
+                })
+              : undefined,
           });
-          if (abortRef.current) return;
+          if (abortRef.current || submissionDiscarded()) return;
         }
 
         const briefTaskResponse = shouldUseExecutiveBriefTaskResponse({
@@ -331,7 +379,8 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
                 : turn,
             );
             setTurns(needsTurns);
-            await persistConversation(needsTurns);
+            if (submissionDiscarded()) return;
+            await persistPinnedConversation(needsTurns);
             await refreshContinuity();
             return;
           }
@@ -363,7 +412,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
 
         // Thinking/presence stays until verify + format complete, then one reveal.
         await new Promise((resolve) => window.setTimeout(resolve, presenceDelayMs()));
-        if (abortRef.current) return;
+        if (submissionDiscarded()) return;
 
         const ready = presentationReadyToReveal();
         setTurns((prev) =>
@@ -383,7 +432,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
         );
 
         await streamTextReveal(streamText, (visible) => {
-          if (abortRef.current) return;
+          if (submissionDiscarded()) return;
           const chunk = presentationRevealChunk(visible);
           setTurns((prev) =>
             prev.map((turn) =>
@@ -400,7 +449,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
           );
         });
 
-        if (abortRef.current) return;
+        if (submissionDiscarded()) return;
 
         sessionRef.current = sessionFromAnswer(rawQuestion, answer, sessionRef.current);
         setActiveInvestigation(investigationFromSession(sessionRef.current));
@@ -425,8 +474,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
                 // Guarded above; keep honest failure if race clears evidence.
                 throw new Error('no-evidence');
               }
-              const conversationKey =
-                conversationId ?? recordRef.current?.conversationId ?? 'unknown-conversation';
+              const conversationKey = pinnedConversationId;
               const topic =
                 sessionRef.current.lastSearchQuery ||
                 source.answer.searchQuery ||
@@ -442,6 +490,7 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
             // Genuine prepare/revise failure — no successful preview; one honest message.
             // Do not clear an existing active preview on a failed parallel attempt.
             if (!revising && !activeBrief) setExecutiveBriefTask(null);
+            if (submissionDiscarded()) return;
             const failedBriefTurns = nextTurns.map((turn) =>
               turn.id === assistantId
                 ? {
@@ -456,10 +505,12 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
                 : turn,
             );
             setTurns(failedBriefTurns);
-            await persistConversation(failedBriefTurns);
+            await persistPinnedConversation(failedBriefTurns);
             return;
           }
         }
+
+        if (submissionDiscarded()) return;
 
         const settled = presentationComplete(streamText);
         const completedTurns = nextTurns.map((turn) =>
@@ -477,9 +528,10 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
             : turn,
         );
         setTurns(completedTurns);
-        await persistConversation(completedTurns);
+        await persistPinnedConversation(completedTurns);
         await refreshContinuity();
       } catch {
+        if (submissionDiscarded()) return;
         const failedTurns = nextTurns.map((turn) =>
           turn.id === assistantId
             ? {
@@ -492,12 +544,12 @@ export function useVigsyConversationState(navigate?: (screen: ScreenId) => void)
             : turn,
         );
         setTurns(failedTurns);
-        await persistConversation(failedTurns);
+        await persistPinnedConversation(failedTurns);
       } finally {
         setBusy(false);
       }
     },
-    [busy, conversationId, navigate, persistConversation, refreshContinuity, selectedEvidencePath, turns],
+    [busy, conversationId, navigate, refreshContinuity, selectedEvidencePath, turns],
   );
 
   const sealHomeOpener = useCallback((lines: string[]) => {

@@ -205,14 +205,16 @@ export function resolveEvidenceDrilldown(
   const messageRecords = krcRecords
     .filter((record) => record.kind === 'message')
     .sort((a, b) => {
-      const aIdx = Number(a.message?.messageId.split(':msg:')[1] ?? 0);
-      const bIdx = Number(b.message?.messageId.split(':msg:')[1] ?? 0);
+      const aIdx = Number(a.message?.messageId.split(':msg:')[1] ?? a.message?.messageId.split(':transcript:')[1] ?? 0);
+      const bIdx = Number(b.message?.messageId.split(':msg:')[1] ?? b.message?.messageId.split(':transcript:')[1] ?? 0);
       return aIdx - bIdx;
     });
 
   const attachmentRecords = krcRecords.filter((record) => record.kind === 'attachment');
   const relatedSources = findRelatedSources(index, krcId, title, query);
   const newest = findNewestEvidence(krcRecords);
+  const isYouTube =
+    sourceRecord?.repository.sourceType === 'youtube' || Boolean(sourceRecord?.youtube);
 
   const decisionSummary = buildDecisionSummary(anchorRecord, krcId, title, query, sessionRecord);
 
@@ -224,6 +226,129 @@ export function resolveEvidenceDrilldown(
       highlighted: anchorRecord.kind === 'source',
     }),
   ]);
+
+  if (isYouTube) {
+    const yt = sourceRecord?.youtube ?? anchorRecord.youtube;
+    const originalUrl = yt?.originalSourceUrl;
+    const youtubeEvidence = section(
+      'conversation',
+      'YouTube Evidence',
+      [
+        link(title, sourcePath, {
+          recordId: sourceRecord?.id,
+          kind: 'source',
+          subtitle: [yt?.sourceKey, yt?.videoId ? `Video ID ${yt.videoId}` : undefined]
+            .filter(Boolean)
+            .join(' · '),
+          highlighted: true,
+        }),
+        ...messageRecords.map((record) =>
+          link(`Caption transcript: ${record.excerpt}`, sourcePath, {
+            recordId: record.id,
+            kind: 'message',
+            subtitle: record.youtube?.originalSourceUrl,
+            highlighted: record.id === anchorRecord.id,
+          }),
+        ),
+      ],
+      'No YouTube evidence indexed.',
+    );
+
+    const originalSource = section(
+      'messages',
+      'Original YouTube Source',
+      originalUrl
+        ? [
+            link('Open original YouTube source', sourcePath, {
+              recordId: sourceRecord?.id,
+              kind: 'source',
+              subtitle: originalUrl,
+              externalUrl: originalUrl,
+              highlighted: true,
+            }),
+          ]
+        : [],
+      'No canonical YouTube URL available.',
+    );
+
+    const noSession = section(
+      'executiveSession',
+      'Executive Session',
+      [],
+      'No automatic Executive Session for YouTube sources.',
+    );
+
+    const attachments = section('attachments', 'Attachments', [], 'No attachments indexed.');
+
+    const relatedSourcesSection = section(
+      'relatedSources',
+      'Related Sources',
+      relatedSources.map((record) =>
+        link(
+          record.conversation?.title ?? record.repository.krcId ?? record.repository.repositoryPath,
+          record.repository.repositoryPath,
+          {
+            recordId: record.id,
+            kind: 'source',
+            subtitle: record.repository.krcId,
+          },
+        ),
+      ),
+      'No related sources found.',
+    );
+
+    const timelineSteps: EvidenceTimelineStep[] = [
+      {
+        kind: 'youtube_evidence',
+        label: title,
+        subtitle: krcId,
+        explorerPath: sourcePath,
+        recordId: sourceRecord?.id ?? anchorRecord.id,
+      },
+      {
+        kind: 'youtube_original_source',
+        label: 'Original YouTube Source',
+        subtitle: originalUrl,
+        explorerPath: sourcePath,
+        recordId: sourceRecord?.id,
+      },
+    ];
+
+    const timelineSection = section(
+      'timeline',
+      'Timeline',
+      timelineSteps.map((step) =>
+        link(step.label, step.explorerPath, {
+          recordId: step.recordId,
+          subtitle: [step.subtitle, step.timestamp].filter(Boolean).join(' · '),
+          ...(step.kind === 'youtube_original_source' && originalUrl
+            ? { externalUrl: originalUrl }
+            : {}),
+        }),
+      ),
+    );
+
+    return {
+      anchorRecordId: recordId,
+      anchorKrcId: krcId,
+      anchorSourcePath: sourcePath,
+      query,
+      decisionSummary,
+      sections: {
+        decisionSummary: section('decisionSummary', 'Decision Summary', [
+          link(decisionSummary, sourcePath, { highlighted: true }),
+        ]),
+        sourceFile,
+        conversation: youtubeEvidence,
+        messages: originalSource,
+        attachments,
+        executiveSession: noSession,
+        relatedSources: relatedSourcesSection,
+        timeline: timelineSection,
+      },
+      timeline: timelineSteps,
+    };
+  }
 
   const conversation = section(
     'conversation',

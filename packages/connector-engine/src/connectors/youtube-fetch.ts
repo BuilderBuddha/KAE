@@ -6,16 +6,40 @@ export interface YouTubeTarget {
   url: string;
 }
 
+/** Honest caption acquisition outcome — never collapse failure into unavailable. */
+export type YouTubeCaptionStatus = 'acquired' | 'unavailable' | 'failed';
+
+export interface YouTubeTranscriptSegment {
+  text: string;
+  /** Present only when upstream timedtext provides a valid start time. */
+  startSeconds?: number;
+}
+
+export interface YouTubeCaptionAcquisition {
+  status: YouTubeCaptionStatus;
+  /** Non-empty only when status is acquired. Never holds description text. */
+  transcript: string;
+  segments: YouTubeTranscriptSegment[];
+  hasTimestamps: boolean;
+  detail?: string;
+}
+
 export interface YouTubeVideoPayload {
   videoId: string;
   title: string;
   description: string;
+  /** Caption text only when captionStatus is acquired; otherwise empty. */
   transcript: string;
   thumbnailUrl: string;
   publishDate?: string;
   duration?: string;
   channelTitle?: string;
+  /** True only when usable captions were actually acquired. */
   captionsAvailable: boolean;
+  captionStatus: YouTubeCaptionStatus;
+  /** True only when acquired segments included valid timing. */
+  hasTranscriptTimestamps?: boolean;
+  captionDetail?: string;
   metadata: Record<string, unknown>;
 }
 
@@ -97,29 +121,171 @@ function decodeEntities(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
-function parseTimedTextXml(xml: string): string {
-  const lines = [...xml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)].map((match) =>
-    decodeEntities(match[1].replace(/\n/g, ' ').trim()),
-  );
-  return lines.filter(Boolean).join('\n');
+function formatTimestamp(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  const mins = Math.floor(whole / 60);
+  const secs = whole % 60;
+  return `${mins}:${String(secs).padStart(2, '0')}`;
 }
 
-export async function fetchYouTubeTranscript(videoId: string): Promise<string> {
+/** Parse timedtext XML into segments; retain start only when a valid numeric start attribute exists. */
+export function parseTimedTextSegments(xml: string): YouTubeTranscriptSegment[] {
+  const segments: YouTubeTranscriptSegment[] = [];
+  for (const match of xml.matchAll(/<text([^>]*)>([\s\S]*?)<\/text>/g)) {
+    const attrs = match[1] ?? '';
+    const text = decodeEntities((match[2] ?? '').replace(/\n/g, ' ').trim());
+    if (!text) continue;
+    const startMatch = attrs.match(/\bstart="([0-9]*\.?[0-9]+)"/);
+    const startSeconds = startMatch ? Number(startMatch[1]) : undefined;
+    const segment: YouTubeTranscriptSegment = { text };
+    if (typeof startSeconds === 'number' && Number.isFinite(startSeconds)) {
+      segment.startSeconds = startSeconds;
+    }
+    segments.push(segment);
+  }
+  return segments;
+}
+
+export function formatTranscriptFromSegments(segments: YouTubeTranscriptSegment[]): {
+  transcript: string;
+  hasTimestamps: boolean;
+} {
+  const hasTimestamps = segments.some((segment) => typeof segment.startSeconds === 'number');
+  if (!hasTimestamps) {
+    return {
+      transcript: segments.map((segment) => segment.text).join('\n'),
+      hasTimestamps: false,
+    };
+  }
+  const lines = segments.map((segment) => {
+    if (typeof segment.startSeconds === 'number') {
+      return `[${formatTimestamp(segment.startSeconds)}] ${segment.text}`;
+    }
+    return segment.text;
+  });
+  return { transcript: lines.join('\n'), hasTimestamps: true };
+}
+
+/** Successful track list with no lang_code → unavailable; otherwise return first lang. */
+export function classifyCaptionTrackList(listXml: string): {
+  outcome: 'unavailable' | 'has_track';
+  lang?: string;
+} {
+  const langMatch = listXml.match(/lang_code="([^"]+)"/);
+  if (!langMatch?.[1]) {
+    return { outcome: 'unavailable' };
+  }
+  return { outcome: 'has_track', lang: langMatch[1] };
+}
+
+/**
+ * Acquire captions with explicit status.
+ * Never returns description text as transcript.
+ */
+export async function fetchYouTubeCaptionAcquisition(
+  videoId: string,
+): Promise<YouTubeCaptionAcquisition> {
+  let listXml: string;
   try {
-    const listXml = await fetchText(
+    listXml = await fetchText(
       `https://www.youtube.com/api/timedtext?type=list&v=${videoId}`,
     );
-    const langMatch = listXml.match(/lang_code="([^"]+)"/);
-    const lang = langMatch?.[1] ?? 'en';
-    const transcriptXml = await fetchText(
+  } catch (error) {
+    return {
+      status: 'failed',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: `Caption track list request failed: ${String(error)}`,
+    };
+  }
+
+  if (!listXml.trim()) {
+    return {
+      status: 'failed',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: 'Caption track list returned an empty response',
+    };
+  }
+
+  const list = classifyCaptionTrackList(listXml);
+  if (list.outcome === 'unavailable') {
+    return {
+      status: 'unavailable',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: 'No caption tracks listed for this video',
+    };
+  }
+
+  const lang = list.lang ?? 'en';
+  let transcriptXml: string;
+  try {
+    transcriptXml = await fetchText(
       `https://www.youtube.com/api/timedtext?v=${videoId}&lang=${lang}`,
     );
-    const transcript = parseTimedTextXml(transcriptXml);
-    if (transcript.trim()) return transcript;
-  } catch {
-    // fall through to description-only transcript
+  } catch (error) {
+    return {
+      status: 'failed',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: `Caption track request failed: ${String(error)}`,
+    };
   }
-  return '';
+
+  if (!transcriptXml.trim()) {
+    return {
+      status: 'unavailable',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: 'Caption track returned no content',
+    };
+  }
+
+  let segments: YouTubeTranscriptSegment[];
+  try {
+    segments = parseTimedTextSegments(transcriptXml);
+  } catch (error) {
+    return {
+      status: 'failed',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: `Caption parse failed: ${String(error)}`,
+    };
+  }
+
+  if (segments.length === 0) {
+    if (/<text[\s>]/i.test(transcriptXml) || /<transcript/i.test(transcriptXml)) {
+      return {
+        status: 'unavailable',
+        transcript: '',
+        segments: [],
+        hasTimestamps: false,
+        detail: 'Caption track contained no usable text',
+      };
+    }
+    return {
+      status: 'failed',
+      transcript: '',
+      segments: [],
+      hasTimestamps: false,
+      detail: 'Unexpected caption track response',
+    };
+  }
+
+  const formatted = formatTranscriptFromSegments(segments);
+  return {
+    status: 'acquired',
+    transcript: formatted.transcript,
+    segments,
+    hasTimestamps: formatted.hasTimestamps,
+  };
 }
 
 export async function fetchYouTubeVideo(
@@ -155,22 +321,34 @@ export async function fetchYouTubeVideo(
     context?.log?.('warn', `Could not parse watch page for ${videoId}: ${String(err)}`);
   }
 
-  const transcript = await fetchYouTubeTranscript(videoId);
-  const captionsAvailable = transcript.length > 0;
+  const captions = await fetchYouTubeCaptionAcquisition(videoId);
+  if (captions.status !== 'acquired') {
+    context?.log?.(
+      captions.status === 'failed' ? 'warn' : 'info',
+      `YouTube captions ${captions.status} for ${videoId}${captions.detail ? `: ${captions.detail}` : ''}`,
+    );
+  }
 
   return {
     videoId,
     title: oEmbed.title,
     description,
-    transcript: transcript || description,
+    // Never substitute description into transcript.
+    transcript: captions.status === 'acquired' ? captions.transcript : '',
     thumbnailUrl: oEmbed.thumbnail_url ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
     publishDate,
     duration,
     channelTitle: oEmbed.author_name,
-    captionsAvailable,
+    captionsAvailable: captions.status === 'acquired',
+    captionStatus: captions.status,
+    hasTranscriptTimestamps: captions.status === 'acquired' ? captions.hasTimestamps : false,
+    captionDetail: captions.detail,
     metadata: {
       watchUrl,
       connectorId: 'youtube',
+      captionStatus: captions.status,
+      hasTranscriptTimestamps: captions.status === 'acquired' ? captions.hasTimestamps : false,
+      ...(captions.detail ? { captionDetail: captions.detail } : {}),
     },
   };
 }

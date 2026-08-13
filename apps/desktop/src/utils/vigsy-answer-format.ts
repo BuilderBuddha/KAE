@@ -232,7 +232,11 @@ export function formatConversationalAnswer(
   }
 
   const supporting = answer.reasonedSummary.trim();
-  const supportingText = supporting ? sanitizeFlowText(supporting) : '';
+  // Deduplicate: do not re-paint the same relationship block as supporting context.
+  const bodyNormalized = sanitizeFlowText(body);
+  const supportingNormalized = supporting ? sanitizeFlowText(supporting) : '';
+  const supportingText =
+    supportingNormalized && supportingNormalized !== bodyNormalized ? supportingNormalized : '';
 
   return {
     streamText: body,

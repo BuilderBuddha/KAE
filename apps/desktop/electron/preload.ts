@@ -85,6 +85,8 @@ export interface KaeAPI {
   getExecutiveBriefing: () => Promise<ExecutiveBriefingLoadResult>;
   refreshExecutiveBriefing: () => Promise<ExecutiveBriefing>;
   loadActiveVigsyConversation: () => Promise<VigsyConversationRecord | null>;
+  /** Restore active conversation or create exactly one (mount/remount). */
+  ensureActiveVigsyConversation: () => Promise<VigsyConversationRecord>;
   saveVigsyConversation: (record: VigsyConversationRecord) => Promise<string>;
   createVigsyConversation: () => Promise<VigsyConversationRecord>;
   deleteVigsyConversation: (conversationId: string) => Promise<void>;
@@ -101,6 +103,9 @@ export interface KaeAPI {
   openRepositoryPath: () => Promise<void>;
   openRepositoryFile: (relativePath: string) => Promise<void>;
   revealRepositoryFile: (relativePath: string) => Promise<void>;
+  openTrustedYouTubeUrl: (
+    url: string,
+  ) => Promise<{ opened: true } | { opened: false; reason: 'rejected_untrusted_url' }>;
   copyText: (text: string) => Promise<boolean>;
   getLastValidation: () => Promise<ImportValidationReport | null>;
   getLastImportSummary: () => Promise<ImportSummary | null>;
@@ -176,6 +181,7 @@ const kaeAPI: KaeAPI = {
   getExecutiveBriefing: () => ipcRenderer.invoke('kae:get-executive-briefing'),
   refreshExecutiveBriefing: () => ipcRenderer.invoke('kae:refresh-executive-briefing'),
   loadActiveVigsyConversation: () => ipcRenderer.invoke('kae:load-active-vigsy-conversation'),
+  ensureActiveVigsyConversation: () => ipcRenderer.invoke('kae:ensure-active-vigsy-conversation'),
   saveVigsyConversation: (record) => ipcRenderer.invoke('kae:save-vigsy-conversation', record),
   createVigsyConversation: () => ipcRenderer.invoke('kae:create-vigsy-conversation'),
   deleteVigsyConversation: (conversationId) =>
@@ -191,6 +197,7 @@ const kaeAPI: KaeAPI = {
   openRepositoryPath: () => ipcRenderer.invoke('kae:open-repository-path'),
   openRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:open-repository-file', relativePath),
   revealRepositoryFile: (relativePath) => ipcRenderer.invoke('kae:reveal-repository-file', relativePath),
+  openTrustedYouTubeUrl: (url) => ipcRenderer.invoke('kae:open-trusted-youtube-url', url),
   copyText: (text) => ipcRenderer.invoke('kae:copy-text', text),
   getLastValidation: () => ipcRenderer.invoke('kae:get-last-validation'),
   getLastImportSummary: () => ipcRenderer.invoke('kae:get-last-import-summary'),

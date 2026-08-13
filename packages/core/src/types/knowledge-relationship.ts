@@ -50,6 +50,9 @@ export interface RelatedEvidenceHit {
   relationshipType: KnowledgeRelationshipType;
   reason: string;
   confidence: number;
+  /** Indexed edge endpoints when available (relationship-trace grounding). */
+  fromId?: string;
+  toId?: string;
 }
 
 /** Relationship-enriched groups for Vigsy answers (no UI redesign). */

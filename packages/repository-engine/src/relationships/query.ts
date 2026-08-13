@@ -26,6 +26,8 @@ function recordToHit(record: EvidenceRecord, relationship: KnowledgeRelationship
     relationshipType: relationship.relationshipType,
     reason: relationship.reason,
     confidence: relationship.confidence,
+    fromId: relationship.fromId,
+    toId: relationship.toId,
   };
 }
 
@@ -130,28 +132,204 @@ export async function getRelatedEvidence(
     ensureEvidenceIndex(repositoryPath),
     ensureRelationshipIndex(repositoryPath),
   ]);
+  return collectRelatedEvidenceHits(evidenceIndex, relationshipIndex, [anchor], query ?? '', limit);
+}
 
-  let relationships = getRelationshipsForEvidence(relationshipIndex, anchor);
-  if (relationships.length === 0 && query) {
-    relationships = searchRelationships(relationshipIndex, query, limit * 3);
+/**
+ * Synchronous related-evidence resolution against already-loaded indexes.
+ * Checkpoint F0a — used during assemble/retrieve so relationships influence evidence selection.
+ */
+export function collectRelatedEvidenceHits(
+  evidenceIndex: EvidenceIndex,
+  relationshipIndex: KnowledgeRelationshipIndex,
+  anchors: string[],
+  query = '',
+  limit = 20,
+  allowedRelationshipTypes?: readonly string[],
+): RelatedEvidenceHit[] {
+  const hits: RelatedEvidenceHit[] = [];
+  const seen = new Set<string>();
+  const cleanedAnchors = anchors.map((a) => a.trim()).filter(Boolean);
+  const typeAllowed = (type: string) =>
+    !allowedRelationshipTypes || allowedRelationshipTypes.length === 0
+      ? true
+      : allowedRelationshipTypes.includes(type);
+
+  const filterRels = (relationships: KnowledgeRelationship[]) =>
+    relationships.filter((rel) => typeAllowed(rel.relationshipType));
+
+  const pushFromRelationships = (relationships: KnowledgeRelationship[], preferredAnchor?: string) => {
+    for (const rel of filterRels(relationships).sort((a, b) => b.confidence - a.confidence)) {
+      const candidates = [rel.fromId, rel.toId, ...rel.supportingEvidenceIds];
+      const ordered = preferredAnchor
+        ? [
+            ...candidates.filter((id) => id !== preferredAnchor),
+            ...candidates.filter((id) => id === preferredAnchor),
+          ]
+        : candidates;
+      for (const id of ordered) {
+        if (preferredAnchor && id === preferredAnchor) continue;
+        const record = resolveRecord(evidenceIndex, id);
+        if (!record || seen.has(record.id)) continue;
+        seen.add(record.id);
+        hits.push(recordToHit(record, rel));
+        if (hits.length >= limit) return true;
+      }
+    }
+    return false;
+  };
+
+  for (const anchor of cleanedAnchors) {
+    let relationships = getRelationshipsForEvidence(relationshipIndex, anchor);
+    if (relationships.length === 0 && query) {
+      relationships = searchRelationships(relationshipIndex, query, limit * 3);
+    }
+    if (relationships.length === 0) {
+      relationships = searchRelationships(relationshipIndex, anchor, limit * 3);
+    }
+    if (pushFromRelationships(relationships, anchor)) return hits;
   }
-  if (relationships.length === 0) {
-    relationships = searchRelationships(relationshipIndex, anchor, limit * 3);
+
+  if (hits.length === 0 && query.trim()) {
+    const relationships = searchRelationships(relationshipIndex, query, limit * 3);
+    pushFromRelationships(relationships);
+  }
+
+  return hits;
+}
+
+function endpointNodeIds(endpoint: string): string[] {
+  const id = endpoint.trim();
+  if (!id) return [];
+  const upper = id.toUpperCase();
+  if (/^KRC-\d{4}$/i.test(id)) {
+    return [upper, `${upper}:source`, `${upper}:conversation`, id, `${id}:source`, `${id}:conversation`];
+  }
+  return [id, upper];
+}
+
+function relationshipTouchesEndpoint(rel: KnowledgeRelationship, endpointNodes: Set<string>): boolean {
+  return (
+    endpointNodes.has(rel.fromId) ||
+    endpointNodes.has(rel.toId) ||
+    rel.supportingEvidenceIds.some((sid) => endpointNodes.has(sid))
+  );
+}
+
+function isSelfEdge(rel: KnowledgeRelationship): boolean {
+  return rel.fromId === rel.toId;
+}
+
+/**
+ * Bounded named-pair path over the existing relationship index (direct edge or ≤1 hop).
+ * Not a general graph engine — depth capped at 2 edges.
+ */
+export function collectNamedPairRelationshipHits(
+  evidenceIndex: EvidenceIndex,
+  relationshipIndex: KnowledgeRelationshipIndex,
+  endpointA: string,
+  endpointB: string,
+  allowedRelationshipTypes?: readonly string[],
+  maxDepth = 2,
+): RelatedEvidenceHit[] {
+  const nodesA = new Set(endpointNodeIds(endpointA));
+  const nodesB = new Set(endpointNodeIds(endpointB));
+  if (nodesA.size === 0 || nodesB.size === 0) return [];
+
+  const typeAllowed = (type: string) =>
+    !allowedRelationshipTypes || allowedRelationshipTypes.length === 0
+      ? true
+      : allowedRelationshipTypes.includes(type);
+
+  const edges = relationshipIndex.relationships.filter(
+    (rel) => typeAllowed(rel.relationshipType) && !isSelfEdge(rel),
+  );
+
+  // Direct edge between the named endpoints.
+  const direct = edges
+    .filter((rel) => relationshipTouchesEndpoint(rel, nodesA) && relationshipTouchesEndpoint(rel, nodesB))
+    .sort((a, b) => b.confidence - a.confidence);
+
+  const pathRels: KnowledgeRelationship[] = [];
+  if (direct.length > 0) {
+    pathRels.push(direct[0]);
+  } else if (maxDepth >= 2) {
+    // One intermediate hop: A—X—B
+    const fromA = edges.filter((rel) => relationshipTouchesEndpoint(rel, nodesA));
+    let found: KnowledgeRelationship[] | null = null;
+    for (const edgeA of fromA.sort((a, b) => b.confidence - a.confidence)) {
+      const midIds = [edgeA.fromId, edgeA.toId, ...edgeA.supportingEvidenceIds].filter(
+        (id) => !nodesA.has(id) && !nodesB.has(id),
+      );
+      for (const mid of midIds) {
+        const midNodes = new Set(endpointNodeIds(mid));
+        const edgeB = edges
+          .filter(
+            (rel) =>
+              rel.relationshipId !== edgeA.relationshipId &&
+              relationshipTouchesEndpoint(rel, midNodes) &&
+              relationshipTouchesEndpoint(rel, nodesB),
+          )
+          .sort((a, b) => b.confidence - a.confidence)[0];
+        if (edgeB) {
+          found = [edgeA, edgeB];
+          break;
+        }
+      }
+      if (found) break;
+    }
+    if (found) pathRels.push(...found);
   }
 
   const hits: RelatedEvidenceHit[] = [];
   const seen = new Set<string>();
-
-  for (const rel of relationships.sort((a, b) => b.confidence - a.confidence)) {
-    const peerId = rel.fromId === anchor || rel.supportingEvidenceIds[0] === anchor ? rel.toId : rel.fromId;
-    const record = resolveRecord(evidenceIndex, peerId);
-    if (!record || seen.has(record.id)) continue;
-    seen.add(record.id);
-    hits.push(recordToHit(record, rel));
-    if (hits.length >= limit) break;
+  for (const rel of pathRels) {
+    const peerIds = [rel.fromId, rel.toId].filter((id) => !nodesA.has(id) || nodesB.has(id));
+    // Prefer the non-A endpoint for display; include both path peers once.
+    for (const id of peerIds) {
+      const record = resolveRecord(evidenceIndex, id);
+      if (!record || seen.has(`${rel.relationshipId}:${record.id}`)) continue;
+      seen.add(`${rel.relationshipId}:${record.id}`);
+      hits.push(recordToHit(record, rel));
+    }
   }
-
   return hits;
+}
+
+/** Governed campaign/project edges only — never titles, capabilities, or source links. */
+export function isGovernedCampaignRelationshipType(type: string): boolean {
+  return type === 'campaign_campaign';
+}
+
+/** Governed topic edges only — must be labeled as topics, never projects. */
+export function isGovernedTopicRelationshipType(type: string): boolean {
+  return type === 'topic_topic';
+}
+
+/**
+ * @deprecated Prefer isGovernedCampaignRelationshipType / isGovernedTopicRelationshipType.
+ * Kept for callers that need either campaign or topic (not capabilities/sources).
+ */
+export function isProjectTopicRelationshipType(type: string): boolean {
+  return isGovernedCampaignRelationshipType(type) || isGovernedTopicRelationshipType(type);
+}
+
+/** Human-readable governed record type from an evidence kind. */
+export function governedRecordTypeLabel(kind: string): string {
+  switch (kind) {
+    case 'source':
+      return 'source';
+    case 'conversation':
+      return 'conversation';
+    case 'message':
+      return 'message';
+    case 'attachment':
+      return 'attachment';
+    case 'executive_session':
+      return 'executive_session';
+    default:
+      return kind || 'record';
+  }
 }
 
 export function groupRelatedEvidence(hits: RelatedEvidenceHit[]): {

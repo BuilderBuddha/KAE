@@ -29,6 +29,7 @@ import {
   type ConnectorConfig,
   type ConnectorId,
   InMemoryJobQueue,
+  isTrustedYouTubeWatchUrl,
 } from '@scooper/core';
 import { getSharedConnectorManager } from '@scooper/connector-engine';
 import { getSharedAIProviderManager } from '@scooper/ai-orchestration';
@@ -63,10 +64,12 @@ import {
   getExecutiveBriefing,
   refreshExecutiveBriefing,
   loadActiveVigsyConversation,
-  saveVigsyConversation,
+  ensureActiveVigsyConversation,
   createNewVigsyConversation,
+  saveVigsyConversation,
   deleteVigsyConversation,
   syncExecutiveMemoryFromConversation,
+  isNavigationOnlyLookupConversation,
   getExecutiveContinuity,
   ensureExecutiveSessionForConversation,
   pauseActiveExecutiveSession,
@@ -765,9 +768,23 @@ function setupIpc(): void {
     }
     return record;
   });
+  /** Mount/remount: restore active or create exactly one (StrictMode-safe). */
+  ipcMain.handle('kae:ensure-active-vigsy-conversation', async () => {
+    const existing = await loadActiveVigsyConversation(repoPath());
+    if (existing) {
+      await ensureExecutiveSessionForConversation(repoPath(), existing);
+      return existing;
+    }
+    await pauseActiveExecutiveSession(repoPath());
+    const record = await ensureActiveVigsyConversation(repoPath());
+    await ensureExecutiveSessionForConversation(repoPath(), record);
+    return record;
+  });
   ipcMain.handle('kae:save-vigsy-conversation', async (_event, record: VigsyConversationRecord) => {
     const filePath = await saveVigsyConversation(repoPath(), record);
-    if (record.turns.length > 0) {
+    // Navigation-only source lookups must not create Executive Sessions, decisions,
+    // awareness records, or derived evidence that feeds future retrieval.
+    if (record.turns.length > 0 && !isNavigationOnlyLookupConversation(record)) {
       await syncExecutiveMemoryFromConversation(repoPath(), record);
       mainWindow?.webContents.send('kae:executive-memory-updated');
       mainWindow?.webContents.send('kae:executive-briefing-updated');
@@ -794,6 +811,14 @@ function setupIpc(): void {
   });
   ipcMain.handle('kae:reveal-repository-file', async (_event, relativePath: string) => {
     shell.showItemInFolder(resolveRepoFile(relativePath));
+  });
+  /** Allowlisted YouTube watch URLs only — never arbitrary model URLs. */
+  ipcMain.handle('kae:open-trusted-youtube-url', async (_event, url: string) => {
+    if (!isTrustedYouTubeWatchUrl(url)) {
+      return { opened: false as const, reason: 'rejected_untrusted_url' as const };
+    }
+    await shell.openExternal(url);
+    return { opened: true as const };
   });
   ipcMain.handle('kae:copy-text', async (_event, text: string) => {
     clipboard.writeText(text);

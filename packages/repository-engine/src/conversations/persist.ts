@@ -70,6 +70,36 @@ export async function loadActiveVigsyConversation(
   return loadVigsyConversation(repositoryPath, active.conversationId);
 }
 
+/** In-flight ensureActive promises — collapses React StrictMode twin mounts. */
+const ensureActiveInflight = new Map<string, Promise<VigsyConversationRecord>>();
+
+/**
+ * Returns the valid active KayD conversation, creating exactly one when none exists.
+ * Concurrent callers (StrictMode remount) share one create — no twin empty records.
+ */
+export async function ensureActiveVigsyConversation(
+  repositoryPath: string,
+): Promise<VigsyConversationRecord> {
+  const existing = await loadActiveVigsyConversation(repositoryPath);
+  if (existing) return existing;
+
+  const inflight = ensureActiveInflight.get(repositoryPath);
+  if (inflight) return inflight;
+
+  const promise = (async () => {
+    try {
+      const again = await loadActiveVigsyConversation(repositoryPath);
+      if (again) return again;
+      return createNewVigsyConversation(repositoryPath);
+    } finally {
+      ensureActiveInflight.delete(repositoryPath);
+    }
+  })();
+
+  ensureActiveInflight.set(repositoryPath, promise);
+  return promise;
+}
+
 export async function saveVigsyConversation(
   repositoryPath: string,
   record: VigsyConversationRecord,

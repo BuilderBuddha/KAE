@@ -22,6 +22,8 @@ const TIMELINE_LABELS: Record<EvidenceTimelineStep['kind'], string> = {
   executive_session: 'Executive Session',
   related_sources: 'Related Sources',
   newest_evidence: 'Newest Evidence',
+  youtube_evidence: 'YouTube Evidence',
+  youtube_original_source: 'Original YouTube Source',
 };
 
 function DrilldownLinkButton({
@@ -29,13 +31,13 @@ function DrilldownLinkButton({
   onOpen,
 }: {
   item: EvidenceDrilldownLink;
-  onOpen: (path: string) => void;
+  onOpen: (path: string, externalUrl?: string) => void;
 }) {
   return (
     <button
       type="button"
       className={`evidence-drilldown__link${item.highlighted ? ' evidence-drilldown__link--highlight' : ''}`}
-      onClick={() => onOpen(item.explorerPath)}
+      onClick={() => onOpen(item.explorerPath, item.externalUrl)}
     >
       <span className="evidence-drilldown__link-label">{item.label}</span>
       {item.subtitle ? <span className="evidence-drilldown__link-sub">{item.subtitle}</span> : null}
@@ -48,7 +50,7 @@ function DrilldownSectionView({
   onOpen,
 }: {
   section: EvidenceDrilldownSection;
-  onOpen: (path: string) => void;
+  onOpen: (path: string, externalUrl?: string) => void;
 }) {
   return (
     <section className="evidence-drilldown__section">
@@ -58,7 +60,11 @@ function DrilldownSectionView({
       ) : (
         <div className="evidence-drilldown__items">
           {section.items.map((item) => (
-            <DrilldownLinkButton key={`${section.id}-${item.label}-${item.explorerPath}`} item={item} onOpen={onOpen} />
+            <DrilldownLinkButton
+              key={`${section.id}-${item.label}-${item.explorerPath}-${item.externalUrl ?? ''}`}
+              item={item}
+              onOpen={onOpen}
+            />
           ))}
         </div>
       )}
@@ -71,14 +77,27 @@ function TimelineView({
   onOpen,
 }: {
   steps: EvidenceTimelineStep[];
-  onOpen: (path: string) => void;
+  onOpen: (path: string, externalUrl?: string) => void;
 }) {
   return (
     <div className="evidence-timeline">
       {steps.map((step, index) => (
         <div key={`${step.kind}-${step.label}`} className="evidence-timeline__step">
-          {index > 0 ? <div className="evidence-timeline__arrow" aria-hidden>↓</div> : null}
-          <button type="button" className="evidence-timeline__card" onClick={() => onOpen(step.explorerPath)}>
+          {index > 0 ? (
+            <div className="evidence-timeline__arrow" aria-hidden>
+              ↓
+            </div>
+          ) : null}
+          <button
+            type="button"
+            className="evidence-timeline__card"
+            onClick={() =>
+              onOpen(
+                step.explorerPath,
+                step.kind === 'youtube_original_source' ? step.subtitle : undefined,
+              )
+            }
+          >
             <span className="evidence-timeline__kind">{TIMELINE_LABELS[step.kind]}</span>
             <span className="evidence-timeline__label">{step.label}</span>
             {step.subtitle ? <span className="evidence-timeline__sub">{step.subtitle}</span> : null}
@@ -92,6 +111,14 @@ function TimelineView({
 
 export function EvidenceDrilldownPanel({ drilldown }: { drilldown: EvidenceDrilldown }) {
   const { openInExplorer } = useNavigation();
+
+  const onOpen = (path: string, externalUrl?: string) => {
+    if (externalUrl && typeof window.kae.openTrustedYouTubeUrl === 'function') {
+      void window.kae.openTrustedYouTubeUrl(externalUrl);
+      return;
+    }
+    openInExplorer(path);
+  };
 
   return (
     <div className="evidence-drilldown">
@@ -109,10 +136,10 @@ export function EvidenceDrilldownPanel({ drilldown }: { drilldown: EvidenceDrill
         </button>
       </div>
 
-      <TimelineView steps={drilldown.timeline} onOpen={openInExplorer} />
+      <TimelineView steps={drilldown.timeline} onOpen={onOpen} />
 
       {SECTION_ORDER.map((key) => (
-        <DrilldownSectionView key={key} section={drilldown.sections[key]} onOpen={openInExplorer} />
+        <DrilldownSectionView key={key} section={drilldown.sections[key]} onOpen={onOpen} />
       ))}
     </div>
   );
